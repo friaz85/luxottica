@@ -11,10 +11,17 @@ class RewardAdminController extends ResourceController
     public function index()
     {
         $rewardModel = new RewardModel();
-        $rewards = $rewardModel->select('rewards.*, vigencias.fecha_inicio, vigencias.fecha_fin')
-                               ->join('vigencias', 'vigencias.id = rewards.idVigencia', 'left')
-                               ->orderBy('rewards.cost', 'ASC')
-                               ->findAll();
+        $rewards = $rewardModel->orderBy('cost', 'ASC')->findAll();
+        
+        $db = \Config\Database::connect();
+        foreach ($rewards as &$reward) {
+            $reward['vigencias'] = $db->table('reward_vigencias')
+                                     ->select('vigencias.*')
+                                     ->join('vigencias', 'vigencias.id = reward_vigencias.id_vigencia')
+                                     ->where('reward_vigencias.id_reward', $reward['id'])
+                                     ->get()
+                                     ->getResultArray();
+        }
         return $this->respond($rewards);
     }
 
@@ -24,17 +31,7 @@ class RewardAdminController extends ResourceController
         $rewardModel = new RewardModel();
         
         $now = date('Y-m-d H:i:s');
-        $query = $rewardModel->select('rewards.*, vigencias.fecha_inicio, vigencias.fecha_fin')
-                             ->join('vigencias', 'vigencias.id = rewards.idVigencia', 'left')
-                             ->where('rewards.active', 1)
-                             ->where('rewards.stock >', 0)
-                             ->groupStart()
-                                 ->where('rewards.idVigencia IS NULL')
-                                 ->orGroupStart()
-                                     ->where('vigencias.fecha_inicio <=', $now)
-                                     ->where('vigencias.fecha_fin >=', $now)
-                                 ->groupEnd()
-                             ->groupEnd();
+        $query = $rewardModel->where('active', 1)->where('stock >', 0);
         
         if ($user && isset($user->id_proyecto)) {
             $db = \Config\Database::connect();
@@ -54,7 +51,38 @@ class RewardAdminController extends ResourceController
             }
         }
         
-        return $this->respond($query->orderBy('rewards.cost', 'ASC')->findAll());
+        $rewards = $query->orderBy('rewards.cost', 'ASC')->findAll();
+        
+        $db = \Config\Database::connect();
+        $filteredRewards = [];
+        
+        foreach ($rewards as $reward) {
+            $vigencias = $db->table('reward_vigencias')
+                            ->select('vigencias.*')
+                            ->join('vigencias', 'vigencias.id = reward_vigencias.id_vigencia')
+                            ->where('reward_vigencias.id_reward', $reward['id'])
+                            ->get()
+                            ->getResultArray();
+            
+            if (empty($vigencias)) {
+                $reward['vigencias'] = [];
+                $filteredRewards[] = $reward;
+            } else {
+                $isValid = false;
+                foreach ($vigencias as $v) {
+                    if ($v['fecha_inicio'] <= $now && $v['fecha_fin'] >= $now) {
+                        $isValid = true;
+                        break;
+                    }
+                }
+                if ($isValid) {
+                    $reward['vigencias'] = $vigencias;
+                    $filteredRewards[] = $reward;
+                }
+            }
+        }
+        
+        return $this->respond($filteredRewards);
     }
 
     public function createReward()
@@ -98,6 +126,26 @@ class RewardAdminController extends ResourceController
             if ($rewardModel->insert($saveData)) {
                 $rewardId = $rewardModel->insertID();
                 
+                // Save reward_vigencias
+                $idVigencias = $data['id_vigencias'] ?? [];
+                if (is_string($idVigencias)) {
+                    $decoded = json_decode($idVigencias, true);
+                    if (is_array($decoded)) {
+                        $idVigencias = $decoded;
+                    } else {
+                        $idVigencias = array_filter(explode(',', $idVigencias));
+                    }
+                }
+                if (!empty($idVigencias)) {
+                    $db = \Config\Database::connect();
+                    foreach ($idVigencias as $idVigencia) {
+                        $db->table('reward_vigencias')->insert([
+                            'id_reward'   => $rewardId,
+                            'id_vigencia' => $idVigencia
+                        ]);
+                    }
+                }
+
                 // Handle Exit Codes and Update Stock
                 if (!empty($data['exit_codes'])) {
                     $addedCount = $this->processExitCodes($rewardId, $data['exit_codes']);
@@ -153,6 +201,27 @@ class RewardAdminController extends ResourceController
 
         try {
             if ($rewardModel->update($id, $updateData)) {
+                // Sync reward_vigencias
+                if (isset($data['id_vigencias'])) {
+                    $idVigencias = $data['id_vigencias'];
+                    if (is_string($idVigencias)) {
+                        $decoded = json_decode($idVigencias, true);
+                        if (is_array($decoded)) {
+                            $idVigencias = $decoded;
+                        } else {
+                            $idVigencias = array_filter(explode(',', $idVigencias));
+                        }
+                    }
+                    $db = \Config\Database::connect();
+                    $db->table('reward_vigencias')->where('id_reward', $id)->delete();
+                    foreach ($idVigencias as $idVigencia) {
+                        $db->table('reward_vigencias')->insert([
+                            'id_reward'   => $id,
+                            'id_vigencia' => $idVigencia
+                        ]);
+                    }
+                }
+
                 if (isset($data['exit_codes'])) {
                     $this->processExitCodes($id, $data['exit_codes'], true);
                     // Recalculate stock after codes update

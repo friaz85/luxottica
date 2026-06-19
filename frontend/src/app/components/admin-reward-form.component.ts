@@ -93,9 +93,10 @@ interface CodeArea {
                    <span class="type-badge digital">💾 Digital</span>
                 </td>
                 <td>
-                   <div *ngIf="reward.idVigencia; else noVigencia" style="font-size: 0.8rem; line-height: 1.2;">
-                      <span class="font-bold">{{ formatShortDate(reward.fecha_inicio) }}</span> al 
-                      <span class="font-bold">{{ formatShortDate(reward.fecha_fin) }}</span>
+                   <div *ngIf="reward.vigencias && reward.vigencias.length > 0; else noVigencia" style="font-size: 0.8rem; line-height: 1.3; display: flex; flex-direction: column; gap: 0.25rem;">
+                      <div *ngFor="let v of reward.vigencias" class="status-pill future" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;">
+                         {{ formatShortDate(v.fecha_inicio) }} al {{ formatShortDate(v.fecha_fin) }}
+                      </div>
                    </div>
                    <ng-template #noVigencia>
                       <span class="project-tag global">Sin límite</span>
@@ -162,13 +163,22 @@ interface CodeArea {
               </div>
 
               <div class="admin-form-group">
-                <label>Vigencia de la Recompensa</label>
-                <select [(ngModel)]="editingReward.idVigencia" class="admin-input">
-                  <option [ngValue]="null">Sin Vigencia (Límite del proyecto)</option>
-                  <option *ngFor="let v of vigencias()" [ngValue]="v.id">
-                    Vigencia #{{ v.id }} ({{ formatShortDate(v.fecha_inicio) }} a {{ formatShortDate(v.fecha_fin) }})
-                  </option>
-                </select>
+                <label>Vigencias de la Recompensa (Multivigencia)</label>
+                <div class="vigencias-checklist-container custom-scroll">
+                  <div *ngFor="let v of vigencias()" class="checklist-item">
+                    <label class="checkbox-label">
+                      <input 
+                        type="checkbox" 
+                        [checked]="isVigenciaSelected(v.id)" 
+                        (change)="toggleVigenciaSelection(v.id)"
+                      >
+                      <span>Vigencia #{{ v.id }} ({{ formatShortDate(v.fecha_inicio) }} a {{ formatShortDate(v.fecha_fin) }})</span>
+                    </label>
+                  </div>
+                  <div *ngIf="vigencias().length === 0" class="text-muted" style="font-size: 0.85rem; padding: 0.5rem;">
+                    No hay vigencias creadas. Créalas primero en la sección de Vigencias.
+                  </div>
+                </div>
               </div>
 
               <div class="admin-form-group">
@@ -453,6 +463,11 @@ interface CodeArea {
 
     .inventory-section { margin-top: 2rem; border-top: 1px dashed #e2e8f0; padding-top: 1.5rem; }
     .section-header h4 { margin: 0 0 1rem 0; color: #334155; font-size: 1rem; font-weight: 900; }
+
+    .vigencias-checklist-container { max-height: 150px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 0.6rem; padding: 0.8rem; background: #f8fafc; display: flex; flex-direction: column; gap: 0.6rem; }
+    .checklist-item { display: flex; align-items: center; }
+    .checkbox-label { display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem !important; font-weight: 500 !important; color: #334155; text-transform: none !important; letter-spacing: normal !important; cursor: pointer; }
+    .checkbox-label input { width: 16px; height: 16px; cursor: pointer; }
   `]
 })
 export class AdminRewardFormComponent implements OnInit, AfterViewInit {
@@ -550,6 +565,22 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear().toString().substring(2)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
+  isVigenciaSelected(id: number): boolean {
+    return this.editingReward && this.editingReward.id_vigencias && this.editingReward.id_vigencias.includes(id);
+  }
+
+  toggleVigenciaSelection(id: number) {
+    if (!this.editingReward.id_vigencias) {
+      this.editingReward.id_vigencias = [];
+    }
+    const idx = this.editingReward.id_vigencias.indexOf(id);
+    if (idx > -1) {
+      this.editingReward.id_vigencias.splice(idx, 1);
+    } else {
+      this.editingReward.id_vigencias.push(id);
+    }
+  }
+
   filteredRewards = computed(() => {
     const term = this.searchTerm().toLowerCase();
     return this.rewards().filter((r: any) => r.title?.toLowerCase().includes(term));
@@ -569,7 +600,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   ngAfterViewInit() {}
 
   openCreateModal() {
-    this.editingReward = { title: '', id_proyecto: null, type: 'digital', cost: 0, active: 1, image_url: '', pdf_template: '', codes_count: 1, exit_codes: '', idVigencia: null };
+    this.editingReward = { title: '', id_proyecto: null, type: 'digital', cost: 0, active: 1, image_url: '', pdf_template: '', codes_count: 1, exit_codes: '', id_vigencias: [] };
     this.selectedImage = null;
     this.selectedPDF = null;
     this.pendingCSVFile = null;
@@ -590,6 +621,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
 
   editReward(reward: any) {
     this.editingReward = { ...reward };
+    this.editingReward.id_vigencias = reward.vigencias ? reward.vigencias.map((v: any) => v.id) : [];
     this.selectedImage = null;
     this.selectedPDF = null;
     this.pendingCSVFile = null;
@@ -791,7 +823,11 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     const formData = new FormData();
     Object.keys(this.editingReward).forEach(key => {
        const val = this.editingReward[key];
-       formData.append(key, val === null ? '' : val);
+       if (key === 'id_vigencias' || Array.isArray(val)) {
+         formData.append(key, JSON.stringify(val));
+       } else {
+         formData.append(key, val === null ? '' : val);
+       }
     });
     if (this.selectedImage) formData.append('image', this.selectedImage);
     if (this.selectedPDF) formData.append('pdf', this.selectedPDF);
