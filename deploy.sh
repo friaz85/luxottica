@@ -18,7 +18,7 @@ export const environment = {
     production: $( [ "$ENV" == "PROD" ] && echo "true" || echo "false" ),
     apiUrl: '$API_URL',
     uploadsUrl: '$API_URL/public/uploads',
-    fallbackUrl: 'https://q-tokens.com.mx/embajadores-tec-dev/api/public/uploads'
+    fallbackUrl: 'https://q-tokens.com.mx/luxottica/api/public/uploads'
 };
 EOF
 
