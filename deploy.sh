@@ -1,25 +1,13 @@
 #!/bin/bash
 
-# Usage: ./deploy.sh [DEV|PROD]
+# Deploy to PROD environment
+ENV="PROD"
+echo "🔥 Deploying to PROD environment..."
+REMOTE_PATH="www/q-tokens.com.mx/public_html/luxottica"
+BASE_HREF="/luxottica/"
+API_URL="https://q-tokens.com.mx/luxottica/api"
 
-ENV=$1
-
-if [ "$ENV" == "DEV" ]; then
-    echo "🚀 Deploying to DEV environment..."
-    REMOTE_PATH="www/q-tokens.com.mx/public_html/embajadores-tec-dev"
-    BASE_HREF="/embajadores-tec-dev/"
-    API_URL="https://q-tokens.com.mx/embajadores-tec-dev/api"
-elif [ "$ENV" == "PROD" ]; then
-    echo "🔥 Deploying to PROD environment..."
-    REMOTE_PATH="www/q-tokens.com.mx/public_html/embajadores-tec"
-    BASE_HREF="/embajadores-tec/"
-    API_URL="https://q-tokens.com.mx/embajadores-tec/api"
-else
-    echo "❌ Error: Please specify environment [DEV|PROD]"
-    exit 1
-fi
-
-SSH_KEY="/Users/friaz85/Documents/Proyectos/DesaLyL/embajadores tec/embajadores_tec/.ssh/id_ed25519"
+SSH_KEY="/Users/friaz85/Documents/Proyectos/DesaLyL/luxottica/.ssh/id_ed25519"
 REMOTE_USER="u13-duekhqdeblng@ssh.q-tokens.com.mx"
 SSH_PARAMS="-p 18765 -o StrictHostKeyChecking=no -i \"$SSH_KEY\""
 
@@ -105,5 +93,16 @@ ssh -p 18765 -o StrictHostKeyChecking=no -i "$SSH_KEY" $REMOTE_USER "cat > $REMO
 HTEOF"
 # Note: In the line above, we need \$1 because cat > file <<'EOF' preserves the backslash if it's escaped? 
 # No, let's test.
+
+# 7. Git Commit and Push
+echo "💾 Committing and pushing changes to git..."
+if [ -n "$(git status --porcelain)" ]; then
+    git add .
+    git commit -m "deploy: version $ENV deployed to SiteGround"
+    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    git push origin $CURRENT_BRANCH
+else
+    echo "ℹ️ No changes to commit in working directory."
+fi
 
 echo "✅ Deployment to $ENV finished successfully!"

@@ -1,0 +1,654 @@
+import { Component, signal, inject, OnInit, ElementRef, ViewChild } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { UserNavbarComponent } from './user-navbar.component';
+import { ToastService } from '../services/toast.service';
+import { AuthService } from '../services/auth.service';
+import { environment } from '../../environments/environment';
+import Swal from 'sweetalert2';
+
+@Component({
+  selector: 'app-redeem-rewards',
+  standalone: true,
+  imports: [CommonModule, FormsModule, UserNavbarComponent],
+  template: `
+    <user-navbar></user-navbar>
+    
+    <div class="rewards-layout">
+      <div class="content-container">
+        <!-- Two Column Content Grid -->
+        <div class="dashboard-grid">
+          
+          <!-- Left Column: User status & Code registration -->
+          <div class="left-col">
+            <!-- Welcome Card -->
+            <div class="white-card welcome-card">
+              <h3 class="card-label">Bienvenido</h3>
+              <h2 class="user-name">{{ userName() }}</h2>
+            </div>
+
+            <!-- Points Card -->
+            <div class="white-card points-card">
+              <h3 class="card-label">Cuentas con</h3>
+              <div class="points-circle">
+                <span class="points-val">{{ userPoints() | number:'1.0-0' }}</span>
+              </div>
+              <span class="card-sublabel">Puntos disponibles</span>
+            </div>
+
+            <!-- Code Entry Card -->
+            <div class="white-card code-card">
+              <h3 class="code-title">Ingresar código</h3>
+              <div class="code-form">
+                <input #codeField type="text" [(ngModel)]="entryCode" placeholder="Ingresa tu código" class="code-input">
+                <button (click)="redeemCode()" [disabled]="!entryCode || isSubmittingCode" class="btn-black-rect">
+                  {{ isSubmittingCode ? '...' : 'Registrar' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Catalog -->
+          <div class="right-col">
+            <div class="catalog-card">
+              <!-- Black Header Block -->
+              <div class="catalog-header">
+                <h2>¿Qué recompensa deseas canjear el día de hoy?</h2>
+              </div>
+
+              <!-- Main Catalog Body -->
+              <div class="catalog-body">
+                <!-- Subheading -->
+                <p class="catalog-subheading">
+                  {{ userPoints() > 0 ? 'Selecciona una recompensa y haz clic en canjear.' : 'Aún no cuentas con los puntos suficientes para poder canjear Sigue participando para acumular más puntos' }}
+                </p>
+
+                <!-- Spinner while loading -->
+                <div *ngIf="loading()" class="loading-state">
+                  <div class="spinner"></div>
+                  <p>Cargando catálogo...</p>
+                </div>
+
+                <!-- Rewards Grid -->
+                <div class="rewards-grid" *ngIf="!loading()">
+                  <div class="reward-item" 
+                       *ngFor="let item of rewards()" 
+                       [class.selected]="selectedReward()?.id === item.id"
+                       (click)="selectReward(item)">
+                    <div class="reward-img-container">
+                      <img [src]="item.image_url ? environment.uploadsUrl + '/rewards/' + item.image_url : 'assets/img/Logo_Tec.png'" 
+                           (error)="handleImageError($event, item.image_url)"
+                           [alt]="item.title">
+                    </div>
+                    <h3 class="reward-title">{{ item.title }}</h3>
+                    <div class="reward-pts">{{ item.cost }} puntos</div>
+                  </div>
+                </div>
+
+                <div class="empty-state" *ngIf="rewards().length === 0 && !loading()">
+                  <h2>SIN RESULTADOS</h2>
+                  <p>No hay recompensas disponibles en este momento.</p>
+                </div>
+
+                <!-- Action Buttons at bottom of right block -->
+                <div class="catalog-actions" *ngIf="!loading() && rewards().length > 0">
+                  <button (click)="redeemSelected()" [disabled]="!selectedReward()" class="btn-black-rect large-btn">
+                    Canjear
+                  </button>
+                  <button (click)="focusCodeField()" class="btn-black-rect large-btn">
+                    + Acumular
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Bottom Brands Pleca -->
+      <div class="bottom-pleca">
+        <img src="assets/img/poleca logos abajo.png" alt="Logos Marcas" class="pleca-img">
+      </div>
+
+      <!-- Bottom Footer Text -->
+      <footer class="app-footer">
+        <p class="contact-info">Informes en la República Mexicana: 55 5249.3752 <a href="mailto:atencionaclientes@quantummx.com" style="color: inherit; text-decoration: underline;">atencionaclientes@quantummx.com</a></p>
+      </footer>
+    </div>
+  `,
+  styles: [`
+    .rewards-layout {
+      min-height: 100vh;
+      width: 100vw;
+      background: url('../../assets/img/fondo web.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      overflow-x: hidden;
+      padding-top: 130px; /* Accounts for header + top pleca */
+      position: relative;
+    }
+
+    @media (max-width: 768px) {
+      .rewards-layout {
+        background: url('../../assets/img/fondo mobile.jpg');
+        background-size: cover;
+        background-position: center;
+        padding-top: 180px;
+      }
+    }
+
+    .content-container {
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1.5rem 2rem;
+      flex: 1;
+      z-index: 5;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    @media (max-width: 992px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .left-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .white-card {
+      background: #ffffff;
+      border: 1px solid #000000;
+      border-radius: 4px;
+      padding: 1.5rem;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      color: #000000;
+    }
+
+    .welcome-card {
+      padding: 1rem 1.5rem;
+    }
+
+    .card-label {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #666;
+      margin: 0 0 0.2rem 0;
+    }
+
+    .user-name {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin: 0;
+      text-transform: capitalize;
+    }
+
+    .points-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem;
+    }
+
+    .points-circle {
+      margin: 1rem 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .points-val {
+      font-size: 3.5rem;
+      font-weight: 900;
+      color: #000000;
+      line-height: 1;
+    }
+
+    .card-sublabel {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #666;
+    }
+
+    .code-card {
+      text-align: left;
+    }
+
+    .code-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin: 0 0 1rem 0;
+      text-align: center;
+    }
+
+    .code-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .code-input {
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid #cccccc;
+      border-radius: 4px;
+      padding: 0.75rem;
+      font-size: 0.95rem;
+      color: #000000;
+      outline: none;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .code-input:focus {
+      border-color: #000000;
+    }
+
+    .btn-black-rect {
+      background: #000000;
+      color: #ffffff;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: opacity 0.2s;
+    }
+
+    .btn-black-rect:hover:not(:disabled) {
+      opacity: 0.85;
+    }
+
+    .btn-black-rect:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .right-col {
+      width: 100%;
+    }
+
+    .catalog-card {
+      background: #ffffff;
+      border: 1px solid #000000;
+      border-radius: 4px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    .catalog-header {
+      background: #000000;
+      color: #ffffff;
+      padding: 1.5rem;
+      text-align: center;
+      border-bottom: 1px solid #000000;
+    }
+
+    .catalog-header h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .catalog-body {
+      padding: 2rem;
+      color: #000000;
+    }
+
+    .catalog-subheading {
+      text-align: center;
+      font-size: 0.95rem;
+      color: #333;
+      margin-bottom: 2rem;
+      font-weight: 500;
+      line-height: 1.5;
+    }
+
+    .rewards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .reward-item {
+      background: #ffffff;
+      border: 1px solid #eeeeee;
+      border-radius: 4px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .reward-item:hover {
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
+    }
+
+    .reward-item.selected {
+      border: 2px solid #000000;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    }
+
+    .reward-img-container {
+      width: 100%;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+
+    .reward-img-container img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .reward-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-align: center;
+      color: #333333;
+      margin: 0 0 0.5rem 0;
+      min-height: 2.4em;
+      line-height: 1.2;
+    }
+
+    .reward-pts {
+      font-size: 0.95rem;
+      font-weight: 900;
+      color: #000000;
+      text-transform: uppercase;
+    }
+
+    .catalog-actions {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      border-top: 1px solid #eeeeee;
+      padding-top: 2rem;
+    }
+
+    .large-btn {
+      padding: 0.8rem 3rem;
+      font-size: 0.95rem;
+    }
+
+    .bottom-pleca {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      border-top: 2px solid #c5a880;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+      z-index: 10;
+      margin-top: auto;
+    }
+
+    .pleca-img {
+      max-width: 100%;
+      height: auto;
+      max-height: 80px;
+      object-fit: contain;
+    }
+
+    .app-footer {
+      width: 100%;
+      text-align: center;
+      padding: 1.5rem 1rem;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 10;
+    }
+
+    .app-footer p {
+      color: #ffffff;
+      font-size: 0.75rem;
+      margin: 0;
+      opacity: 0.8;
+    }
+
+    .loading-state {
+      padding: 3rem;
+      text-align: center;
+    }
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid #eee;
+      border-top: 3px solid #000000;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #666;
+    }
+
+    @media (max-width: 576px) {
+      .rewards-grid {
+        grid-template-columns: 1fr;
+      }
+      .catalog-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .large-btn {
+        width: 100%;
+        padding: 0.75rem;
+      }
+      .content-container {
+        padding: 1rem;
+      }
+      .pleca-img {
+        max-height: 50px;
+      }
+    }
+  `]
+})
+export class RedeemRewardsComponent implements OnInit {
+  @ViewChild('codeField') codeField!: ElementRef;
+
+  rewards = signal<any[]>([]);
+  userPoints = signal(0);
+  userName = signal('Usuario');
+  loading = signal(true);
+  selectedReward = signal<any>(null);
+  
+  entryCode = '';
+  isSubmittingCode = false;
+
+  private http = inject(HttpClient);
+  private toast = inject(ToastService);
+  private auth = inject(AuthService);
+  private router = inject(Router);
+  environment = environment;
+
+  ngOnInit() {
+    this.loadData();
+  }
+
+  loadData() {
+    this.loading.set(true);
+    this.auth.getProfile().subscribe({
+      next: (profile: any) => {
+        const user = profile.user || profile;
+        this.userPoints.set(parseInt(user.points || 0));
+        this.userName.set(user.full_name || user.name || 'Usuario');
+
+        this.http.get(`${environment.apiUrl}/rewards`).subscribe({
+          next: (res: any) => {
+            this.rewards.set(Array.isArray(res) ? res : []);
+            this.loading.set(false);
+          },
+          error: () => this.loading.set(false)
+        });
+      },
+      error: () => this.loading.set(false)
+    });
+  }
+
+  selectReward(reward: any) {
+    this.selectedReward.set(reward);
+  }
+
+  focusCodeField() {
+    if (this.codeField) {
+      this.codeField.nativeElement.focus();
+      this.codeField.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  redeemCode() {
+    if (!this.entryCode) return;
+    this.isSubmittingCode = true;
+
+    this.http.post(`${environment.apiUrl}/codes/redeem`, { code: this.entryCode }).subscribe({
+      next: (res: any) => {
+        this.isSubmittingCode = false;
+        this.entryCode = '';
+        this.loadData();
+        Swal.fire({
+          title: '¡CÓDIGO EXITOSO!',
+          text: `Has sumado ${res.points} puntos.`,
+          icon: 'success',
+          confirmButtonColor: '#000000'
+        });
+      },
+      error: (err: any) => {
+        this.isSubmittingCode = false;
+        const msg = err.error?.messages?.error || err.error?.message || 'Error al canjear el código.';
+        const status = err.status;
+        let title = 'ERROR';
+        
+        if (status === 400 && msg.includes('canjeado')) {
+          title = 'Código Utilizado';
+        } else if (status === 404 || msg.includes('válido')) {
+          title = 'Código Invalido';
+        }
+
+        Swal.fire({
+          title: title,
+          text: msg,
+          icon: 'error',
+          confirmButtonColor: '#000000',
+          confirmButtonText: 'OK'
+        });
+      }
+    });
+  }
+
+  redeemSelected() {
+    const reward = this.selectedReward();
+    if (!reward) return;
+
+    if (reward.cost > this.userPoints()) {
+      Swal.fire({
+        title: 'PUNTOS INSUFICIENTES',
+        text: `TE FALTAN ${reward.cost - this.userPoints()} PUNTOS PARA CANJEAR ESTA RECOMPENSA.`,
+        icon: 'warning',
+        confirmButtonColor: '#000000'
+      });
+      return;
+    }
+    if (reward.stock <= 0) {
+      Swal.fire({
+        title: 'AGOTADO',
+        text: 'ESTA RECOMPENSA NO TIENE STOCK DISPONIBLE.',
+        icon: 'info',
+        confirmButtonColor: '#000000'
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: 'CONFIRMAR CANJE',
+      text: `¿DESEAS CANJEAR "${reward.title}" POR ${reward.cost} PUNTOS?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'SÍ, CANJEAR',
+      cancelButtonText: 'CANCELAR',
+      confirmButtonColor: '#000000',
+      cancelButtonColor: '#ff4444'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.processRedemption(reward);
+      }
+    });
+  }
+
+  processRedemption(reward: any) {
+    Swal.fire({
+      title: 'PROCESANDO...',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    this.http.post(`${environment.apiUrl}/rewards/redeem`, { reward_id: reward.id }).subscribe({
+      next: (res: any) => {
+        Swal.fire({
+          title: '¡CANJE EXITOSO!',
+          text: 'TU RECOMPENSA HA SIDO CANJEADA CORRECTAMENTE.',
+          icon: 'success',
+          confirmButtonColor: '#000000'
+        }).then(() => {
+          this.selectedReward.set(null);
+          this.loadData();
+          if (res.pdf_url) {
+            window.open(res.pdf_url, '_blank');
+          }
+        });
+      },
+      error: (err) => {
+        console.error('Redemption error:', err);
+        const msg = String(err.error?.message || err.error?.error || 'NO SE PUDO COMPLETAR EL CANJE.');
+        Swal.fire({
+          title: 'ERROR',
+          text: msg,
+          icon: 'error',
+          confirmButtonColor: '#000000'
+        });
+      }
+    });
+  }
+
+  handleImageError(event: any, imageUrl: string) {
+    const fallbackBase = (environment as any).fallbackUrl || 'https://q-tokens.com.mx/embajadores-tec-dev/api/public/uploads';
+    if (!event.target.src.includes(fallbackBase) && imageUrl) {
+      event.target.src = `${fallbackBase}/rewards/${imageUrl}`;
+    } else {
+      event.target.src = 'assets/img/Logo_Tec.png';
+    }
+  }
+}
