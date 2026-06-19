@@ -124,7 +124,7 @@ import Swal from 'sweetalert2';
     .pleca-img {
       max-width: 100%;
       height: auto;
-      max-height: 80px;
+      max-height: 90px;
       object-fit: contain;
     }
 
