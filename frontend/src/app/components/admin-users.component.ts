@@ -242,13 +242,15 @@ import * as XLSX from 'xlsx';
             </div>
 
             <div class="format-hint">
-              <strong>📋 Formato esperado de columnas:</strong>
+              <strong>📋 Columnas del archivo XLSX:</strong>
               <div class="format-table">
-                <span class="col-tag">nombre</span>
-                <span class="col-tag">email</span>
-                <span class="col-tag">puntos</span>
+                <span class="col-tag">ID</span>
+                <span class="col-tag">Descripcion_Depto</span>
+                <span class="col-tag">Depto_ID</span>
+                <span class="col-tag col-tag-points">$$</span>
+                <span class="col-tag col-tag-ignore">ESTATUS ✗</span>
               </div>
-              <p style="font-size:0.78rem; color:#64748b; margin:0.5rem 0 0;">La primera fila debe ser el encabezado. Las contraseñas se generan automáticamente.</p>
+              <p style="font-size:0.78rem; color:#64748b; margin:0.5rem 0 0;">Hoja: <strong>ASOCIADOS GANADORES</strong>. El campo <code>ESTATUS</code> es ignorado. Las contraseñas se generan automáticamente.</p>
             </div>
           </div>
 
@@ -329,7 +331,7 @@ import * as XLSX from 'xlsx';
                 <span style="font-size:2rem;">⬇️</span>
                 <div>
                   <strong>Descargar Reporte con Contraseñas</strong>
-                  <p style="margin:0; font-size:0.8rem; color:#64748b;">CSV con nombre, email, puntos y contraseña generada</p>
+                  <p style="margin:0; font-size:0.8rem; color:#64748b;">CSV con usuario, nombre, depto ID, puntos y contraseña generada</p>
                 </div>
               </div>
             </div>
@@ -552,6 +554,8 @@ import * as XLSX from 'xlsx';
     .format-hint strong { color: #15803d; font-size: 0.85rem; }
     .format-table { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
     .col-tag { background: white; border: 1.5px solid #86efac; color: #15803d; padding: 0.3rem 0.8rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 800; font-family: 'Courier New', monospace; }
+    .col-tag-points { border-color: #93c5fd; color: #1d4ed8; background: #eff6ff; }
+    .col-tag-ignore { border-color: #fca5a5; color: #dc2626; background: #fef2f2; text-decoration: line-through; opacity: 0.8; }
 
     /* Preview */
     .preview-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; padding: 1rem 1.2rem; background: #f8fafc; border-radius: 0.8rem; border: 1px solid #e2e8f0; }
