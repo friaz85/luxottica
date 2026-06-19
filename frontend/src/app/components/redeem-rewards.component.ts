@@ -343,7 +343,18 @@ export class RedeemRewardsComponent implements OnInit {
       },
       error: () => {
         this.loading.set(false);
-        this.toast.show('Error al cargar tu perfil', 'error');
+        Swal.fire({
+          title: 'ERROR',
+          text: 'ERROR AL CARGAR TU PERFIL',
+          icon: 'error',
+          confirmButtonText: 'ACEPTAR',
+          confirmButtonColor: '#000000',
+          allowOutsideClick: false,
+          allowEscapeKey: false
+        }).then(() => {
+          this.auth.logout();
+          this.router.navigate(['/auth/login']);
+        });
       }
     });
   }
