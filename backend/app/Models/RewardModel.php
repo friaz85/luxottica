@@ -21,7 +21,8 @@ class RewardModel extends Model
         'codes_count',
         'coordinates',
         'code_areas',
-        'font_size'
+        'font_size',
+        'idVigencia'
     ];
     protected $useTimestamps = true;
     protected $createdField  = 'created_at';

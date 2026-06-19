@@ -142,25 +142,25 @@ import Swal from 'sweetalert2';
     .admin-page { padding: 5rem 2rem 2rem 2rem; margin-left: 260px; min-height: 100vh; background: #f4f7f9; color: #333; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     .admin-page.sidebar-closed { margin-left: 0; padding-top: 5rem; }
     .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; gap: 1rem; }
-    .title { font-weight: 900; font-size: 2rem; color: #003366; margin: 0; }
+    .title { font-weight: 900; font-size: 2rem; color: var(--admin-primary); margin: 0; }
     .subtitle { color: #666; margin: 0.5rem 0 0 0; }
-    .add-btn { background: #003366; border: none; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: bold; transition: 0.3s; }
-    .add-btn:hover { background: #002244; transform: translateY(-2px); }
+    .add-btn { background: var(--admin-primary); border: none; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: bold; transition: 0.3s; }
+    .add-btn:hover { background: var(--admin-secondary); transform: translateY(-2px); }
     .add-btn .icon { filter: brightness(0) invert(1); }
     
     .table-container { background: white; border: 1px solid #ddd; border-radius: 1rem; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; }
     .loading-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.7); z-index: 10; display: flex; align-items: center; justify-content: center; }
-    .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #003366; border-radius: 50%; animation: spin 1s linear infinite; }
+    .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--admin-primary); border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
     .table-header { padding: 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: flex-end; }
     .search-box { width: 40%; } .search-box input { width: 100%; background: #f9f9f9; border: 1px solid #ddd; color: #333; padding: 0.8rem 1.2rem; border-radius: 0.5rem; outline: none; }
     .admin-table { width: 100%; border-collapse: collapse; }
-    .admin-table th { background: #f8f9fa; color: #003366; padding: 1.2rem; text-align: left; font-size: 0.85rem; text-transform: uppercase; font-weight: 900; }
+    .admin-table th { background: #f8f9fa; color: var(--admin-primary); padding: 1.2rem; text-align: left; font-size: 0.85rem; text-transform: uppercase; font-weight: 900; }
     .admin-table td { padding: 1.2rem; border-bottom: 1px solid #eee; font-size: 0.95rem; vertical-align: middle; }
     .admin-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
     .admin-table tbody tr:hover { background-color: #f1f5f9; }
-    .code-text { font-family: monospace; letter-spacing: 1px; color: #003366; }
+    .code-text { font-family: monospace; letter-spacing: 1px; color: var(--admin-primary); }
     
     .points-badge { background: #e6f7ff; color: #1890ff; padding: 0.2rem 0.5rem; border-radius: 0.4rem; font-weight: bold; font-size: 0.8rem; }
     .status-badge { padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: bold; background: #f0f0f0; color: #666; }
@@ -174,13 +174,13 @@ import Swal from 'sweetalert2';
     .page-info { font-weight: bold; color: #666; font-size: 0.85rem; }
     .pagination-controls { display: flex; align-items: center; gap: 0.5rem; }
     .pagination-controls button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #ddd; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-    .pagination-controls button:hover:not(:disabled) { background: #003366; color: white; border-color: #003366; }
-    .page-number { font-weight: bold; padding: 0 0.5rem; color: #003366; }
+    .pagination-controls button:hover:not(:disabled) { background: var(--admin-primary); color: white; border-color: var(--admin-primary); }
+    .page-number { font-weight: bold; padding: 0 0.5rem; color: var(--admin-primary); }
 
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
     .import-modal { background: white; border-radius: 1.5rem; padding: 2rem; width: 100%; max-width: 600px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-    .modal-header h3 { margin: 0; color: #003366; font-weight: 900; }
+    .modal-header h3 { margin: 0; color: var(--admin-primary); font-weight: 900; }
     .close-btn { background: transparent; border: none; color: #999; font-size: 1.5rem; cursor: pointer; }
     .form-group { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; flex: 1; }
     .form-row { display: flex; gap: 1rem; }
@@ -188,7 +188,7 @@ import Swal from 'sweetalert2';
     .form-group input, .form-group select, .form-group textarea { width: 100%; background: #f5f5f5; border: 1px solid #ddd; color: #333; padding: 0.8rem; border-radius: 0.5rem; outline: none; }
     .modal-footer { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
     .btn-cancel { background: #eee; border: none; color: #666; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: bold; }
-    .btn-action.save { background: #003366; border: none; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: bold; }
+    .btn-action.save { background: var(--admin-primary); border: none; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: bold; }
   `]
 })
 export class AdminEntryCodesComponent implements OnInit {
@@ -296,7 +296,7 @@ export class AdminEntryCodesComponent implements OnInit {
           title,
           html,
           icon: res.success_count > 0 ? 'success' : 'info',
-          confirmButtonColor: '#003366'
+          confirmButtonColor: 'var(--admin-primary)'
         });
 
         this.loadCodes(1);

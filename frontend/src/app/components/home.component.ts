@@ -114,7 +114,7 @@ import { environment } from '../../environments/environment';
     }
 
     .welcome-title {
-        color: #003366;
+        color: var(--admin-primary);
         font-size: clamp(1.6rem, 5vw, 2.2rem);
         font-weight: 900;
         text-transform: uppercase;
@@ -123,7 +123,7 @@ import { environment } from '../../environments/environment';
     }
 
     .points-display {
-        background: #003366;
+        background: var(--admin-primary);
         color: white;
         padding: 0.75rem;
         border-radius: 1.2rem;
@@ -162,7 +162,7 @@ import { environment } from '../../environments/environment';
     .actions { width: 100%; }
 
     .rewards-btn {
-        background: #003366;
+        background: var(--admin-primary);
         color: white;
         border: none;
         padding: 1rem 2rem;
@@ -178,7 +178,7 @@ import { environment } from '../../environments/environment';
     
     .rewards-btn:hover {
         transform: translateY(-3px);
-        background: #002244;
+        background: var(--admin-secondary);
         box-shadow: 0 15px 30px rgba(0, 51, 102, 0.4);
     }
 
@@ -192,7 +192,7 @@ import { environment } from '../../environments/environment';
     }
 
     .section-title {
-        color: #003366;
+        color: var(--admin-primary);
         font-weight: 900;
         font-size: 1.1rem;
         margin-bottom: 1rem;
@@ -214,13 +214,13 @@ import { environment } from '../../environments/environment';
         font-weight: 800;
         text-align: center;
         text-transform: uppercase;
-        color: #003366;
+        color: var(--admin-primary);
         outline: none;
         transition: 0.3s;
     }
 
     .redeem-input:focus {
-        border-color: #003366;
+        border-color: var(--admin-primary);
         box-shadow: 0 0 0 4px rgba(0, 51, 102, 0.1);
     }
 
@@ -308,7 +308,7 @@ export class HomeComponent implements OnInit {
             title: '¡CÓDIGO EXITOSO!',
             text: `Has sumado ${res.points} puntos.`,
             icon: 'success',
-            confirmButtonColor: '#003366'
+            confirmButtonColor: 'var(--admin-primary)'
           });
         });
       },
@@ -329,7 +329,7 @@ export class HomeComponent implements OnInit {
             title: title,
             text: msg,
             icon: 'error',
-            confirmButtonColor: '#003366',
+            confirmButtonColor: 'var(--admin-primary)',
             confirmButtonText: 'OK'
           });
         });

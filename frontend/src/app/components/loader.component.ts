@@ -41,13 +41,13 @@ import { LoaderService } from '../services/loader.service';
       width: 60px;
       height: 60px;
       border: 6px solid #f3f3f3;
-      border-top: 6px solid #003366;
+      border-top: 6px solid var(--admin-primary);
       border-radius: 50%;
       animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
       margin: 0 auto 1.5rem;
     }
     .loader-text {
-      color: #003366;
+      color: var(--admin-primary);
       font-weight: 800;
       font-size: 1.1rem;
       margin: 0;

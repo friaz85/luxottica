@@ -88,7 +88,7 @@ import { AuthService } from '../services/auth.service';
     }
 
     .title {
-      color: #003366;
+      color: var(--admin-primary);
       font-size: clamp(2.5rem, 8vw, 4rem);
       font-weight: 900;
       margin-bottom: 0.5rem;
@@ -117,14 +117,14 @@ import { AuthService } from '../services/auth.service';
     }
 
     .primary { 
-      background: #003366; 
+      background: var(--admin-primary); 
       color: white; 
       box-shadow: 0 10px 20px rgba(0, 51, 102, 0.2); 
     }
 
     .primary:hover { 
       transform: translateY(-5px); 
-      background: #002244;
+      background: var(--admin-secondary);
       box-shadow: 0 15px 30px rgba(0, 51, 102, 0.4); 
     }
 

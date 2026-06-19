@@ -11,7 +11,11 @@ class RewardAdminController extends ResourceController
     public function index()
     {
         $rewardModel = new RewardModel();
-        return $this->respond($rewardModel->orderBy('cost', 'ASC')->findAll());
+        $rewards = $rewardModel->select('rewards.*, vigencias.fecha_inicio, vigencias.fecha_fin')
+                               ->join('vigencias', 'vigencias.id = rewards.idVigencia', 'left')
+                               ->orderBy('rewards.cost', 'ASC')
+                               ->findAll();
+        return $this->respond($rewards);
     }
 
     public function publicCatalog()
@@ -19,7 +23,18 @@ class RewardAdminController extends ResourceController
         $user = $this->request->user ?? null;
         $rewardModel = new RewardModel();
         
-        $query = $rewardModel->where('active', 1)->where('stock >', 0);
+        $now = date('Y-m-d H:i:s');
+        $query = $rewardModel->select('rewards.*, vigencias.fecha_inicio, vigencias.fecha_fin')
+                             ->join('vigencias', 'vigencias.id = rewards.idVigencia', 'left')
+                             ->where('rewards.active', 1)
+                             ->where('rewards.stock >', 0)
+                             ->groupStart()
+                                 ->where('rewards.idVigencia IS NULL')
+                                 ->orGroupStart()
+                                     ->where('vigencias.fecha_inicio <=', $now)
+                                     ->where('vigencias.fecha_fin >=', $now)
+                                 ->groupEnd()
+                             ->groupEnd();
         
         if ($user && isset($user->id_proyecto)) {
             $db = \Config\Database::connect();
@@ -29,14 +44,14 @@ class RewardAdminController extends ResourceController
                               ->getResultArray();
             $excludedIds = array_column($excludedIds, 'id_reward');
 
-            $query->where('id_proyecto', $user->id_proyecto);
+            $query->where('rewards.id_proyecto', $user->id_proyecto);
 
             if (!empty($excludedIds)) {
-                $query->whereNotIn('id', $excludedIds);
+                $query->whereNotIn('rewards.id', $excludedIds);
             }
         }
         
-        return $this->respond($query->orderBy('cost', 'ASC')->findAll());
+        return $this->respond($query->orderBy('rewards.cost', 'ASC')->findAll());
     }
 
     public function createReward()
@@ -62,6 +77,7 @@ class RewardAdminController extends ResourceController
             'coordinates'  => !empty($data['coordinates']) ? $data['coordinates'] : null,
             'code_areas'   => !empty($data['code_areas']) ? $data['code_areas'] : null,
             'font_size'    => $data['font_size'] ?? 12,
+            'idVigencia'   => !empty($data['idVigencia']) ? $data['idVigencia'] : null,
         ];
 
         // Handle File Uploads
@@ -121,6 +137,7 @@ class RewardAdminController extends ResourceController
         if (key_exists('coordinates', $data)) $updateData['coordinates'] = !empty($data['coordinates']) ? $data['coordinates'] : null;
         if (key_exists('code_areas', $data)) $updateData['code_areas'] = !empty($data['code_areas']) ? $data['code_areas'] : null;
         if (isset($data['font_size'])) $updateData['font_size'] = $data['font_size'];
+        if (key_exists('idVigencia', $data)) $updateData['idVigencia'] = !empty($data['idVigencia']) ? $data['idVigencia'] : null;
 
         // Handle File Uploads
         $img = $this->request->getFile('image');

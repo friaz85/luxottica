@@ -219,11 +219,11 @@ import { environment } from '../../environments/environment';
     .admin-page.sidebar-closed { margin-left: 0; padding-top: 5rem; }
 
     .header-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; gap: 1.5rem; flex-wrap: wrap; }
-    .title { font-weight: 900; font-size: 2rem; color: #003366; margin: 0; }
+    .title { font-weight: 900; font-size: 2rem; color: var(--admin-primary); margin: 0; }
     .subtitle { color: #666; margin: 0.5rem 0 0 0; }
 
     .actions { display: flex; gap: 1rem; }
-    .export-btn { background: #003366; border: none; color: white; padding: 0.8rem 1.5rem; border-radius: 0.6rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: bold; transition: 0.3s; }
+    .export-btn { background: var(--admin-primary); border: none; color: white; padding: 0.8rem 1.5rem; border-radius: 0.6rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: bold; transition: 0.3s; }
     .export-btn.secondary { background: #666; }
     .export-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
 
@@ -233,7 +233,7 @@ import { environment } from '../../environments/environment';
 
     .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .admin-table { width: 100%; border-collapse: collapse; min-width: 900px; }
-    .admin-table th { background: #f8f9fa; color: #003366; padding: 1.2rem; text-align: left; font-size: 0.85rem; text-transform: uppercase; font-weight: 900; border-bottom: 2px solid #eee; }
+    .admin-table th { background: #f8f9fa; color: var(--admin-primary); padding: 1.2rem; text-align: left; font-size: 0.85rem; text-transform: uppercase; font-weight: 900; border-bottom: 2px solid #eee; }
     .admin-table td { padding: 1.2rem; border-bottom: 1px solid #eee; font-size: 0.95rem; vertical-align: middle; }
     .admin-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
     .admin-table tbody tr:hover { background-color: #f1f5f9; }
@@ -256,7 +256,7 @@ import { environment } from '../../environments/environment';
     .page-numbers { display: flex; gap: 0.3rem; }
     .pag-btn { background: #fff; border: 1px solid #d1d5db; color: #374151; padding: 0.4rem 0.8rem; border-radius: 0.4rem; font-weight: 600; cursor: pointer; }
     .page-num-btn { width: 32px; height: 32px; border-radius: 0.4rem; border: 1px solid #d1d5db; background: #fff; cursor: pointer; font-weight: 700; }
-    .page-num-btn.active { background: #003366; color: white; border-color: #003366; }
+    .page-num-btn.active { background: var(--admin-primary); color: white; border-color: var(--admin-primary); }
 
     .mobile-only-info { display: none; margin-top: 0.3rem; font-size: 0.8rem; color: #666; font-weight: 700; }
 
@@ -271,7 +271,7 @@ import { environment } from '../../environments/environment';
     }
 
     .exclusive-codes-section { margin-top: 1.5rem; }
-    .section-header label { display: block; margin-bottom: 1rem; color: #003366; font-size: 0.9rem; }
+    .section-header label { display: block; margin-bottom: 1rem; color: var(--admin-primary); font-size: 0.9rem; }
     .codes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; background: #f8fafc; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; }
     .code-row { display: grid; grid-template-columns: 1fr 75px; gap: 0.4rem 0.6rem; background: white; padding: 1rem; border-radius: 0.8rem; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
     .code-label, .pts-label { font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase; }
@@ -407,7 +407,7 @@ export class AdminUsersComponent implements OnInit {
           title,
           html,
           icon: 'success',
-          confirmButtonColor: '#003366'
+          confirmButtonColor: 'var(--admin-primary)'
         });
 
         this.loadUsers();

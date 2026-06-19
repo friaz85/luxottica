@@ -1,9 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
 
 :root {
-  --primary-color: #003366;
-  --secondary-color: #002244;
-  --accent-color: #F2E74B;
+  --primary-color: #000000;
+  --secondary-color: #121212;
+  --accent-color: #c5a880;
+
+  --admin-primary: #000000;
+  --admin-secondary: #121212;
+  --admin-accent: #c5a880;
+  --admin-bg: #f8fafc;
 }
 
 * {
@@ -34,12 +39,12 @@ button, input, select, textarea {
 }
 
 .custom-scroll::-webkit-scrollbar-thumb {
-  background: rgba(0, 51, 102, 0.2);
+  background: rgba(197, 168, 128, 0.3);
   border-radius: 10px;
 }
 
 .custom-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 51, 102, 0.4);
+  background: rgba(197, 168, 128, 0.6);
 }
 
 /* Animate.css zoomIn override */
@@ -91,7 +96,7 @@ button, input, select, textarea {
 
 .admin-modal-header h3 {
   margin: 0;
-  color: #003366;
+  color: var(--admin-primary);
   font-size: 1.4rem;
   font-weight: 900;
 }
@@ -150,15 +155,17 @@ button, input, select, textarea {
 }
 
 .btn-admin-primary {
-  background: #003366;
+  background: var(--admin-primary);
   color: white;
-  box-shadow: 0 4px 6px rgba(0, 51, 102, 0.2);
+  border: 1px solid var(--admin-accent);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
 
 .btn-admin-primary:hover {
-  background: #002244;
+  background: var(--admin-accent);
+  color: var(--admin-primary);
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 51, 102, 0.3);
+  box-shadow: 0 6px 12px rgba(197, 168, 128, 0.4);
 }
 
 .btn-admin-secondary {
@@ -217,9 +224,9 @@ button, input, select, textarea {
 }
 
 .admin-input:focus {
-  border-color: #003366;
+  border-color: var(--admin-accent);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
+  box-shadow: 0 0 0 3px rgba(197, 168, 128, 0.25);
   background: #fff;
 }
 

@@ -62,7 +62,7 @@ import { environment } from '../../environments/environment';
       max-width: 500px;
       text-align: center;
     }
-    .title { color: #003366; font-weight: 900; margin-bottom: 0.5rem; }
+    .title { color: var(--admin-primary); font-weight: 900; margin-bottom: 0.5rem; }
     .subtitle { color: #666; margin-bottom: 2.5rem; font-weight: 500; }
     
     .input-group { display: flex; flex-direction: column; gap: 1rem; }
@@ -78,10 +78,10 @@ import { environment } from '../../environments/environment';
       outline: none;
       transition: 0.3s;
     }
-    .code-input:focus { border-color: #003366; background: white; }
+    .code-input:focus { border-color: var(--admin-primary); background: white; }
     
     .redeem-btn {
-      background: #003366;
+      background: var(--admin-primary);
       color: white;
       border: none;
       padding: 1.2rem;
@@ -91,7 +91,7 @@ import { environment } from '../../environments/environment';
       cursor: pointer;
       transition: 0.3s;
     }
-    .redeem-btn:hover:not(:disabled) { background: #002244; transform: translateY(-3px); }
+    .redeem-btn:hover:not(:disabled) { background: var(--admin-secondary); transform: translateY(-3px); }
     .redeem-btn:disabled { opacity: 0.7; cursor: not-allowed; }
     
     .info-box {

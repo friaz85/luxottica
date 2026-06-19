@@ -174,7 +174,7 @@ Chart.register(...registerables);
     .dashboard-page.sidebar-closed { margin-left: 0; padding-top: 5rem; }
 
     .header-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; gap: 1.5rem; }
-    .title { font-weight: 900; font-size: 2.5rem; margin: 0; color: #003366; }
+    .title { font-weight: 900; font-size: 2.5rem; margin: 0; color: var(--admin-primary); }
     .subtitle { color: #666; margin: 0.5rem 0 0 0; font-size: 0.95rem; }
 
     .actions-group { display: flex; align-items: center; gap: 1rem; }
@@ -188,10 +188,10 @@ Chart.register(...registerables);
     .date-input input { background: transparent; border: none; color: #333; outline: none; padding: 0.2rem 0; cursor: pointer; }
 
     .export-btn { 
-      background: #003366; border: none; color: #fff; padding: 0.75rem 1.5rem; border-radius: 0.5rem;
+      background: var(--admin-primary); border: none; color: #fff; padding: 0.75rem 1.5rem; border-radius: 0.5rem;
       cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: 0.3s; font-weight: bold;
     }
-    .export-btn:hover { background: #002244; transform: translateY(-2px); }
+    .export-btn:hover { background: var(--admin-secondary); transform: translateY(-2px); }
 
     .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
     .kpi-card { 
@@ -200,24 +200,24 @@ Chart.register(...registerables);
     }
     .kpi-icon { font-size: 2.5rem; }
     .kpi-info h3 { margin: 0; font-size: 0.85rem; color: #666; text-transform: uppercase; letter-spacing: 1px; }
-    .kpi-info .value { font-size: 2rem; font-weight: 900; color: #003366; line-height: 1.2; }
+    .kpi-info .value { font-size: 2rem; font-weight: 900; color: var(--admin-primary); line-height: 1.2; }
 
     .charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
     .panel { background: white; border-radius: 1.5rem; padding: 1.5rem; border: 1px solid #eee; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
     
     .chart-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1rem; }
-    .chart-header h3 { margin: 0; font-size: 1.2rem; color: #003366; font-weight: 900; }
+    .chart-header h3 { margin: 0; font-size: 1.2rem; color: var(--admin-primary); font-weight: 900; }
     .chart-toggles { display: flex; gap: 0.4rem; flex-wrap: wrap; }
     .chart-toggles button {
       background: #f5f5f5; border: 1px solid #ddd; color: #666;
       padding: 0.4rem 0.8rem; border-radius: 0.5rem; cursor: pointer; font-size: 0.75rem; font-weight: bold;
       transition: 0.3s;
     }
-    .chart-toggles button.active { background: #003366; color: white; border-color: #003366; }
+    .chart-toggles button.active { background: var(--admin-primary); color: white; border-color: var(--admin-primary); }
 
     .canvas-wrapper { min-height: 300px; position: relative; }
     .simple-table { width: 100%; border-collapse: collapse; }
-    .simple-table th { color: #003366; font-size: 0.75rem; text-transform: uppercase; padding: 1rem; text-align: left; font-weight: 900; border-bottom: 2px solid #eee; }
+    .simple-table th { color: var(--admin-primary); font-size: 0.75rem; text-transform: uppercase; padding: 1rem; text-align: left; font-weight: 900; border-bottom: 2px solid #eee; }
     .simple-table td { padding: 1.2rem; border-bottom: 1px solid #eee; vertical-align: middle; }
     .simple-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
     .simple-table tbody tr:hover { background-color: #f1f5f9; }
@@ -228,7 +228,7 @@ Chart.register(...registerables);
     .dashboard-panel { background: white; border-radius: 1.5rem; padding: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
     .table-panel.full-width { margin-top: 2rem; }
     .chart-header, .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-    .chart-header h3, .panel-header h3 { font-size: 1.2rem; font-weight: 900; color: #003366; margin: 0; }
+    .chart-header h3, .panel-header h3 { font-size: 1.2rem; font-weight: 900; color: var(--admin-primary); margin: 0; }
 
     .pagination-footer { padding: 1.5rem 2rem; background: #fff; border-top: 1px solid #eee; }
     .pagination-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; }
@@ -236,7 +236,7 @@ Chart.register(...registerables);
     .page-numbers { display: flex; gap: 0.3rem; }
     .pag-btn { background: #fff; border: 1px solid #d1d5db; color: #374151; padding: 0.4rem 0.8rem; border-radius: 0.4rem; font-weight: 600; cursor: pointer; }
     .page-num-btn { width: 32px; height: 32px; border-radius: 0.4rem; border: 1px solid #d1d5db; background: #fff; cursor: pointer; font-weight: 700; }
-    .page-num-btn.active { background: #003366; color: white; border-color: #003366; }
+    .page-num-btn.active { background: var(--admin-primary); color: white; border-color: var(--admin-primary); }
     .mt-4 { margin-top: 1rem; }
 
     /* Skeleton Loading Styles */
@@ -384,7 +384,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
       datasets.push({
         label: 'Recompensas (Cant)',
         data: stats.chart.map((d: any) => d.redemptions_count),
-        borderColor: '#003366',
+        borderColor: 'var(--admin-primary)',
         backgroundColor: 'rgba(0, 51, 102, 0.1)',
         fill: true,
         tension: 0.4
@@ -444,7 +444,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
         labels: rewardLabels,
         datasets: [{
           data: rewardData,
-          backgroundColor: ['#003366', '#0066cc', '#0099ff', '#00cc66', '#ffcc00']
+          backgroundColor: ['var(--admin-primary)', '#0066cc', '#0099ff', '#00cc66', '#ffcc00']
         }]
       },
       options: {

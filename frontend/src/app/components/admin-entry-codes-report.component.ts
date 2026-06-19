@@ -93,16 +93,16 @@ import { environment } from '../../environments/environment';
     .admin-page { padding: 5rem 2rem 2rem 2rem; margin-left: 260px; min-height: 100vh; background: #f4f7f9; transition: all 0.3s; }
     .admin-page.sidebar-closed { margin-left: 0; }
     .header-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
-    .title { font-weight: 900; font-size: 2rem; color: #003366; margin: 0; }
+    .title { font-weight: 900; font-size: 2rem; color: var(--admin-primary); margin: 0; }
     .subtitle { color: #666; margin: 0.5rem 0 0 0; }
-    .export-btn { background: #003366; border: none; color: white; padding: 0.8rem 1.5rem; border-radius: 0.6rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: bold; transition: 0.3s; }
+    .export-btn { background: var(--admin-primary); border: none; color: white; padding: 0.8rem 1.5rem; border-radius: 0.6rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: bold; transition: 0.3s; }
     .export-btn.secondary { background: #666; }
     .table-container { background: white; border-radius: 1rem; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
     .table-header { padding: 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: flex-end; }
     .search-box { width: 40%; } .search-box input { width: 100%; padding: 0.8rem; border-radius: 0.5rem; border: 1px solid #ddd; }
     .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .admin-table { width: 100%; border-collapse: collapse; min-width: 800px; }
-    .admin-table th { background: #f8f9fa; padding: 1.2rem; text-align: left; font-size: 0.8rem; text-transform: uppercase; color: #003366; font-weight: 900; border-bottom: 2px solid #eee; white-space: nowrap; }
+    .admin-table th { background: #f8f9fa; padding: 1.2rem; text-align: left; font-size: 0.8rem; text-transform: uppercase; color: var(--admin-primary); font-weight: 900; border-bottom: 2px solid #eee; white-space: nowrap; }
     .admin-table td { padding: 1.2rem; border-bottom: 1px solid #eee; font-size: 0.95rem; vertical-align: middle; }
     .admin-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
     .admin-table tbody tr:hover { background-color: #f1f5f9; }
@@ -112,7 +112,7 @@ import { environment } from '../../environments/environment';
     .pagination-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
     .pagination-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; }
     .page-num-btn { width: 32px; height: 32px; border-radius: 0.4rem; border: 1px solid #ddd; background: white; cursor: pointer; }
-    .page-num-btn.active { background: #003366; color: white; }
+    .page-num-btn.active { background: var(--admin-primary); color: white; }
     .pag-btn { padding: 0.4rem 0.8rem; border-radius: 0.4rem; border: 1px solid #ddd; background: white; cursor: pointer; }
     @media (max-width: 1100px) {
       .admin-page { padding: 4rem 1rem 1rem 1rem; }

@@ -141,7 +141,7 @@ import { AuthService } from '../services/auth.service';
     }
 
     .scoreboard {
-        background: #003366;
+        background: var(--admin-primary);
         color: white;
         padding: 1rem 2rem;
         border-radius: 1rem;
@@ -174,7 +174,7 @@ import { AuthService } from '../services/auth.service';
     .sk-btn   { width: 80px; height: 28px; border-radius: 6px; margin: 0 auto; }
 
     .history-title {
-        color: #003366;
+        color: var(--admin-primary);
         font-size: 2.5rem;
         font-weight: 900;
         text-transform: uppercase;
@@ -198,7 +198,7 @@ import { AuthService } from '../services/auth.service';
     
     .glass-table th {
       padding: 1rem;
-      color: #003366;
+      color: var(--admin-primary);
       font-weight: 800;
       text-transform: uppercase;
       border-bottom: 2px solid #eee;
@@ -234,7 +234,7 @@ import { AuthService } from '../services/auth.service';
     .status-badge.pending { background: #fffaf0; color: #9c4221; }
 
     .reprint-btn {
-      background: #003366;
+      background: var(--admin-primary);
       color: white;
       border: none;
       padding: 0.6rem 1.2rem;
@@ -244,7 +244,7 @@ import { AuthService } from '../services/auth.service';
       cursor: pointer;
       transition: 0.2s;
     }
-    .reprint-btn:hover { background: #002244; transform: translateY(-2px); }
+    .reprint-btn:hover { background: var(--admin-secondary); transform: translateY(-2px); }
 
     .no-action { color: #999; font-style: italic; }
     .empty-cell { text-align: center; padding: 4rem; color: #999; }

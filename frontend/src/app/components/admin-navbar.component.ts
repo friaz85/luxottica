@@ -45,6 +45,9 @@ import { LoaderComponent } from './loader.component';
         <a routerLink="/admin/rewards" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">🎁</span> Recompensas
         </a>
+        <a routerLink="/admin/vigencias" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
+          <span class="icon">📅</span> Vigencias
+        </a>
         <a routerLink="/admin/redemptions" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">📋</span> Canjes
         </a>
@@ -79,10 +82,11 @@ import { LoaderComponent } from './loader.component';
       position: fixed;
       left: 15px;
       top: 3px;
-      background: #003366;
-      box-shadow: 0 4px 10px rgba(0, 51, 102, 0.4);
+      background: var(--admin-primary);
+      border: 1px solid var(--admin-accent);
+      box-shadow: 0 4px 10px rgba(197, 168, 128, 0.4);
     }
-    .sidebar-toggle.floating:hover { transform: scale(1.1); background: #004488; }
+    .sidebar-toggle.floating:hover { transform: scale(1.1); background: var(--admin-accent); color: var(--admin-primary); }
 
     .sidebar-toggle.internal {
       position: absolute;
@@ -104,14 +108,14 @@ import { LoaderComponent } from './loader.component';
     .admin-sidebar { 
       width: 260px; 
       height: 100vh; 
-      background: linear-gradient(180deg, #002244 0%, #001122 100%); 
-      border-right: 1px solid rgba(255,255,255,0.1); 
+      background: #000000; 
+      border-right: 1px solid #222222; 
       display: flex; 
       flex-direction: column; 
       position: fixed; 
       left: 0; 
       top: 0; 
-      box-shadow: 4px 0 20px rgba(0,0,0,0.3);
+      box-shadow: 4px 0 20px rgba(0,0,0,0.5);
       z-index: 100;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -136,8 +140,8 @@ import { LoaderComponent } from './loader.component';
       color: #aaa; text-decoration: none; border-radius: 0.5rem; 
       font-weight: 500; transition: all 0.2s; 
     }
-    .nav-item:hover { background: rgba(255,255,255,0.05); color: white; transform: translateX(5px); }
-    .nav-item.active { background: #003366; color: white; box-shadow: 0 4px 15px rgba(0, 51, 102, 0.3); }
+    .nav-item:hover { background: rgba(197, 168, 128, 0.08); color: var(--admin-accent); transform: translateX(5px); }
+    .nav-item.active { background: var(--admin-accent); color: #000000; box-shadow: 0 4px 15px rgba(197, 168, 128, 0.25); font-weight: 700; }
     .icon { font-size: 1.2rem; }
 
     .user-footer { padding: 1.5rem; border-top: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 0.5rem; }

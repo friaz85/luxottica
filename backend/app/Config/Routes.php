@@ -65,6 +65,12 @@ $routes->group('admin', ['filter' => 'admin_auth'], function ($routes) {
 
     $routes->post('upload/reward-image', 'UploadController::uploadRewardImage');
     $routes->post('upload/template', 'UploadController::uploadTemplate');
+
+    // Vigencias CRUD
+    $routes->get('vigencias', 'AdminVigenciasController::index');
+    $routes->post('vigencias', 'AdminVigenciasController::create');
+    $routes->post('vigencias/(:num)', 'AdminVigenciasController::update/$1');
+    $routes->delete('vigencias/(:num)', 'AdminVigenciasController::delete/$1');
 });
 
 $routes->post('analytics/log', 'AnalyticsController::logVisit');

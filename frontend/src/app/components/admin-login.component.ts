@@ -93,7 +93,7 @@ import { ToastService } from '../services/toast.service';
     }
 
     h1 {
-      color: #003366;
+      color: var(--admin-primary);
       text-transform: uppercase;
       font-weight: 900;
       letter-spacing: 3px;
@@ -107,7 +107,7 @@ import { ToastService } from '../services/toast.service';
 
     label {
       display: block;
-      color: #003366;
+      color: var(--admin-primary);
       margin-bottom: 0.75rem;
       font-size: 0.8rem;
       font-weight: 800;
@@ -129,14 +129,14 @@ import { ToastService } from '../services/toast.service';
 
     input:focus {
       outline: none;
-      border-color: #003366;
+      border-color: var(--admin-primary);
       background: white;
       box-shadow: 0 0 0 4px rgba(0, 51, 102, 0.1);
     }
 
     .login-btn {
       width: 100%;
-      background: #003366;
+      background: var(--admin-primary);
       color: white;
       border: none;
       padding: 1.2rem;

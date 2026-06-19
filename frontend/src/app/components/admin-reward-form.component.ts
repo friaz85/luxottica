@@ -63,6 +63,7 @@ interface CodeArea {
                 <th>Puntos</th>
                 <th>Stock</th>
                 <th>Tipo</th>
+                <th>Vigencia</th>
                 <th class="text-right">Acciones</th>
               </tr>
             </thead>
@@ -91,6 +92,15 @@ interface CodeArea {
                 <td>
                    <span class="type-badge digital">💾 Digital</span>
                 </td>
+                <td>
+                   <div *ngIf="reward.idVigencia; else noVigencia" style="font-size: 0.8rem; line-height: 1.2;">
+                      <span class="font-bold">{{ formatShortDate(reward.fecha_inicio) }}</span> al 
+                      <span class="font-bold">{{ formatShortDate(reward.fecha_fin) }}</span>
+                   </div>
+                   <ng-template #noVigencia>
+                      <span class="project-tag global">Sin límite</span>
+                   </ng-template>
+                </td>
                 <td class="text-right">
                   <div class="btn-group">
                     <button class="action-btn duplicate" (click)="duplicateReward(reward)" title="Duplicar">Copiar</button>
@@ -100,7 +110,7 @@ interface CodeArea {
                 </td>
               </tr>
               <tr *ngIf="filteredRewards().length === 0">
-                 <td colspan="7" class="text-center py-8 text-gray">No se encontraron recompensas</td>
+                 <td colspan="8" class="text-center py-8 text-gray">No se encontraron recompensas</td>
               </tr>
             </tbody>
           </table>
@@ -148,6 +158,16 @@ interface CodeArea {
                 <select [(ngModel)]="editingReward.id_proyecto" class="admin-input" required>
                   <option [ngValue]="null" disabled>Seleccionar Proyecto...</option>
                   <option *ngFor="let p of projects()" [ngValue]="p.idProyecto">{{ p.Proyecto }}</option>
+                </select>
+              </div>
+
+              <div class="admin-form-group">
+                <label>Vigencia de la Recompensa</label>
+                <select [(ngModel)]="editingReward.idVigencia" class="admin-input">
+                  <option [ngValue]="null">Sin Vigencia (Límite del proyecto)</option>
+                  <option *ngFor="let v of vigencias()" [ngValue]="v.id">
+                    Vigencia #{{ v.id }} ({{ formatShortDate(v.fecha_inicio) }} a {{ formatShortDate(v.fecha_fin) }})
+                  </option>
                 </select>
               </div>
 
@@ -306,11 +326,11 @@ interface CodeArea {
     
     .header-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; gap: 1.5rem; flex-wrap: wrap; }
     .title-section { flex: 1; min-width: 300px; }
-    .title { font-weight: 900; font-size: 2rem; color: #003366; margin: 0; }
+    .title { font-weight: 900; font-size: 2rem; color: var(--admin-primary); margin: 0; }
     .subtitle { color: #666; margin: 0.5rem 0 0 0; }
     
     .header-actions { display: flex; gap: 1rem; flex-shrink: 0; }
-    .export-btn { background: #003366; border: none; color: white; padding: 0.8rem 1.5rem; border-radius: 0.6rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: bold; transition: 0.3s; }
+    .export-btn { background: var(--admin-primary); border: none; color: white; padding: 0.8rem 1.5rem; border-radius: 0.6rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: bold; transition: 0.3s; }
     .export-btn.secondary { background: #666; }
     .export-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
     
@@ -320,7 +340,7 @@ interface CodeArea {
     
     .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .admin-table { width: 100%; border-collapse: collapse; min-width: 800px; }
-    .admin-table th { background: #f8f9fa; color: #003366; padding: 1.2rem; text-align: left; font-size: 0.85rem; text-transform: uppercase; font-weight: 900; border-bottom: 2px solid #eee; }
+    .admin-table th { background: #f8f9fa; color: var(--admin-primary); padding: 1.2rem; text-align: left; font-size: 0.85rem; text-transform: uppercase; font-weight: 900; border-bottom: 2px solid #eee; }
     .admin-table td { padding: 1.2rem; border-bottom: 1px solid #eee; font-size: 0.95rem; vertical-align: middle; }
     .admin-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
     .admin-table tbody tr:hover { background-color: #f1f5f9; }
@@ -344,7 +364,7 @@ interface CodeArea {
     .page-numbers { display: flex; gap: 0.3rem; }
     .pag-btn { background: #fff; border: 1px solid #d1d5db; color: #374151; padding: 0.4rem 0.8rem; border-radius: 0.4rem; font-weight: 600; cursor: pointer; }
     .page-num-btn { width: 32px; height: 32px; border-radius: 0.4rem; border: 1px solid #d1d5db; background: #fff; cursor: pointer; font-weight: 700; }
-    .page-num-btn.active { background: #003366; color: white; border-color: #003366; }
+    .page-num-btn.active { background: var(--admin-primary); color: white; border-color: var(--admin-primary); }
 
     .mobile-only-info { display: none; margin-top: 0.3rem; font-size: 0.8rem; color: #666; font-weight: 700; }
 
@@ -383,16 +403,16 @@ interface CodeArea {
     }
 
     .label-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.2rem; }
-    .image-preview-mini { width: 45px; height: 45px; border-radius: 0.5rem; object-fit: cover; border: 2px solid #003366; }
+    .image-preview-mini { width: 45px; height: 45px; border-radius: 0.5rem; object-fit: cover; border: 2px solid var(--admin-primary); }
     .admin-input[type="number"] { text-align: right; }
     .load-type-selector { display: flex; background: #f3f4f6; padding: 0.4rem; border-radius: 0.8rem; margin-bottom: 1.5rem; gap: 0.4rem; }
     .load-type-selector button { flex: 1; padding: 0.6rem; border: none; border-radius: 0.6rem; background: transparent; color: #4b5563; font-weight: 800; cursor: pointer; }
-    .load-type-selector button.active { background: #fff; color: #003366; }
+    .load-type-selector button.active { background: #fff; color: var(--admin-primary); }
 
     .pdf-preview-wrapper { background: #d1d5db; border-radius: 1rem; padding: 1rem; overflow: auto; max-height: 100vh; position: relative; }
     .pdf-canvas-container { position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3); background: white; margin: 0 auto; display: inline-block; }
-    .code-area-box { position: absolute; border: 2px solid #003366; background: rgba(0, 51, 102, 0.15); cursor: move; }
-    .demo-text { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #003366; }
+    .code-area-box { position: absolute; border: 2px solid var(--admin-primary); background: rgba(0, 51, 102, 0.15); cursor: move; }
+    .demo-text { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 900; color: var(--admin-primary); }
 
     /* STATUS TOGGLE STYLES - ULTRA CLEAR */
     .status-toggle-container { display: flex; background: #f1f5f9; padding: 0.5rem; border-radius: 1.2rem; gap: 0.5rem; margin-top: 0.5rem; border: 1px solid #e2e8f0; }
@@ -405,28 +425,28 @@ interface CodeArea {
     /* CODE AREAS MANAGER STYLES */
     .code-areas-manager { margin-top: 1.5rem; background: #f8fafc; padding: 1.5rem; border-radius: 1.2rem; border: 1px solid #e2e8f0; }
     .areas-header { margin-bottom: 1.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 1rem; }
-    .header-titles label { display: block; color: #003366; font-size: 1.3rem; font-weight: 900; margin-bottom: 0.3rem; }
+    .header-titles label { display: block; color: var(--admin-primary); font-size: 1.3rem; font-weight: 900; margin-bottom: 0.3rem; }
     .header-titles small { color: #64748b; font-size: 0.9rem; }
     
-    .btn-add-area-bottom { width: 100%; margin-top: 1.5rem; background: #003366; color: white; border: none; padding: 1.2rem; border-radius: 0.8rem; font-size: 1rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.8rem; transition: 0.3s; box-shadow: 0 4px 6px rgba(0, 51, 102, 0.2); }
-    .btn-add-area-bottom:hover { background: #002244; transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0, 51, 102, 0.3); }
+    .btn-add-area-bottom { width: 100%; margin-top: 1.5rem; background: var(--admin-primary); color: white; border: none; padding: 1.2rem; border-radius: 0.8rem; font-size: 1rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.8rem; transition: 0.3s; box-shadow: 0 4px 6px rgba(0, 51, 102, 0.2); }
+    .btn-add-area-bottom:hover { background: var(--admin-secondary); transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0, 51, 102, 0.3); }
     .icon-plus { font-size: 1.4rem; color: white; font-weight: bold; }
 
     .areas-list { display: flex; flex-direction: column; gap: 1.2rem; }
-    .area-item { background: white; padding: 1.5rem; border-radius: 1.2rem; border: 1px solid #e2e8f0; border-left: 4px solid #003366; display: flex; flex-direction: column; gap: 1.2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: 0.2s; }
+    .area-item { background: white; padding: 1.5rem; border-radius: 1.2rem; border: 1px solid #e2e8f0; border-left: 4px solid var(--admin-primary); display: flex; flex-direction: column; gap: 1.2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: 0.2s; }
     .area-item:hover { border-left-color: #0066cc; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
     
     .area-top-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #e2e8f0; padding-bottom: 1rem; }
     .area-label-group { display: flex; align-items: center; gap: 0.6rem; }
     .pin-icon { font-size: 1.2rem; }
     .area-number { font-weight: 900; color: #1e293b; font-size: 1.1rem; }
-    .area-coords { font-size: 0.9rem; color: #003366; font-weight: 800; background: #eff6ff; padding: 0.4rem 0.8rem; border-radius: 0.6rem; border: 1px solid #dbeafe; font-family: 'Courier New', Courier, monospace; }
+    .area-coords { font-size: 0.9rem; color: var(--admin-primary); font-weight: 800; background: #eff6ff; padding: 0.4rem 0.8rem; border-radius: 0.6rem; border: 1px solid #dbeafe; font-family: 'Courier New', Courier, monospace; }
     
     .area-bottom-row { display: flex; justify-content: space-between; align-items: center; }
     .font-control { display: flex; align-items: center; gap: 1rem; }
     .font-control label { font-size: 0.85rem; font-weight: 900; color: #475569; letter-spacing: 0.5px; }
     .font-control input.font-input { width: 90px !important; padding: 0.6rem !important; text-align: center; font-weight: 900; background: #f8fafc; font-size: 1rem; border: 2px solid #e2e8f0 !important; }
-    .font-control input.font-input:focus { border-color: #003366 !important; background: white; }
+    .font-control input.font-input:focus { border-color: var(--admin-primary) !important; background: white; }
     
     .btn-remove-alt { background: #fff1f2; border: 1px solid #ffe4e6; width: 45px; height: 45px; border-radius: 0.8rem; color: #e11d48; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
     .btn-remove-alt:hover { background: #dc2626; color: white; transform: rotate(8deg) scale(1.1); border-color: #dc2626; }
@@ -440,6 +460,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   @ViewChild('pdfPreviewWrapper') pdfPreviewWrapper!: ElementRef<HTMLDivElement>;
   rewards = signal<any[]>([]);
   projects = signal<any[]>([]);
+  vigencias = signal<any[]>([]);
   searchTerm = signal('');
   currentPage = signal(1);
   pageSize = 10;
@@ -474,6 +495,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   ngOnInit() {
     this.loadRewards();
     this.loadProjects();
+    this.loadVigencias();
     document.addEventListener('mousemove', this.onMouseMove.bind(this));
     document.addEventListener('mouseup', this.onMouseUp.bind(this));
   }
@@ -510,6 +532,24 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     return this.projects().find(p => p.idProyecto == id)?.Proyecto || 'Desconocido';
   }
 
+  loadVigencias() {
+    this.http.get<any[]>(`${environment.apiUrl}/admin/vigencias`).subscribe({
+      next: (res) => {
+        this.vigencias.set(res);
+      },
+      error: (e) => {
+        console.error('Error loading vigencias', e);
+      }
+    });
+  }
+
+  formatShortDate(dateStr: string): string {
+    if (!dateStr) return '';
+    const d = new Date(dateStr.replace(' ', 'T'));
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear().toString().substring(2)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
   filteredRewards = computed(() => {
     const term = this.searchTerm().toLowerCase();
     return this.rewards().filter((r: any) => r.title?.toLowerCase().includes(term));
@@ -529,7 +569,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   ngAfterViewInit() {}
 
   openCreateModal() {
-    this.editingReward = { title: '', id_proyecto: null, type: 'digital', cost: 0, active: 1, image_url: '', pdf_template: '', codes_count: 1, exit_codes: '' };
+    this.editingReward = { title: '', id_proyecto: null, type: 'digital', cost: 0, active: 1, image_url: '', pdf_template: '', codes_count: 1, exit_codes: '', idVigencia: null };
     this.selectedImage = null;
     this.selectedPDF = null;
     this.pendingCSVFile = null;
@@ -799,7 +839,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   }
 
   deleteReward(id: number) {
-    Swal.fire({ title: '¿Eliminar?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#003366' }).then(result => {
+    Swal.fire({ title: '¿Eliminar?', icon: 'warning', showCancelButton: true, confirmButtonColor: 'var(--admin-primary)' }).then(result => {
       if (result.isConfirmed) {
         this.loader.show();
         this.http.delete(`${environment.apiUrl}/admin/rewards/${id}`).subscribe({
@@ -877,7 +917,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
             title,
             html,
             icon: res.success_count > 0 ? 'success' : 'info',
-            confirmButtonColor: '#003366'
+            confirmButtonColor: 'var(--admin-primary)'
           });
 
           this.pendingCSVFile = null;
