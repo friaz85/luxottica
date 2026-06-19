@@ -61,15 +61,7 @@ import Swal from 'sweetalert2';
               <span class="card-sublabel">Puntos disponibles</span>
             </div>
 
-            <div class="white-card code-card">
-              <h3 class="code-title">Ingresar código</h3>
-              <div class="code-form">
-                <input #codeField type="text" [(ngModel)]="entryCode" placeholder="Ingresa tu código" class="code-input">
-                <button (click)="redeemCode()" [disabled]="!entryCode || isSubmittingCode" class="btn-black-rect">
-                  {{ isSubmittingCode ? '...' : 'Registrar' }}
-                </button>
-              </div>
-            </div>
+
           </div>
 
           <!-- Right Column: Catalog -->
@@ -113,9 +105,6 @@ import Swal from 'sweetalert2';
                 <div class="catalog-actions" *ngIf="!rewardsLoading() && rewards().length > 0">
                   <button (click)="redeemSelected()" [disabled]="!selectedReward()" class="btn-black-rect large-btn">
                     Canjear
-                  </button>
-                  <button (click)="focusCodeField()" class="btn-black-rect large-btn">
-                    + Acumular
                   </button>
                 </div>
               </div>
