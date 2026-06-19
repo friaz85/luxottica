@@ -81,13 +81,26 @@ class RedemptionController extends ResourceController
             $db->transStart();
 
             if ($hasInventory) {
-                $availableRow = $rewardCodeModel->where('reward_id', $rewardId)
-                    ->where('is_used', 0)
+                // Find a code where the associated validity (if any) is currently active, or has no validity limit.
+                // We connect to the DB and check which codes are unused.
+                $nowStr = date('Y-m-d H:i:s');
+                $availableRow = $rewardCodeModel->select('reward_codes.*')
+                    ->join('vigencias', 'vigencias.id = reward_codes.id_vigencia', 'left')
+                    ->where('reward_codes.reward_id', $rewardId)
+                    ->where('reward_codes.is_used', 0)
+                    ->groupStart()
+                        ->where('reward_codes.id_vigencia IS NULL')
+                        ->orGroupStart()
+                            ->where('vigencias.fecha_inicio <=', $nowStr)
+                            ->where('vigencias.fecha_fin >=', $nowStr)
+                        ->groupEnd()
+                    ->groupEnd()
+                    ->orderBy('reward_codes.id', 'ASC')
                     ->first();
 
                 if (!$availableRow) {
                     $db->transRollback();
-                    return $this->respond(['message' => 'Lo sentimos, no hay suficientes códigos disponibles para esta recompensa en este momento.'], 400);
+                    return $this->respond(['message' => 'Lo sentimos, no hay suficientes códigos disponibles que no hayan caducado para esta recompensa.'], 400);
                 }
 
                 // Mark as used
