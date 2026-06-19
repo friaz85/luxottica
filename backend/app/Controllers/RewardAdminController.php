@@ -15,10 +15,12 @@ class RewardAdminController extends ResourceController
         
         $db = \Config\Database::connect();
         foreach ($rewards as &$reward) {
-            $reward['vigencias'] = $db->table('reward_vigencias')
+            $reward['vigencias'] = $db->table('reward_codes')
                                      ->select('vigencias.*')
-                                     ->join('vigencias', 'vigencias.id = reward_vigencias.id_vigencia')
-                                     ->where('reward_vigencias.id_reward', $reward['id'])
+                                     ->join('vigencias', 'vigencias.id = reward_codes.id_vigencia')
+                                     ->where('reward_codes.reward_id', $reward['id'])
+                                     ->where('reward_codes.is_used', 0)
+                                     ->groupBy('vigencias.id')
                                      ->get()
                                      ->getResultArray();
         }
@@ -57,27 +59,52 @@ class RewardAdminController extends ResourceController
         $filteredRewards = [];
         
         foreach ($rewards as $reward) {
-            $vigencias = $db->table('reward_vigencias')
-                            ->select('vigencias.*')
-                            ->join('vigencias', 'vigencias.id = reward_vigencias.id_vigencia')
-                            ->where('reward_vigencias.id_reward', $reward['id'])
-                            ->get()
-                            ->getResultArray();
+            // First check if reward has any codes (inventory)
+            $hasCodes = $db->table('reward_codes')
+                           ->where('reward_id', $reward['id'])
+                           ->countAllResults() > 0;
             
-            if (empty($vigencias)) {
+            if (!$hasCodes) {
+                // If it's a wallpaper or generated reward with no inventory, it's global/always valid
                 $reward['vigencias'] = [];
                 $filteredRewards[] = $reward;
             } else {
-                $isValid = false;
-                foreach ($vigencias as $v) {
-                    if ($v['fecha_inicio'] <= $now && $v['fecha_fin'] >= $now) {
-                        $isValid = true;
-                        break;
+                // Look up all vigencias that have at least one active, non-used code
+                $vigencias = $db->table('reward_codes')
+                                ->select('vigencias.*')
+                                ->join('vigencias', 'vigencias.id = reward_codes.id_vigencia')
+                                ->where('reward_codes.reward_id', $reward['id'])
+                                ->where('reward_codes.is_used', 0)
+                                ->groupBy('vigencias.id')
+                                ->get()
+                                ->getResultArray();
+
+                // Also check if there is at least one active code that is GLOBAL (no associated validity)
+                $hasGlobalActiveCode = $db->table('reward_codes')
+                                          ->where('reward_id', $reward['id'])
+                                          ->where('is_used', 0)
+                                          ->where('id_vigencia IS NULL')
+                                          ->countAllResults() > 0;
+
+                if (empty($vigencias)) {
+                    // No codes with validity. Check if there are active global codes
+                    if ($hasGlobalActiveCode) {
+                        $reward['vigencias'] = [];
+                        $filteredRewards[] = $reward;
                     }
-                }
-                if ($isValid) {
-                    $reward['vigencias'] = $vigencias;
-                    $filteredRewards[] = $reward;
+                } else {
+                    $isValid = $hasGlobalActiveCode; // if has global code, it's already active
+                    $validVigencias = [];
+                    foreach ($vigencias as $v) {
+                        if ($v['fecha_inicio'] <= $now && $v['fecha_fin'] >= $now) {
+                            $isValid = true;
+                            $validVigencias[] = $v;
+                        }
+                    }
+                    if ($isValid) {
+                        $reward['vigencias'] = $validVigencias;
+                        $filteredRewards[] = $reward;
+                    }
                 }
             }
         }
@@ -148,7 +175,8 @@ class RewardAdminController extends ResourceController
 
                 // Handle Exit Codes and Update Stock
                 if (!empty($data['exit_codes'])) {
-                    $addedCount = $this->processExitCodes($rewardId, $data['exit_codes']);
+                    $uploadVigenciaId = !empty($data['upload_vigencia_id']) ? $data['upload_vigencia_id'] : null;
+                    $addedCount = $this->processExitCodes($rewardId, $data['exit_codes'], false, $uploadVigenciaId);
                     $rewardModel->update($rewardId, ['stock' => $addedCount]);
                 }
 
@@ -222,8 +250,9 @@ class RewardAdminController extends ResourceController
                     }
                 }
 
-                if (isset($data['exit_codes'])) {
-                    $this->processExitCodes($id, $data['exit_codes'], true);
+                if (!empty($data['exit_codes'])) {
+                    $uploadVigenciaId = !empty($data['upload_vigencia_id']) ? $data['upload_vigencia_id'] : null;
+                    $this->processExitCodes($id, $data['exit_codes'], false, $uploadVigenciaId);
                     // Recalculate stock after codes update
                     $rewardCodeModel = new RewardCodeModel();
                     $newStock = $rewardCodeModel->where('reward_id', $id)->where('is_used', 0)->countAllResults();

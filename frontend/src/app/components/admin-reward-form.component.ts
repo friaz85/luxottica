@@ -162,24 +162,6 @@ interface CodeArea {
                 </select>
               </div>
 
-              <div class="admin-form-group">
-                <label>Vigencias de la Recompensa (Multivigencia)</label>
-                <div class="vigencias-checklist-container custom-scroll">
-                  <div *ngFor="let v of vigencias()" class="checklist-item">
-                    <label class="checkbox-label">
-                      <input 
-                        type="checkbox" 
-                        [checked]="isVigenciaSelected(v.id)" 
-                        (change)="toggleVigenciaSelection(v.id)"
-                      >
-                      <span>Vigencia #{{ v.id }} ({{ formatShortDate(v.fecha_inicio) }} a {{ formatShortDate(v.fecha_fin) }})</span>
-                    </label>
-                  </div>
-                  <div *ngIf="vigencias().length === 0" class="text-muted" style="font-size: 0.85rem; padding: 0.5rem;">
-                    No hay vigencias creadas. Créalas primero en la sección de Vigencias.
-                  </div>
-                </div>
-              </div>
 
               <div class="admin-form-group">
                 <div class="label-row">
