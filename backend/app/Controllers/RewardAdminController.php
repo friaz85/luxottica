@@ -44,7 +44,10 @@ class RewardAdminController extends ResourceController
                               ->getResultArray();
             $excludedIds = array_column($excludedIds, 'id_reward');
 
-            $query->where('rewards.id_proyecto', $user->id_proyecto);
+            $query->groupStart()
+                      ->where('rewards.id_proyecto IS NULL')
+                      ->orWhere('rewards.id_proyecto', $user->id_proyecto)
+                  ->groupEnd();
 
             if (!empty($excludedIds)) {
                 $query->whereNotIn('rewards.id', $excludedIds);
@@ -59,12 +62,8 @@ class RewardAdminController extends ResourceController
         $rewardModel = new RewardModel();
         $data        = $this->request->getPost();
         
-        if (empty($data['id_proyecto'])) {
-            return $this->fail('El proyecto es obligatorio.');
-        }
-
         $saveData = [
-            'id_proyecto'  => $data['id_proyecto'],
+            'id_proyecto'  => !empty($data['id_proyecto']) ? $data['id_proyecto'] : null,
             'title'        => $data['title'] ?? null,
             'description'  => $data['description'] ?? null,
             'type'         => $data['type'] ?? 'digital',
@@ -119,12 +118,10 @@ class RewardAdminController extends ResourceController
         $rewardModel = new RewardModel();
         $data        = $this->request->getPost();
 
-        if (isset($data['id_proyecto']) && empty($data['id_proyecto'])) {
-            return $this->fail('El proyecto es obligatorio.');
-        }
-
         $updateData = [];
-        if (isset($data['id_proyecto'])) $updateData['id_proyecto'] = $data['id_proyecto'];
+        if (array_key_exists('id_proyecto', $data)) {
+            $updateData['id_proyecto'] = !empty($data['id_proyecto']) ? $data['id_proyecto'] : null;
+        }
         if (isset($data['title'])) $updateData['title'] = $data['title'];
         if (isset($data['description'])) $updateData['description'] = $data['description'];
         if (isset($data['type'])) $updateData['type'] = $data['type'];

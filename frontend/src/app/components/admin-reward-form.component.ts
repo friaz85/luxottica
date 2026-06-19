@@ -154,9 +154,9 @@ interface CodeArea {
               </div>
 
               <div class="admin-form-group">
-                <label>Proyecto Asignado <span class="required">*</span></label>
-                <select [(ngModel)]="editingReward.id_proyecto" class="admin-input" required>
-                  <option [ngValue]="null" disabled>Seleccionar Proyecto...</option>
+                <label>Proyecto Asignado</label>
+                <select [(ngModel)]="editingReward.id_proyecto" class="admin-input">
+                  <option [ngValue]="null">Todos los proyectos (Global)</option>
                   <option *ngFor="let p of projects()" [ngValue]="p.idProyecto">{{ p.Proyecto }}</option>
                 </select>
               </div>
@@ -787,10 +787,6 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   onMouseUp() { this.draggingIndex = null; this.resizingIndex = null; this.stopAutoScroll(); }
 
   saveReward() {
-    if (!this.editingReward.id_proyecto) {
-      this.toastService.show('DEBES SELECCIONAR UN PROYECTO', 'error');
-      return;
-    }
     this.saving.set(true);
     const formData = new FormData();
     Object.keys(this.editingReward).forEach(key => {
