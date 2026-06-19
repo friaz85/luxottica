@@ -1,0 +1,109 @@
+#!/bin/bash
+
+# Usage: ./deploy.sh [DEV|PROD]
+
+ENV=$1
+
+if [ "$ENV" == "DEV" ]; then
+    echo "🚀 Deploying to DEV environment..."
+    REMOTE_PATH="www/q-tokens.com.mx/public_html/embajadores-tec-dev"
+    BASE_HREF="/embajadores-tec-dev/"
+    API_URL="https://q-tokens.com.mx/embajadores-tec-dev/api"
+elif [ "$ENV" == "PROD" ]; then
+    echo "🔥 Deploying to PROD environment..."
+    REMOTE_PATH="www/q-tokens.com.mx/public_html/embajadores-tec"
+    BASE_HREF="/embajadores-tec/"
+    API_URL="https://q-tokens.com.mx/embajadores-tec/api"
+else
+    echo "❌ Error: Please specify environment [DEV|PROD]"
+    exit 1
+fi
+
+SSH_KEY="/Users/friaz85/Documents/Proyectos/DesaLyL/embajadores tec/embajadores_tec/.ssh/id_ed25519"
+REMOTE_USER="u13-duekhqdeblng@ssh.q-tokens.com.mx"
+SSH_PARAMS="-p 18765 -o StrictHostKeyChecking=no -i \"$SSH_KEY\""
+
+# 1. Update Frontend Environment
+echo "📝 Updating frontend environment..."
+cat > frontend/src/environments/environment.ts <<EOF
+export const environment = {
+    production: $( [ "$ENV" == "PROD" ] && echo "true" || echo "false" ),
+    apiUrl: '$API_URL',
+    uploadsUrl: '$API_URL/public/uploads',
+    fallbackUrl: 'https://q-tokens.com.mx/embajadores-tec-dev/api/public/uploads'
+};
+EOF
+
+# 2. Build Frontend
+echo "🏗️ Building frontend..."
+cd frontend
+npx ng build --base-href $BASE_HREF
+if [ $? -ne 0 ]; then echo "❌ Build failed"; exit 1; fi
+
+# 3. Create .htaccess for the specific environment
+echo "📄 Creating .htaccess..."
+cat > dist/frontend/browser/.htaccess <<EOF
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase $BASE_HREF
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . ${BASE_HREF}index.html [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Disable caching for HTML files
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires 0
+  </FilesMatch>
+</IfModule>
+EOF
+
+# 4. Deploy Frontend
+echo "🚚 Uploading frontend to $REMOTE_PATH..."
+rsync -avz -e "ssh -p 18765 -o StrictHostKeyChecking=no -i \"$SSH_KEY\"" dist/frontend/browser/ $REMOTE_USER:$REMOTE_PATH/
+scp -P 18765 -o StrictHostKeyChecking=no -i "$SSH_KEY" "dist/frontend/browser/.htaccess" $REMOTE_USER:$REMOTE_PATH/
+
+# 5. Deploy Backend (API)
+echo "🚚 Uploading backend to $REMOTE_PATH/api..."
+cd ..
+# Ensure writable folder exists remotely
+ssh -p 18765 -o StrictHostKeyChecking=no -i "$SSH_KEY" $REMOTE_USER "mkdir -p $REMOTE_PATH/api/writable/cache $REMOTE_PATH/api/writable/session $REMOTE_PATH/api/writable/logs && chmod -R 775 $REMOTE_PATH/api/writable"
+
+rsync -avz -e "ssh -p 18765 -o StrictHostKeyChecking=no -i \"$SSH_KEY\"" --exclude 'writable' --exclude '.env' backend/ $REMOTE_USER:$REMOTE_PATH/api/
+
+# Update backend .env if it doesn't exist or update it
+echo "⚙️ Setting up backend .env..."
+ssh -p 18765 -o StrictHostKeyChecking=no -i "$SSH_KEY" $REMOTE_USER "
+    # Ensure .env exists (copy from .env.example if missing)
+    if [ ! -f $REMOTE_PATH/api/.env ]; then
+        cp $REMOTE_PATH/api/.env.example $REMOTE_PATH/api/.env 2>/dev/null || touch $REMOTE_PATH/api/.env
+    fi
+    # Ensure app.baseURL is present and correct
+    if grep -q \"app.baseURL\" $REMOTE_PATH/api/.env; then
+        sed -i \"s|app.baseURL =.*|app.baseURL = '$API_URL/'|g\" $REMOTE_PATH/api/.env
+    else
+        echo \"app.baseURL = '$API_URL/'\" >> $REMOTE_PATH/api/.env
+    fi
+"
+
+# 6. Create API .htaccess
+echo "📄 Creating API .htaccess for redirection..."
+ssh -p 18765 -o StrictHostKeyChecking=no -i "$SSH_KEY" $REMOTE_USER "cat > $REMOTE_PATH/api/.htaccess << 'HTEOF'
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP_AUTHORIZATION}]
+    RewriteRule ^uploads/(.*)$ public/uploads/\$1 [L]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ public/index.php/\$1 [L]
+</IfModule>
+HTEOF"
+# Note: In the line above, we need \$1 because cat > file <<'EOF' preserves the backslash if it's escaped? 
+# No, let's test.
+
+echo "✅ Deployment to $ENV finished successfully!"

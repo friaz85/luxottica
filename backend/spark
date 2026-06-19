@@ -1,0 +1,44 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * CodeIgniter CLI
+ */
+
+// Check for the CLI binary
+if (PHP_SAPI !== 'cli') {
+    exit('The spark command can only be run from the command line.' . PHP_EOL);
+}
+
+// Set Environment (Earliest possible to avoid naming conflicts in early class loading)
+if (!defined('ENVIRONMENT')) {
+    define('ENVIRONMENT', 'production');
+}
+
+// Fix for missing CI_DEBUG in some environments
+if (!defined('CI_DEBUG')) {
+    define('CI_DEBUG', ENVIRONMENT !== 'production');
+}
+
+// Ensure the directory is where we expect it
+chdir(__DIR__);
+
+// Load our paths config file
+require __DIR__ . '/app/Config/Paths.php';
+$paths = new \Config\Paths();
+
+// Bootstrap the framework
+require rtrim($paths->systemDirectory, '\\/ ') . DIRECTORY_SEPARATOR . 'bootstrap.php';
+
+// Load DotEnv
+if (file_exists(ROOTPATH . '.env')) {
+    require_once SYSTEMPATH . 'Config/DotEnv.php';
+    (new CodeIgniter\Config\DotEnv(ROOTPATH))->load();
+}
+
+// Set Mexico timezone (UTC-6)
+date_default_timezone_set('America/Mexico_City');
+
+// Launch the CLI
+$app = new \CodeIgniter\CLI\Console($paths);
+$app->run();

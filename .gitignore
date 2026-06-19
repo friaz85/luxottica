@@ -1,0 +1,27 @@
+# Node / Angular
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/.vscode/
+frontend/src/environments/environment.prod.ts
+frontend/src/environments/environment.dev.ts
+
+# PHP / CodeIgniter
+backend/vendor/
+backend/writable/*
+!backend/writable/index.html
+!backend/writable/keep
+backend/.env
+backend/.phpunit.result.cache
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Deployment artifacts
+deploy_backend.zip
+deploy_frontend.zip
+frontend/dist.zip
