@@ -119,7 +119,7 @@ import { environment } from '../../environments/environment';
            <div class="modal-body" *ngIf="selectedOrder()">
               <div class="info-grid">
                 <div class="info-item">
-                  <label>Embajador</label>
+                  <label>Usuario</label>
                   <span>{{ selectedOrder().user_name }}</span>
                 </div>
                 <div class="info-item">

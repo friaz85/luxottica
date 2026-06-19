@@ -29,7 +29,7 @@ interface CodeArea {
       <div class="header-row">
         <div class="title-section">
            <h2 class="title">GESTIÓN DE RECOMPENSAS</h2>
-           <p class="subtitle">Agrega y edita los premios para los embajadores</p>
+           <p class="subtitle">Agrega y edita los premios para los usuarios</p>
         </div>
         <div class="header-actions">
           <button class="export-btn secondary" (click)="exportToCSV()">

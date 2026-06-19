@@ -21,7 +21,7 @@ Chart.register(...registerables);
       <div class="header-row">
         <div>
            <h2 class="title">DASHBOARD DE RENDIMIENTO</h2>
-           <p class="subtitle">Embajadores TEC | Portal Administrativo</p>
+           <p class="subtitle">Luxottica | Portal Administrativo</p>
         </div>
         
         <div class="actions-group">
@@ -57,7 +57,7 @@ Chart.register(...registerables);
          <div class="kpi-card users">
             <div class="kpi-icon">👥</div>
             <div class="kpi-info">
-              <h3>Embajadores</h3>
+              <h3>Usuarios</h3>
               <span class="value">{{ (stats()?.cards?.users || stats()?.cards?.hist_users || 0) | number }}</span>
               <small *ngIf="stats()?.cards?.hist_users" style="display:block; font-size:0.7rem; color:#999">Total histórico: {{ stats().cards.hist_users | number }}</small>
             </div>

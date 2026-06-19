@@ -15,7 +15,7 @@ class RedemptionController extends ResourceController
 {
     /**
      * Reemplaza la funcionalidad de registro de códigos de Takis.
-     * En Embajadores TEC no se registran códigos.
+     * En Luxottica no se registran códigos.
      */
     public function redeemCode()
     {

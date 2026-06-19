@@ -19,7 +19,7 @@ import { AuthService } from '../services/auth.service';
           
           <div class="hero-right welcome-card">
             <h1 class="title">BIENVENIDO</h1>
-            <p class="desc">Portal de Embajadores TEC</p>
+            <p class="desc">Portal de Luxottica</p>
             <div class="actions">
               <a routerLink="/auth/login" class="tec-btn primary">INICIAR SESIÓN</a>
             </div>

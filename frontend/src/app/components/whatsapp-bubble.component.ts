@@ -4,7 +4,7 @@ import { Component } from '@angular/core';
   selector: 'app-whatsapp-bubble',
   standalone: true,
   template: `
-    <a href="https://wa.me/525574479668?text=Hola,%20vengo%20del%20Portal%20Embajadores%20TEC%20y%20necesito%20ayuda" target="_blank" class="wa-bubble">
+    <a href="https://wa.me/525574479668?text=Hola,%20vengo%20del%20Portal%20Luxottica%20y%20necesito%20ayuda" target="_blank" class="wa-bubble">
       <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="Support">
       <span class="tooltip">¿Necesitas ayuda?</span>
     </a>

@@ -56,7 +56,7 @@ class AdminOrdersController extends ResourceController
     {
         $subject = '¡Tu recompensa ha sido entregada!';
         $title   = '✅ RECOMPENSA ENTREGADA';
-        $message = "Hola {$user['full_name']},<br><br>¡Felicidades! Tu recompensa del portal Embajadores TEC ha sido procesada y entregada.<br><br>Gracias por ser parte de nuestra comunidad.";
+        $message = "Hola {$user['full_name']},<br><br>¡Felicidades! Tu recompensa del portal Luxottica ha sido procesada y entregada.<br><br>Gracias por ser parte de nuestra comunidad.";
 
         EmailSender::sendEmail($user['email'], $subject, $title, $message);
     }

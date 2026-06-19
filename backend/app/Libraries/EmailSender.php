@@ -25,7 +25,7 @@ class EmailSender
         $email->initialize($config);
 
         $fromEmail = env('EMAIL_FROM');
-        $fromName  = env('EMAIL_FROM_NAME', 'Embajadores TEC');
+        $fromName  = env('EMAIL_FROM_NAME', 'Luxottica');
 
         $email->setFrom($fromEmail, $fromName);
         $email->setTo($to);
@@ -39,12 +39,12 @@ class EmailSender
 
     private static function buildHtml($title, $message, $btnText, $btnUrl)
     {
-        $primaryColor = '#003366'; // TEC Blue
-        $accentColor  = '#00cc66'; // Green accent
+        $primaryColor = '#000000'; 
+        $accentColor  = '#c5a880'; 
         $bgColor      = '#f4f7f9';
         $cardColor    = '#ffffff';
 
-        $logoUrl = 'https://q-tokens.com.mx/public_html/embajadores-tec/assets/img/Logo_Tec.png';
+        $logoUrl = 'https://q-tokens.com.mx/luxottica/assets/img/Logo_Luxottica.png';
         $year = date('Y');
 
         $buttonHtml = '';
@@ -70,7 +70,7 @@ class EmailSender
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; background-color: $cardColor; border-radius: 16px; border: 1px solid #dddddd; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
                     <tr>
                         <td align="center" style="padding: 30px; border-bottom: 1px solid #eeeeee;">
-                            <img src="$logoUrl" alt="Embajadores TEC" width="180" style="display: block; border: 0; margin: 0 auto;">
+                            <img src="$logoUrl" alt="Luxottica" width="180" style="display: block; border: 0; margin: 0 auto;">
                         </td>
                     </tr>
                     <tr>
@@ -84,7 +84,7 @@ class EmailSender
                     </tr>
                     <tr>
                         <td style="padding: 20px; background-color: #f8f9fa; text-align: center; color: #999999; font-size: 12px;">
-                            <p style="margin: 0;">&copy; $year Embajadores TEC. Todos los derechos reservados.</p>
+                            <p style="margin: 0;">&copy; $year Luxottica. Todos los derechos reservados.</p>
                         </td>
                     </tr>
                 </table>
