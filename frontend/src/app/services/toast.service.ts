@@ -17,7 +17,7 @@ export class ToastService {
         toast: false,
         position: 'center',
         showConfirmButton: true,
-        confirmButtonColor: '#003366',
+        confirmButtonColor: '#000000',
         customClass: {
             popup: 'tec-toast-popup',
             title: 'tec-toast-title',
@@ -35,7 +35,7 @@ export class ToastService {
             background: '#fff',
             color: '#333',
             confirmButtonText: 'ACEPTAR',
-            iconColor: type === 'success' ? '#00cc66' : type === 'error' ? '#ff4444' : type === 'warning' ? '#f2e74b' : '#003366',
+            iconColor: type === 'success' ? '#00cc66' : type === 'error' ? '#ff4444' : type === 'warning' ? '#f2e74b' : '#000000',
         });
     }
 }
