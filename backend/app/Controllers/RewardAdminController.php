@@ -248,7 +248,7 @@ class RewardAdminController extends ResourceController
         return $this->fail('Error al eliminar');
     }
 
-    private function processExitCodes($rewardId, $codesText, $clearOld = false)
+    private function processExitCodes($rewardId, $codesText, $clearOld = false, $idVigencia = null)
     {
         $rewardCodeModel = new RewardCodeModel();
         if ($clearOld) {
@@ -263,8 +263,9 @@ class RewardAdminController extends ResourceController
 
             $codes = explode(",", $line);
             $saveData = [
-                'reward_id' => $rewardId,
-                'is_used'   => 0
+                'reward_id'   => $rewardId,
+                'id_vigencia' => !empty($idVigencia) ? $idVigencia : null,
+                'is_used'     => 0
             ];
 
             foreach (array_slice($codes, 0, 8) as $i => $val) {
@@ -313,6 +314,7 @@ class RewardAdminController extends ResourceController
     public function addCodes($rewardId)
     {
         $rows            = $this->request->getVar('codes');
+        $idVigencia      = $this->request->getVar('id_vigencia');
         $rewardCodeModel = new RewardCodeModel();
 
         if (!is_array($rows)) return $this->fail('Formato de códigos inválido.');
@@ -322,8 +324,9 @@ class RewardAdminController extends ResourceController
 
         foreach ($rows as $rowData) {
             $saveData = [
-                'reward_id' => $rewardId,
-                'is_used'   => false
+                'reward_id'   => $rewardId,
+                'id_vigencia' => !empty($idVigencia) ? $idVigencia : null,
+                'is_used'     => false
             ];
             
             $isDuplicate = false;

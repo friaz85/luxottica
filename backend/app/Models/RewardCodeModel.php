@@ -10,6 +10,7 @@ class RewardCodeModel extends Model
     protected $primaryKey = 'id';
     protected $allowedFields = [
         'reward_id',
+        'id_vigencia',
         'code',
         'code1',
         'code2',

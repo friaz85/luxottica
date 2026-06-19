@@ -97,13 +97,13 @@ import Swal from 'sweetalert2';
           
           <form (submit)="saveVigencia($event)" class="admin-modal-body">
             <div class="admin-form-group">
-              <label>Fecha y Hora de Inicio</label>
-              <input type="datetime-local" [(ngModel)]="vigenciaData.fecha_inicio" name="fecha_inicio" class="admin-input" required>
+              <label>Fecha de Inicio</label>
+              <input type="date" [(ngModel)]="vigenciaData.fecha_inicio" name="fecha_inicio" class="admin-input" required>
             </div>
             
             <div class="admin-form-group">
-              <label>Fecha y Hora de Fin</label>
-              <input type="datetime-local" [(ngModel)]="vigenciaData.fecha_fin" name="fecha_fin" class="admin-input" required>
+              <label>Fecha de Fin</label>
+              <input type="date" [(ngModel)]="vigenciaData.fecha_fin" name="fecha_fin" class="admin-input" required>
             </div>
             
             <div class="admin-modal-footer">
@@ -319,17 +319,21 @@ export class AdminVigenciasComponent implements OnInit {
   }
 
   formatDateTime(dateStr: string): string {
+    if (!dateStr) return '';
+    const parts = dateStr.split(' ');
+    const dStr = parts[0];
+    const subParts = dStr.split('-');
+    if (subParts.length === 3) {
+      return `${subParts[2]}/${subParts[1]}/${subParts[0]}`;
+    }
     const d = new Date(dateStr);
-    return d.toLocaleString('es-MX', {
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit'
-    });
+    const pad = (num: number) => num.toString().padStart(2, '0');
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
   }
 
   formatForInput(dateStr: string): string {
     if (!dateStr) return '';
-    const d = new Date(dateStr.replace(' ', 'T'));
-    const pad = (num: number) => num.toString().padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const parts = dateStr.split(' ');
+    return parts[0];
   }
 }

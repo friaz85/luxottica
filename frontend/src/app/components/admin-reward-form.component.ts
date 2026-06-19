@@ -256,6 +256,30 @@ interface CodeArea {
                 <div class="inventory-section">
                   <div class="section-header"><h4>📥 Inventario de Códigos</h4></div>
                   
+                  <div class="admin-form-group" style="margin-bottom: 1.5rem; background: #fff; padding: 1rem; border-radius: 0.8rem; border: 1px solid #e2e8f0;">
+                    <label style="font-weight: 800; font-size: 0.9rem; color: #1e293b; display: block; margin-bottom: 0.5rem;">¿Aplica vigencia específica para esta carga de códigos?</label>
+                    <div style="display: flex; gap: 1.5rem; margin-bottom: 0.8rem;">
+                      <label class="checkbox-label" style="font-weight: 600 !important; cursor: pointer;">
+                        <input type="radio" name="apply_code_vigencia" [value]="false" [(ngModel)]="editingReward.apply_code_vigencia" (change)="editingReward.upload_vigencia_id = null">
+                        <span>No, códigos globales (Sin vigencia)</span>
+                      </label>
+                      <label class="checkbox-label" style="font-weight: 600 !important; cursor: pointer;">
+                        <input type="radio" name="apply_code_vigencia" [value]="true" [(ngModel)]="editingReward.apply_code_vigencia">
+                        <span>Sí, asignar a una vigencia</span>
+                      </label>
+                    </div>
+
+                    <div *ngIf="editingReward.apply_code_vigencia" style="margin-top: 0.8rem;">
+                      <label style="font-weight: 700; font-size: 0.85rem; color: #475569; display: block; margin-bottom: 0.4rem;">Seleccionar Vigencia para los Códigos</label>
+                      <select [(ngModel)]="editingReward.upload_vigencia_id" class="admin-input">
+                        <option [ngValue]="null" disabled selected>-- Elige una vigencia --</option>
+                        <option *ngFor="let v of vigencias()" [ngValue]="v.id">
+                          Vigencia #{{ v.id }} ({{ formatShortDate(v.fecha_inicio) }} a {{ formatShortDate(v.fecha_fin) }})
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+
                   <div class="load-type-selector">
                     <button [class.active]="loadMethod() === 'manual'" (click)="loadMethod.set('manual')">⌨️ Carga Manual</button>
                     <button [class.active]="loadMethod() === 'csv'" (click)="loadMethod.set('csv')">📄 Carga CSV</button>
@@ -560,9 +584,15 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
 
   formatShortDate(dateStr: string): string {
     if (!dateStr) return '';
+    const parts = dateStr.split(' ');
+    const dStr = parts[0];
+    const subParts = dStr.split('-');
+    if (subParts.length === 3) {
+      return `${subParts[2]}/${subParts[1]}/${subParts[0].substring(2)}`;
+    }
     const d = new Date(dateStr.replace(' ', 'T'));
     const pad = (n: number) => n.toString().padStart(2, '0');
-    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear().toString().substring(2)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear().toString().substring(2)}`;
   }
 
   isVigenciaSelected(id: number): boolean {
@@ -600,7 +630,11 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   ngAfterViewInit() {}
 
   openCreateModal() {
-    this.editingReward = { title: '', id_proyecto: null, type: 'digital', cost: 0, active: 1, image_url: '', pdf_template: '', codes_count: 1, exit_codes: '', id_vigencias: [] };
+    this.editingReward = { 
+      title: '', id_proyecto: null, type: 'digital', cost: 0, active: 1, 
+      image_url: '', pdf_template: '', codes_count: 1, exit_codes: '', 
+      id_vigencias: [], apply_code_vigencia: false, upload_vigencia_id: null 
+    };
     this.selectedImage = null;
     this.selectedPDF = null;
     this.pendingCSVFile = null;
@@ -620,7 +654,11 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   }
 
   editReward(reward: any) {
-    this.editingReward = { ...reward };
+    this.editingReward = { 
+      ...reward, 
+      apply_code_vigencia: false, 
+      upload_vigencia_id: null 
+    };
     this.editingReward.id_vigencias = reward.vigencias ? reward.vigencias.map((v: any) => v.id) : [];
     this.selectedImage = null;
     this.selectedPDF = null;
@@ -825,6 +863,8 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
        const val = this.editingReward[key];
        if (key === 'id_vigencias' || Array.isArray(val)) {
          formData.append(key, JSON.stringify(val));
+       } else if (key === 'apply_code_vigencia') {
+         formData.append(key, val ? '1' : '0');
        } else {
          formData.append(key, val === null ? '' : val);
        }
@@ -927,7 +967,12 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
       const lines = text.split(/\r?\n/).filter((l: string) => l.trim() !== '');
       const codes = lines.map((l: string) => l.split(',').map(c => c.trim()));
       
-      this.http.post(`${environment.apiUrl}/admin/rewards/${rewardId}/add-codes`, { codes }).subscribe({
+      const payload: any = { codes };
+      if (this.editingReward.apply_code_vigencia && this.editingReward.upload_vigencia_id) {
+        payload.id_vigencia = this.editingReward.upload_vigencia_id;
+      }
+
+      this.http.post(`${environment.apiUrl}/admin/rewards/${rewardId}/add-codes`, payload).subscribe({
         next: (res: any) => {
           const title = res.success_count > 0 ? 'Códigos Procesados' : 'Proceso Finalizado';
           let html = `
