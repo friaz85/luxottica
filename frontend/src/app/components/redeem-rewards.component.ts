@@ -143,7 +143,7 @@ import Swal from 'sweetalert2';
       justify-content: space-between;
       align-items: center;
       overflow-x: hidden;
-      padding-top: 130px;
+      padding-top: 160px;
       position: relative;
     }
 
@@ -152,7 +152,7 @@ import Swal from 'sweetalert2';
         background: url('../../assets/img/fondo mobile.jpg');
         background-size: cover;
         background-position: center;
-        padding-top: 180px;
+        padding-top: 210px;
       }
     }
 

@@ -15,10 +15,6 @@ import Swal from 'sweetalert2';
       <nav class="top-nav">
         <div class="top-nav-content">
           <div class="left-links">
-            <a (click)="showProfile()" class="nav-link cursor-pointer">Mi Perfil</a>
-            <span class="separator">|</span>
-            <a (click)="changePassword()" class="nav-link cursor-pointer">Cambiar contraseña</a>
-            <span class="separator">|</span>
             <a (click)="logout()" class="nav-link cursor-pointer">Salir</a>
           </div>
           <div class="right-info">
@@ -123,13 +119,13 @@ import Swal from 'sweetalert2';
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 0.5rem 1rem;
+      padding: 0.75rem 1rem;
     }
 
     .pleca-logos {
       max-width: 100%;
       height: auto;
-      max-height: 50px;
+      max-height: 90px;
       object-fit: contain;
     }
 
