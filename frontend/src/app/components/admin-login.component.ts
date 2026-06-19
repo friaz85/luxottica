@@ -13,7 +13,7 @@ import { ToastService } from '../services/toast.service';
     <div class="admin-login-container footer-safe-area">
       <div class="login-card">
         <div class="logo-section">
-          <img src="assets/img/Logo_Tec.png?v=5" alt="TEC" class="logo animate-pulse">
+          <img src="assets/img/Logo_Luxottica.png" alt="Luxottica" class="logo animate-pulse">
           <h1>Admin Control</h1>
         </div>
         
@@ -59,7 +59,7 @@ import { ToastService } from '../services/toast.service';
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(135deg, rgba(0, 34, 68, 0.85) 0%, rgba(0, 15, 30, 0.95) 100%);
+      background: linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(18, 18, 18, 0.95) 100%);
       z-index: 1;
     }
 
@@ -87,9 +87,10 @@ import { ToastService } from '../services/toast.service';
     }
 
     .logo {
-      height: 100px;
+      height: 60px;
+      object-fit: contain;
       margin-bottom: 1.5rem;
-      filter: drop-shadow(0 0 15px rgba(0, 51, 102, 0.3));
+      filter: drop-shadow(0 0 15px rgba(0, 0, 0, 0.15));
     }
 
     h1 {
@@ -129,16 +130,16 @@ import { ToastService } from '../services/toast.service';
 
     input:focus {
       outline: none;
-      border-color: var(--admin-primary);
+      border-color: var(--admin-accent);
       background: white;
-      box-shadow: 0 0 0 4px rgba(0, 51, 102, 0.1);
+      box-shadow: 0 0 0 4px rgba(197, 168, 128, 0.2);
     }
 
     .login-btn {
       width: 100%;
       background: var(--admin-primary);
       color: white;
-      border: none;
+      border: 1px solid var(--admin-accent);
       padding: 1.2rem;
       border-radius: 1rem;
       font-weight: 900;
@@ -151,9 +152,10 @@ import { ToastService } from '../services/toast.service';
     }
 
     .login-btn:hover {
-      background: #001f3f;
+      background: var(--admin-accent);
+      color: var(--admin-primary);
       transform: translateY(-5px);
-      box-shadow: 0 20px 40px rgba(0, 51, 102, 0.4);
+      box-shadow: 0 20px 40px rgba(197, 168, 128, 0.3);
     }
 
     .login-btn:active {
@@ -178,8 +180,8 @@ import { ToastService } from '../services/toast.service';
     }
 
     @keyframes animate-pulse {
-      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 15px rgba(0, 51, 102, 0.3)); }
-      50% { transform: scale(1.05); filter: drop-shadow(0 0 25px rgba(0, 51, 102, 0.5)); }
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 15px rgba(0, 0, 0, 0.15)); }
+      50% { transform: scale(1.03); filter: drop-shadow(0 0 25px rgba(197, 168, 128, 0.2)); }
     }
     .animate-pulse { animation: animate-pulse 3s infinite ease-in-out; }
   `]

@@ -26,7 +26,7 @@ import { LoaderComponent } from './loader.component';
           <span class="icon">✕</span>
         </button>
         <div class="logo-wrapper">
-          <img src="assets/img/Logo_Tec.png?v=5" alt="TEC" class="admin-logo">
+          <img src="assets/img/Logo_Luxottica.png" alt="Luxottica" class="admin-logo">
         </div>
         <small>Portal Administrativo</small>
       </div>
@@ -123,7 +123,7 @@ import { LoaderComponent } from './loader.component';
 
     .logo-section { padding: 2.5rem 1rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); text-align: center; position: relative; }
     .logo-wrapper { margin-bottom: 0.5rem; display: flex; justify-content: center; }
-    .admin-logo { height: 60px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.1)); }
+    .admin-logo { height: 60px; filter: invert(1) drop-shadow(0 0 10px rgba(255,255,255,0.1)); }
     .highlight { color: #ffffff; text-decoration: underline; }
     small { color: #888; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; }
     
