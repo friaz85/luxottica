@@ -26,11 +26,8 @@ import * as XLSX from 'xlsx';
           <button class="export-btn secondary" (click)="exportToCSV()">
              <span class="icon">📥</span> <span class="btn-text">Exportar CSV</span>
           </button>
-          <button class="export-btn bulk-btn" (click)="openBulkModal()">
-             <span class="icon">📤</span> <span class="btn-text">Carga Masiva</span>
-          </button>
-          <button class="export-btn add-btn" (click)="openUserModal()">
-             <span class="icon" style="filter: brightness(0) invert(1);">➕</span> <span class="btn-text">Nuevo Usuario</span>
+          <button class="export-btn add-btn" (click)="openBulkModal()">
+             <span class="icon" style="filter: brightness(0) invert(1);">📤</span> <span class="btn-text">Carga Masiva</span>
           </button>
         </div>
       </div>
@@ -65,7 +62,7 @@ import * as XLSX from 'xlsx';
               <thead>
                 <tr>
                   <th (click)="sort('full_name')">Nombre {{ getSortIcon('full_name') }}</th>
-                  <th (click)="sort('email')">Correo {{ getSortIcon('email') }}</th>
+                  <th (click)="sort('email')">Usuario {{ getSortIcon('email') }}</th>
                   <th>Proyecto</th>
                   <th class="text-right" (click)="sort('points')">Puntos {{ getSortIcon('points') }}</th>
                   <th (click)="sort('is_blocked')">Estado {{ getSortIcon('is_blocked') }}</th>
@@ -77,9 +74,10 @@ import * as XLSX from 'xlsx';
                   <td>
                     <div class="user-info-cell">
                       <span class="font-bold">{{ user.full_name }}</span>
+                      <small *ngIf="user.depto_id" style="color:#94a3b8; display:block; font-size:0.75rem;">{{ user.depto_id }}</small>
                     </div>
                   </td>
-                  <td>{{ user.email }}</td>
+                  <td style="font-family:monospace; font-size:0.88rem;">{{ user.email }}</td>
                   <td>
                     <div class="project-tag-container">
                       <span class="project-tag">{{ user.project_name || 'Sin Proyecto' }}</span>
@@ -277,20 +275,22 @@ import * as XLSX from 'xlsx';
                 <thead>
                   <tr>
                     <th>#</th>
+                    <th>Usuario (ID)</th>
                     <th>Nombre</th>
-                    <th>Email</th>
+                    <th>Depto ID</th>
                     <th class="text-right">Puntos</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr *ngFor="let row of bulkRows().slice(0, 50); let i = index">
                     <td style="color:#94a3b8; font-size:0.8rem;">{{ i + 1 }}</td>
+                    <td style="font-family:monospace; font-size:0.85rem; font-weight:700;">{{ row.user }}</td>
                     <td>{{ row.full_name }}</td>
-                    <td style="font-size:0.85rem;">{{ row.email }}</td>
+                    <td style="font-size:0.8rem; color:#64748b;">{{ row.depto_id || '—' }}</td>
                     <td class="text-right font-bold text-blue">{{ row.points | number }}</td>
                   </tr>
                   <tr *ngIf="bulkRows().length > 50">
-                    <td colspan="4" class="text-center" style="color:#64748b; font-style:italic; font-size:0.85rem;">
+                    <td colspan="5" class="text-center" style="color:#64748b; font-style:italic; font-size:0.85rem;">
                       ... y {{ bulkRows().length - 50 }} filas más
                     </td>
                   </tr>
@@ -476,7 +476,6 @@ import * as XLSX from 'xlsx';
     .actions { display: flex; gap: 0.8rem; }
     .export-btn { background: var(--admin-primary); border: none; color: white; padding: 0.8rem 1.5rem; border-radius: 0.6rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: bold; transition: 0.3s; }
     .export-btn.secondary { background: #666; }
-    .export-btn.bulk-btn { background: linear-gradient(135deg, #7c3aed, #4f46e5); }
     .export-btn.add-btn { background: var(--admin-primary); }
     .export-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
 
@@ -723,13 +722,20 @@ export class AdminUsersComponent implements OnInit {
       const reader = new FileReader();
       reader.onload = (e: any) => {
         const wb = XLSX.read(e.target.result, { type: 'array' });
-        const ws = wb.Sheets[wb.SheetNames[0]];
+        // Use 'ASOCIADOS GANADORES' sheet if exists, otherwise first sheet
+        const sheetName = wb.SheetNames.includes('ASOCIADOS GANADORES')
+          ? 'ASOCIADOS GANADORES'
+          : wb.SheetNames[0];
+        const ws = wb.Sheets[sheetName];
         const json: any[] = XLSX.utils.sheet_to_json(ws, { defval: '' });
         const rows = json.map((row: any) => ({
-          full_name: (row['nombre'] || row['full_name'] || row['Nombre'] || '').toString().trim(),
-          email: (row['email'] || row['Email'] || row['correo'] || '').toString().toLowerCase().trim(),
-          points: parseInt((row['puntos'] || row['points'] || row['Puntos'] || '0').toString(), 10) || 0
-        })).filter((r: any) => r.email);
+          // New Luxottica format: ID, Descripcion_Depto, Depto_ID, $$
+          // Legacy format: email/full_name/points
+          user:      (row['ID'] || row['user'] || row['email'] || row['Email'] || '').toString().trim(),
+          full_name: (row['Descripcion_Depto'] || row['nombre'] || row['full_name'] || row['Nombre'] || '').toString().trim(),
+          depto_id:  (row['Depto_ID'] || row['depto_id'] || '').toString().trim(),
+          points:    parseInt((row['$$'] || row['puntos'] || row['points'] || row['Puntos'] || '0').toString(), 10) || 0
+        })).filter((r: any) => r.user);
         this.bulkRows.set(rows);
       };
       reader.readAsArrayBuffer(file);
@@ -741,18 +747,20 @@ export class AdminUsersComponent implements OnInit {
     if (lines.length < 2) return [];
 
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/["']/g, ''));
-    const nameIdx = headers.findIndex(h => h.includes('nombre') || h.includes('name') || h.includes('full'));
-    const emailIdx = headers.findIndex(h => h.includes('email') || h.includes('correo'));
-    const pointsIdx = headers.findIndex(h => h.includes('punto') || h.includes('point'));
+    const nameIdx   = headers.findIndex(h => h.includes('descripcion_depto') || h.includes('nombre') || h.includes('name') || h.includes('full'));
+    const userIdx   = headers.findIndex(h => h === 'id' || h.includes('user') || h.includes('email') || h.includes('correo'));
+    const deptoIdx  = headers.findIndex(h => h === 'depto_id' || h.includes('depto'));
+    const pointsIdx = headers.findIndex(h => h === '$$' || h.includes('punto') || h.includes('point'));
 
     return lines.slice(1).map(line => {
       const cols = line.split(',').map(c => c.trim().replace(/["']/g, ''));
       return {
-        full_name: cols[nameIdx >= 0 ? nameIdx : 0] || '',
-        email: (cols[emailIdx >= 0 ? emailIdx : 1] || '').toLowerCase().trim(),
-        points: parseInt(cols[pointsIdx >= 0 ? pointsIdx : 2] || '0', 10) || 0
+        user:     (cols[userIdx >= 0 ? userIdx : 0] || '').trim(),
+        full_name: cols[nameIdx >= 0 ? nameIdx : 1] || '',
+        depto_id:  deptoIdx >= 0 ? (cols[deptoIdx] || '') : '',
+        points:   parseInt(cols[pointsIdx >= 0 ? pointsIdx : 2] || '0', 10) || 0
       };
-    }).filter(r => r.email);
+    }).filter(r => r.user);
   }
 
   processBulkUpload() {

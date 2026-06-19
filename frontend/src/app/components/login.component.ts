@@ -25,8 +25,8 @@ import Swal from 'sweetalert2';
           
           <form (submit)="onSubmit()" class="login-form">
             <div class="field">
-              <label>Correo electrónico</label>
-              <input type="email" [(ngModel)]="email" name="email" required class="input-flat" placeholder="Ingresa correo electrónico">
+              <label>Usuario</label>
+              <input type="text" [(ngModel)]="email" name="email" required class="input-flat" placeholder="Ingresa tu usuario" autocomplete="username">
             </div>
 
             <div class="field">
@@ -68,7 +68,6 @@ import Swal from 'sweetalert2';
 
       <!-- Footer Text -->
       <footer class="app-footer">
-        <p>C 2020 Todos los derechos reservados Quantum TM Hollywood Movie Magic S de RL de CV. Desarrollado con ♥ por QuantumDevelopment</p>
         <p class="contact-info">Informes en la República Mexicana: 55 5249.3752 <a href="mailto:atencionaclientes@quantummx.com">atencionaclientes@quantummx.com</a></p>
       </footer>
     </div>

@@ -322,32 +322,40 @@ class AdminUserController extends ResourceController
         $errorCount   = 0;
 
         foreach ($usersToLoad as $row) {
-            $fullName = trim($row['full_name'] ?? $row['nombre'] ?? '');
-            $email    = strtolower(trim($row['email'] ?? ''));
-            $points   = (int) ($row['points'] ?? $row['puntos'] ?? 0);
+            // Support both old format (full_name, email, points) and new XLSX format
+            // New format: ID=user/login, Descripcion_Depto=full_name, Depto_ID=depto_id, $$=points
+            $fullName = trim($row['full_name'] ?? $row['Descripcion_Depto'] ?? $row['nombre'] ?? '');
+            $userLogin = trim($row['email'] ?? $row['user'] ?? $row['ID'] ?? '');
+            $deptoId  = trim($row['depto_id'] ?? $row['Depto_ID'] ?? '');
+            $points   = (int) ($row['points'] ?? $row['puntos'] ?? $row['$$'] ?? 0);
+
+            // Use userLogin as the email/identifier
+            $email = strtolower($userLogin);
 
             if (empty($email) || empty($fullName)) {
                 $logData[] = [
                     'full_name' => $fullName,
                     'email'     => $email,
+                    'depto_id'  => $deptoId,
                     'points'    => $points,
                     'password'  => '',
                     'status'    => 'error',
-                    'message'   => 'Nombre o email vacío'
+                    'message'   => 'Nombre o usuario vacío'
                 ];
                 $errorCount++;
                 continue;
             }
 
-            // Check duplicate email
+            // Check duplicate user
             if ($userModel->where('email', $email)->first()) {
                 $logData[] = [
                     'full_name' => $fullName,
                     'email'     => $email,
+                    'depto_id'  => $deptoId,
                     'points'    => $points,
                     'password'  => '',
                     'status'    => 'error',
-                    'message'   => 'Email ya registrado'
+                    'message'   => 'Usuario ya registrado'
                 ];
                 $errorCount++;
                 continue;
@@ -364,6 +372,7 @@ class AdminUserController extends ResourceController
                 'id_proyecto'   => $idProyecto,
                 'email'         => $email,
                 'full_name'     => $fullName,
+                'depto_id'      => $deptoId ?: null,
                 'password_hash' => password_hash($plainPassword, PASSWORD_DEFAULT),
                 'points'        => $points,
                 'role'          => 'user'
@@ -374,10 +383,12 @@ class AdminUserController extends ResourceController
                 $logData[] = [
                     'full_name' => $fullName,
                     'email'     => $email,
+                    'depto_id'  => $deptoId,
                     'points'    => $points,
                     'password'  => $plainPassword,
                     'status'    => 'success',
                     'message'   => 'Creado correctamente'
+
                 ];
             } else {
                 $errorCount++;
