@@ -277,17 +277,21 @@ class AdminUserController extends ResourceController
     }
 
     /**
-     * Bulk upload users from JSON list
-     * Expects: { id_proyecto, users: [{full_name, email, points}] }
+     * Bulk upload users.
+     * Accepts multipart/form-data:
+     *   - file:        the original CSV/XLSX file to store
+     *   - id_proyecto: project ID
+     *   - users:       JSON-encoded array [{full_name, email, points}]
      */
     public function bulkUpload()
     {
         $userModel = new UserModel();
         $db        = \Config\Database::connect();
-        $data      = $this->request->getJSON(true);
 
-        $idProyecto  = $data['id_proyecto'] ?? null;
-        $usersToLoad = $data['users'] ?? [];
+        // Read fields from POST (multipart)
+        $idProyecto  = $this->request->getPost('id_proyecto');
+        $usersJson   = $this->request->getPost('users');
+        $usersToLoad = json_decode($usersJson, true) ?? [];
 
         if (!$idProyecto) {
             return $this->fail('El proyecto es requerido.', 400);
@@ -296,8 +300,18 @@ class AdminUserController extends ResourceController
             return $this->fail('No hay usuarios para procesar.', 400);
         }
 
+        // Save original file if provided
+        $savedFileName = null;
+        $uploadedFile  = $this->request->getFile('file');
+        if ($uploadedFile && $uploadedFile->isValid() && !$uploadedFile->hasMoved()) {
+            $originalName  = pathinfo($uploadedFile->getClientName(), PATHINFO_FILENAME);
+            $ext           = $uploadedFile->getClientExtension();
+            $savedFileName = date('Ymd_His') . '_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $originalName) . '.' . $ext;
+            $uploadedFile->move(FCPATH . 'uploads/user_imports', $savedFileName);
+        }
+
         // Get project name for log
-        $project = $db->table('tblProyecto')->where('idProyecto', $idProyecto)->get()->getRow();
+        $project     = $db->table('tblProyecto')->where('idProyecto', $idProyecto)->get()->getRow();
         $projectName = $project ? $project->Proyecto : 'Desconocido';
 
         // Get admin info from session/token
@@ -339,11 +353,11 @@ class AdminUserController extends ResourceController
                 continue;
             }
 
-            // Generate secure random password: 3 words pattern Xxxx#999
-            $adjectives = ['Rojo','Azul','Verde','Oro','Sol','Luna','Mar','Rio','Viento','Fuego'];
-            $adj = $adjectives[array_rand($adjectives)];
-            $num = rand(100, 999);
-            $sym = ['@', '#', '!', '$'][array_rand(['@', '#', '!', '$'])];
+            // Generate secure random password: pattern Palabra@999
+            $adjectives    = ['Rojo','Azul','Verde','Oro','Sol','Luna','Mar','Rio','Viento','Fuego'];
+            $adj           = $adjectives[array_rand($adjectives)];
+            $num           = rand(100, 999);
+            $sym           = ['@', '#', '!', '$'][array_rand(['@', '#', '!', '$'])];
             $plainPassword = $adj . $sym . $num;
 
             $newUser = [
@@ -378,7 +392,7 @@ class AdminUserController extends ResourceController
             }
         }
 
-        // Save log
+        // Save log (with original_file reference)
         $db->table('user_upload_logs')->insert([
             'id_proyecto'   => $idProyecto,
             'project_name'  => $projectName,
@@ -386,6 +400,7 @@ class AdminUserController extends ResourceController
             'total_rows'    => count($usersToLoad),
             'success_count' => $successCount,
             'error_count'   => $errorCount,
+            'original_file' => $savedFileName,
             'log_data'      => json_encode($logData, JSON_UNESCAPED_UNICODE)
         ]);
 
@@ -393,8 +408,38 @@ class AdminUserController extends ResourceController
             'success_count' => $successCount,
             'error_count'   => $errorCount,
             'project_name'  => $projectName,
+            'original_file' => $savedFileName,
             'users'         => $logData
         ]);
+    }
+
+    /**
+     * Download the original uploaded file for a given log ID
+     */
+    public function downloadOriginalFile($id = null)
+    {
+        $db  = \Config\Database::connect();
+        $log = $db->table('user_upload_logs')->select('original_file, project_name, uploaded_at')->where('id', $id)->get()->getRowArray();
+
+        if (!$log || empty($log['original_file'])) {
+            return $this->failNotFound('Archivo original no encontrado para esta carga.');
+        }
+
+        $filePath = FCPATH . 'uploads/user_imports/' . $log['original_file'];
+        if (!file_exists($filePath)) {
+            return $this->failNotFound('El archivo ya no existe en el servidor.');
+        }
+
+        $ext      = pathinfo($filePath, PATHINFO_EXTENSION);
+        $mimeMap  = ['csv' => 'text/csv', 'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'xls' => 'application/vnd.ms-excel'];
+        $mime     = $mimeMap[$ext] ?? 'application/octet-stream';
+        $download = 'carga_' . date('Ymd', strtotime($log['uploaded_at'])) . '_' . preg_replace('/[^a-zA-Z0-9]/', '_', $log['project_name']) . '.' . $ext;
+
+        return $this->response
+            ->setHeader('Content-Type', $mime)
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $download . '"')
+            ->setHeader('Content-Length', filesize($filePath))
+            ->setBody(file_get_contents($filePath));
     }
 
     /**
@@ -404,7 +449,7 @@ class AdminUserController extends ResourceController
     {
         $db   = \Config\Database::connect();
         $logs = $db->table('user_upload_logs')
-                   ->select('id, id_proyecto, project_name, uploaded_by, total_rows, success_count, error_count, uploaded_at')
+                   ->select('id, id_proyecto, project_name, uploaded_by, total_rows, success_count, error_count, original_file, uploaded_at')
                    ->orderBy('uploaded_at', 'DESC')
                    ->get()
                    ->getResultArray();

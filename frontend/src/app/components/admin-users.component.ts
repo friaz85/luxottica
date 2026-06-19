@@ -151,6 +151,7 @@ import * as XLSX from 'xlsx';
                   <th class="text-right">Total Filas</th>
                   <th class="text-right">✅ Creados</th>
                   <th class="text-right">❌ Errores</th>
+                  <th class="text-right">Archivo</th>
                   <th class="text-right">Reporte</th>
                 </tr>
               </thead>
@@ -165,13 +166,19 @@ import * as XLSX from 'xlsx';
                   <td class="text-right" style="color:#16a34a; font-weight:800;">{{ log.success_count }}</td>
                   <td class="text-right" style="color:#dc2626; font-weight:800;">{{ log.error_count }}</td>
                   <td class="text-right">
+                    <button *ngIf="log.original_file" class="action-btn" style="background:#f0fdf4; color:#16a34a;" (click)="downloadOriginalFile(log.id)" title="Descargar archivo original subido">
+                      📄 Original
+                    </button>
+                    <span *ngIf="!log.original_file" style="font-size:0.75rem; color:#94a3b8;">—</span>
+                  </td>
+                  <td class="text-right">
                     <button class="action-btn edit" style="background:#eff6ff; color:#2563eb;" (click)="downloadLogReport(log.id, log.project_name)">
-                      ⬇️ Descargar
+                      ⬇️ Reporte
                     </button>
                   </td>
                 </tr>
                 <tr *ngIf="uploadLogs().length === 0">
-                   <td colspan="7" class="text-center py-8 text-gray">No hay cargas registradas</td>
+                   <td colspan="8" class="text-center py-8 text-gray">No hay cargas registradas</td>
                 </tr>
               </tbody>
             </table>
@@ -753,10 +760,15 @@ export class AdminUsersComponent implements OnInit {
     this.uploading.set(true);
     this.loader.show();
 
-    this.http.post(`${environment.apiUrl}/admin/users/bulk-upload`, {
-      id_proyecto: this.bulkIdProyecto,
-      users: this.bulkRows()
-    }).subscribe({
+    // Send as multipart/form-data so the backend can save the original file
+    const formData = new FormData();
+    formData.append('id_proyecto', String(this.bulkIdProyecto));
+    formData.append('users', JSON.stringify(this.bulkRows()));
+    if (this.bulkFile) {
+      formData.append('file', this.bulkFile, this.bulkFile.name);
+    }
+
+    this.http.post(`${environment.apiUrl}/admin/users/bulk-upload`, formData).subscribe({
       next: (res: any) => {
         this.bulkResult.set(res);
         this.bulkStep.set(3);
@@ -792,6 +804,30 @@ export class AdminUsersComponent implements OnInit {
         this.loader.hide();
       }
     });
+  }
+
+  downloadOriginalFile(logId: number) {
+    // Redirect to backend endpoint which streams the file as download
+    const token = localStorage.getItem('admin_token') || '';
+    const url = `${environment.apiUrl}/admin/users/upload-logs/${logId}/original-file`;
+    // Use fetch with auth header to trigger browser download
+    fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(async res => {
+        if (!res.ok) {
+          this.toast.show('Archivo original no disponible en el servidor', 'error');
+          return;
+        }
+        const cd = res.headers.get('Content-Disposition') || '';
+        const match = cd.match(/filename="?([^"]+)"?/);
+        const filename = match ? match[1] : `archivo_carga_${logId}`;
+        const blob = await res.blob();
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(link.href);
+      })
+      .catch(() => this.toast.show('Error al descargar el archivo original', 'error'));
   }
 
   generateAndDownloadCSV(users: any[], filename: string) {
