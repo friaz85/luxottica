@@ -16,6 +16,8 @@ class UserModel extends Model
         'phone',
         'role',
         'points',
+        'points_used',
+        'points_remaining',
         'is_blocked',
         'blocked_reason',
         'blocked_at',

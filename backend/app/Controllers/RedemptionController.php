@@ -122,8 +122,14 @@ class RedemptionController extends ResourceController
             }
 
             // Deduct Points and Stock
-            if (!$userModel->update($userId, ['points' => $user['points'] - $reward['cost']])) {
-                throw new \Exception("Error updating user points: " . json_encode($userModel->errors()));
+            $newPoints = $user['points'] - $reward['cost'];
+            $newUsed = ($user['points_used'] ?? 0) + $reward['cost'];
+            if (!$userModel->update($userId, [
+                'points'           => $newPoints,
+                'points_used'      => $newUsed,
+                'points_remaining' => $newPoints
+            ])) {
+                throw new \Exception("Error updating user points fields: " . json_encode($userModel->errors()));
             }
 
             $newStock = (int)$reward['stock'] - 1;

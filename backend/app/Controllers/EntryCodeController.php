@@ -67,7 +67,10 @@ class EntryCodeController extends ResourceController
         ]);
 
         $newPoints = (int)$user['points'] + (int)$entryCode['puntos'];
-        $userModel->update($userId, ['points' => $newPoints]);
+        $userModel->update($userId, [
+            'points'           => $newPoints,
+            'points_remaining' => $newPoints
+        ]);
 
         $db->transComplete();
 
