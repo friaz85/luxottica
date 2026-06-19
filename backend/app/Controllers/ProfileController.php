@@ -20,6 +20,20 @@ class ProfileController extends ResourceController
                 return $this->respond(['status' => 'error', 'message' => 'Usuario no encontrado'], 404);
 
             unset($user["password_hash"], $user["otp"], $user["otp_expiry"]);
+
+            // Attach project validity info
+            if (!empty($user['id_proyecto'])) {
+                $db      = \Config\Database::connect();
+                $project = $db->table('tblProyecto')
+                              ->where('idProyecto', $user['id_proyecto'])
+                              ->get()->getRowArray();
+                if ($project) {
+                    $user['project_name']    = $project['Proyecto'];
+                    $user['project_start']   = $project['Fecha_Inicio'];
+                    $user['project_end']     = $project['Fecha_Fin'];
+                }
+            }
+
             return $this->respond($user);
         } catch (\Exception $e) {
             return $this->respond(['status' => 'error', 'message' => $e->getMessage()], 500);

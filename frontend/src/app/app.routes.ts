@@ -31,12 +31,12 @@ const adminGuard = () => {
 };
 
 export const routes: Routes = [
-    { path: '', redirectTo: 'home', pathMatch: 'full' },
+    { path: '', redirectTo: 'rewards', pathMatch: 'full' },
     { path: 'auth/login', component: LoginComponent },
     {
         path: 'home',
-        component: HomeComponent,
-        canActivate: [authGuard]
+        redirectTo: 'rewards',
+        pathMatch: 'full'
     },
     {
         path: 'rewards',
