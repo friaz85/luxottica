@@ -8,6 +8,7 @@ import { LoaderService } from '../services/loader.service';
 import { AdminNavbarComponent } from './admin-navbar.component';
 import { AdminLayoutService } from '../services/admin-layout.service';
 import { environment } from '../../environments/environment';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-admin-users',
@@ -19,11 +20,14 @@ import { environment } from '../../environments/environment';
       <div class="header-row">
         <div>
            <h2 class="title">GESTIÓN DE USUARIOS</h2>
-           <p class="subtitle">Administra los embajadores registrados</p>
+           <p class="subtitle">Administra los usuarios registrados en la plataforma</p>
         </div>
         <div class="actions">
           <button class="export-btn secondary" (click)="exportToCSV()">
              <span class="icon">📥</span> <span class="btn-text">Exportar CSV</span>
+          </button>
+          <button class="export-btn bulk-btn" (click)="openBulkModal()">
+             <span class="icon">📤</span> <span class="btn-text">Carga Masiva</span>
           </button>
           <button class="export-btn add-btn" (click)="openUserModal()">
              <span class="icon" style="filter: brightness(0) invert(1);">➕</span> <span class="btn-text">Nuevo Usuario</span>
@@ -31,93 +35,333 @@ import { environment } from '../../environments/environment';
         </div>
       </div>
 
-      <!-- Search & Filters -->
-      <div class="table-container">
-        <div class="table-header">
-           <div class="search-box">
-             <input 
-               type="text" 
-               [ngModel]="searchTerm()" 
-               (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
-               placeholder="Buscar por nombre o correo..."
-             >
-           </div>
-        </div>
+      <!-- TABS -->
+      <div class="tabs-bar">
+        <button class="tab-btn" [class.active]="activeTab() === 'users'" (click)="activeTab.set('users')">
+          👥 Usuarios
+        </button>
+        <button class="tab-btn" [class.active]="activeTab() === 'logs'" (click)="activeTab.set('logs'); loadUploadLogs()">
+          📂 Historial de Cargas
+          <span class="tab-badge" *ngIf="uploadLogs().length > 0">{{ uploadLogs().length }}</span>
+        </button>
+      </div>
 
-        <div class="table-wrapper">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th (click)="sort('full_name')">Nombre {{ getSortIcon('full_name') }}</th>
-                <th (click)="sort('email')">Correo {{ getSortIcon('email') }}</th>
-                <th>Proyecto</th>
-                <th class="text-right" (click)="sort('points')">Puntos {{ getSortIcon('points') }}</th>
-                <th (click)="sort('is_blocked')">Estado {{ getSortIcon('is_blocked') }}</th>
-                <th class="text-right" style="cursor: default;">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let user of paginatedUsers()">
-                <td>
-                  <div class="user-info-cell">
-                    <span class="font-bold">{{ user.full_name }}</span>
-                  </div>
-                </td>
-                <td>{{ user.email }}</td>
-                <td>
-                  <div class="project-tag-container">
-                    <span class="project-tag">{{ user.project_name || 'Sin Proyecto' }}</span>
-                  </div>
-                </td>
-                <td class="text-right font-bold text-blue">{{ user.points | number }}</td>
-                <td>
-                  <span class="status-pill" [class.blocked]="user.is_blocked == 1">
-                    {{ user.is_blocked == 1 ? '🔒 Bloqueado' : '✅ Activo' }}
-                  </span>
-                </td>
-                <td class="text-right">
-                  <div class="btn-group">
-                    <button class="action-btn edit" (click)="openUserModal(user)">Editar</button>
-                    <button 
-                      class="action-btn" 
-                      [class.unblock]="user.is_blocked"
-                      (click)="openBlockModal(user)"
-                    >
-                      {{ user.is_blocked == 1 ? 'Desbloquear' : 'Bloquear' }}
-                    </button>
-                  </div>
-                </td>
-              </tr>
-              <tr *ngIf="filteredUsers().length === 0">
-                 <td colspan="5" class="text-center py-8 text-gray">No se encontraron usuarios</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <!-- TAB: USUARIOS -->
+      <div *ngIf="activeTab() === 'users'">
+        <div class="table-container">
+          <div class="table-header">
+             <div class="search-box">
+               <input 
+                 type="text" 
+                 [ngModel]="searchTerm()" 
+                 (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
+                 placeholder="Buscar por nombre o correo..."
+               >
+             </div>
+          </div>
 
-        <!-- Pagination -->
-        <div class="pagination-footer" *ngIf="filteredUsers().length > 0">
-          <div class="pagination-inner">
-            <span class="page-info">
-               Mostrando <b>{{ (currentPage() - 1) * pageSize + 1 }}</b> a <b>{{ Math.min(currentPage() * pageSize, filteredUsers().length) }}</b> de <b>{{ filteredUsers().length }}</b>
-            </span>
-            <div class="pagination-controls">
-              <button class="pag-btn" [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)">« Anterior</button>
-              <div class="page-numbers">
-                <button *ngFor="let p of [].constructor(totalPages()); let i = index" 
-                        class="page-num-btn" 
-                        [class.active]="currentPage() === (i + 1)"
-                        (click)="setPage(i + 1)">
-                  {{ i + 1 }}
-                </button>
+          <div class="table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th (click)="sort('full_name')">Nombre {{ getSortIcon('full_name') }}</th>
+                  <th (click)="sort('email')">Correo {{ getSortIcon('email') }}</th>
+                  <th>Proyecto</th>
+                  <th class="text-right" (click)="sort('points')">Puntos {{ getSortIcon('points') }}</th>
+                  <th (click)="sort('is_blocked')">Estado {{ getSortIcon('is_blocked') }}</th>
+                  <th class="text-right" style="cursor: default;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let user of paginatedUsers()">
+                  <td>
+                    <div class="user-info-cell">
+                      <span class="font-bold">{{ user.full_name }}</span>
+                    </div>
+                  </td>
+                  <td>{{ user.email }}</td>
+                  <td>
+                    <div class="project-tag-container">
+                      <span class="project-tag">{{ user.project_name || 'Sin Proyecto' }}</span>
+                    </div>
+                  </td>
+                  <td class="text-right font-bold text-blue">{{ user.points | number }}</td>
+                  <td>
+                    <span class="status-pill" [class.blocked]="user.is_blocked == 1">
+                      {{ user.is_blocked == 1 ? '🔒 Bloqueado' : '✅ Activo' }}
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    <div class="btn-group">
+                      <button class="action-btn edit" (click)="openUserModal(user)">Editar</button>
+                      <button 
+                        class="action-btn" 
+                        [class.unblock]="user.is_blocked"
+                        (click)="openBlockModal(user)"
+                      >
+                        {{ user.is_blocked == 1 ? 'Desbloquear' : 'Bloquear' }}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngIf="filteredUsers().length === 0">
+                   <td colspan="6" class="text-center py-8 text-gray">No se encontraron usuarios</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="pagination-footer" *ngIf="filteredUsers().length > 0">
+            <div class="pagination-inner">
+              <span class="page-info">
+                 Mostrando <b>{{ (currentPage() - 1) * pageSize + 1 }}</b> a <b>{{ Math.min(currentPage() * pageSize, filteredUsers().length) }}</b> de <b>{{ filteredUsers().length }}</b>
+              </span>
+              <div class="pagination-controls">
+                <button class="pag-btn" [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)">« Anterior</button>
+                <div class="page-numbers">
+                  <button *ngFor="let p of [].constructor(totalPages()); let i = index" 
+                          class="page-num-btn" 
+                          [class.active]="currentPage() === (i + 1)"
+                          (click)="setPage(i + 1)">
+                    {{ i + 1 }}
+                  </button>
+                </div>
+                <button class="pag-btn" [disabled]="currentPage() >= totalPages()" (click)="setPage(currentPage() + 1)">Siguiente »</button>
               </div>
-              <button class="pag-btn" [disabled]="currentPage() >= totalPages()" (click)="setPage(currentPage() + 1)">Siguiente »</button>
             </div>
           </div>
         </div>
       </div>
 
-    <!-- USER MODAL -->
+      <!-- TAB: HISTORIAL DE CARGAS -->
+      <div *ngIf="activeTab() === 'logs'">
+        <div class="table-container">
+          <div class="table-header" style="display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-weight:800; color:#334155;">Historial de Cargas Masivas</span>
+            <button class="export-btn secondary" style="padding:0.6rem 1rem; font-size:0.85rem;" (click)="loadUploadLogs()">🔄 Actualizar</button>
+          </div>
+          <div class="table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Fecha y Hora</th>
+                  <th>Proyecto</th>
+                  <th class="text-right">Total Filas</th>
+                  <th class="text-right">✅ Creados</th>
+                  <th class="text-right">❌ Errores</th>
+                  <th class="text-right">Reporte</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let log of uploadLogs()">
+                  <td class="text-gray" style="font-size:0.8rem;">#{{ log.id }}</td>
+                  <td>{{ formatLogDate(log.uploaded_at) }}</td>
+                  <td>
+                    <span class="project-tag">{{ log.project_name }}</span>
+                  </td>
+                  <td class="text-right font-bold">{{ log.total_rows }}</td>
+                  <td class="text-right" style="color:#16a34a; font-weight:800;">{{ log.success_count }}</td>
+                  <td class="text-right" style="color:#dc2626; font-weight:800;">{{ log.error_count }}</td>
+                  <td class="text-right">
+                    <button class="action-btn edit" style="background:#eff6ff; color:#2563eb;" (click)="downloadLogReport(log.id, log.project_name)">
+                      ⬇️ Descargar
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="uploadLogs().length === 0">
+                   <td colspan="7" class="text-center py-8 text-gray">No hay cargas registradas</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    <!-- BULK UPLOAD MODAL -->
+    <div class="admin-modal-overlay" *ngIf="showBulkModal()" (click)="closeBulkModal()">
+      <div class="admin-modal xlarge animate__animated animate__zoomIn bulk-modal" (click)="$event.stopPropagation()">
+        <div class="admin-modal-header">
+          <div style="display:flex; align-items:center; gap:0.8rem;">
+            <span style="font-size:1.5rem;">📤</span>
+            <div>
+              <h3 style="margin:0;">Carga Masiva de Usuarios</h3>
+              <p style="margin:0; font-size:0.8rem; color:#64748b;">Sube un CSV o XLSX con la lista de usuarios</p>
+            </div>
+          </div>
+          <button class="admin-close-btn" (click)="closeBulkModal()">✕</button>
+        </div>
+        
+        <div class="admin-modal-body bulk-body">
+
+          <!-- STEP 1: Config -->
+          <div class="bulk-step" *ngIf="bulkStep() === 1">
+            <div class="step-indicator">
+              <div class="step active"><span>1</span><label>Configurar</label></div>
+              <div class="step-line"></div>
+              <div class="step"><span>2</span><label>Previsualizar</label></div>
+              <div class="step-line"></div>
+              <div class="step"><span>3</span><label>Resultado</label></div>
+            </div>
+
+            <div class="admin-form-group" style="margin-top:1.5rem;">
+              <label style="font-weight:800; font-size:0.95rem;">1. Proyecto a asignar <span style="color:#ef4444;">*</span></label>
+              <select [(ngModel)]="bulkIdProyecto" class="admin-input">
+                <option [ngValue]="null" disabled>-- Selecciona un proyecto --</option>
+                <option *ngFor="let p of projects()" [ngValue]="p.idProyecto">{{ p.Proyecto }}</option>
+              </select>
+            </div>
+
+            <div class="admin-form-group">
+              <label style="font-weight:800; font-size:0.95rem;">2. Archivo CSV o XLSX</label>
+              <div class="drop-zone" 
+                   [class.drag-over]="isDragging"
+                   (dragover)="$event.preventDefault(); isDragging=true"
+                   (dragleave)="isDragging=false"
+                   (drop)="onFileDrop($event)"
+                   (click)="fileInput.click()">
+                <input #fileInput type="file" accept=".csv,.xlsx,.xls" style="display:none" (change)="onFileSelected($event)">
+                <div *ngIf="!bulkFile" style="text-align:center;">
+                  <div style="font-size:3rem; margin-bottom:0.5rem;">📄</div>
+                  <p style="font-weight:700; color:#334155; margin:0;">Arrastra tu archivo aquí</p>
+                  <p style="font-size:0.85rem; color:#64748b; margin:0.3rem 0 0;">o haz clic para seleccionar</p>
+                  <p style="font-size:0.75rem; color:#94a3b8; margin:0.5rem 0 0;">Formatos soportados: CSV, XLSX, XLS</p>
+                </div>
+                <div *ngIf="bulkFile" style="text-align:center;">
+                  <div style="font-size:2.5rem; margin-bottom:0.5rem;">✅</div>
+                  <p style="font-weight:800; color:#16a34a; margin:0;">{{ bulkFile.name }}</p>
+                  <p style="font-size:0.8rem; color:#64748b; margin:0.3rem 0 0;">{{ bulkRows().length }} filas detectadas</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="format-hint">
+              <strong>📋 Formato esperado de columnas:</strong>
+              <div class="format-table">
+                <span class="col-tag">nombre</span>
+                <span class="col-tag">email</span>
+                <span class="col-tag">puntos</span>
+              </div>
+              <p style="font-size:0.78rem; color:#64748b; margin:0.5rem 0 0;">La primera fila debe ser el encabezado. Las contraseñas se generan automáticamente.</p>
+            </div>
+          </div>
+
+          <!-- STEP 2: Preview -->
+          <div class="bulk-step" *ngIf="bulkStep() === 2">
+            <div class="step-indicator">
+              <div class="step done"><span>✓</span><label>Configurar</label></div>
+              <div class="step-line active"></div>
+              <div class="step active"><span>2</span><label>Previsualizar</label></div>
+              <div class="step-line"></div>
+              <div class="step"><span>3</span><label>Resultado</label></div>
+            </div>
+
+            <div class="preview-header">
+              <div>
+                <h4 style="margin:0; color:#1e293b;">Vista previa — {{ bulkRows().length }} usuarios a procesar</h4>
+                <p style="margin:0.2rem 0 0; font-size:0.83rem; color:#64748b;">Proyecto: <strong>{{ getProjectName(bulkIdProyecto) }}</strong></p>
+              </div>
+              <span class="rows-badge">{{ bulkRows().length }} filas</span>
+            </div>
+
+            <div class="preview-table-wrapper">
+              <table class="admin-table preview-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    <th class="text-right">Puntos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let row of bulkRows().slice(0, 50); let i = index">
+                    <td style="color:#94a3b8; font-size:0.8rem;">{{ i + 1 }}</td>
+                    <td>{{ row.full_name }}</td>
+                    <td style="font-size:0.85rem;">{{ row.email }}</td>
+                    <td class="text-right font-bold text-blue">{{ row.points | number }}</td>
+                  </tr>
+                  <tr *ngIf="bulkRows().length > 50">
+                    <td colspan="4" class="text-center" style="color:#64748b; font-style:italic; font-size:0.85rem;">
+                      ... y {{ bulkRows().length - 50 }} filas más
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- STEP 3: Result -->
+          <div class="bulk-step" *ngIf="bulkStep() === 3">
+            <div class="step-indicator">
+              <div class="step done"><span>✓</span><label>Configurar</label></div>
+              <div class="step-line active"></div>
+              <div class="step done"><span>✓</span><label>Previsualizar</label></div>
+              <div class="step-line active"></div>
+              <div class="step active"><span>3</span><label>Resultado</label></div>
+            </div>
+
+            <div class="result-summary" *ngIf="bulkResult()">
+              <div class="result-card success">
+                <div class="result-number">{{ bulkResult().success_count }}</div>
+                <div class="result-label">✅ Usuarios Creados</div>
+              </div>
+              <div class="result-card error" *ngIf="bulkResult().error_count > 0">
+                <div class="result-number">{{ bulkResult().error_count }}</div>
+                <div class="result-label">❌ Con Errores</div>
+              </div>
+              <div class="result-card project">
+                <div class="result-number" style="font-size:1rem;">{{ bulkResult().project_name }}</div>
+                <div class="result-label">📁 Proyecto</div>
+              </div>
+            </div>
+
+            <div class="download-section">
+              <div class="download-card" (click)="downloadBulkReport()">
+                <span style="font-size:2rem;">⬇️</span>
+                <div>
+                  <strong>Descargar Reporte con Contraseñas</strong>
+                  <p style="margin:0; font-size:0.8rem; color:#64748b;">CSV con nombre, email, puntos y contraseña generada</p>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="bulkResult()?.error_count > 0" class="error-details">
+              <strong style="color:#dc2626;">Registros con error:</strong>
+              <div class="error-list">
+                <div *ngFor="let u of getErrorUsers()" class="error-row">
+                  <span>{{ u.full_name }} ({{ u.email }})</span>
+                  <span class="error-msg">{{ u.message }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="admin-modal-footer" style="justify-content:space-between;">
+          <button class="btn-admin btn-admin-secondary" (click)="closeBulkModal()">Cerrar</button>
+          <div style="display:flex; gap:0.8rem;">
+            <button *ngIf="bulkStep() === 2" class="btn-admin btn-admin-secondary" (click)="bulkStep.set(1)">
+              ← Volver
+            </button>
+            <button *ngIf="bulkStep() === 1" class="btn-admin btn-admin-primary" 
+                    [disabled]="!bulkFile || !bulkIdProyecto || bulkRows().length === 0"
+                    (click)="bulkStep.set(2)">
+              Vista Previa →
+            </button>
+            <button *ngIf="bulkStep() === 2" class="btn-admin btn-admin-primary"
+                    [disabled]="uploading()"
+                    (click)="processBulkUpload()">
+              {{ uploading() ? '⏳ Procesando...' : '🚀 Procesar Carga' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INDIVIDUAL USER MODAL -->
     <div class="admin-modal-overlay" *ngIf="showUserModal()" (click)="closeUserModal()">
       <div class="admin-modal medium animate__animated animate__zoomIn" (click)="$event.stopPropagation()">
         <div class="admin-modal-header">
@@ -218,22 +462,31 @@ import { environment } from '../../environments/environment';
     .admin-page { padding: 5rem 2rem 2rem 2rem; margin-left: 260px; min-height: 100vh; background: #f4f7f9; color: #333; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     .admin-page.sidebar-closed { margin-left: 0; padding-top: 5rem; }
 
-    .header-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; gap: 1.5rem; flex-wrap: wrap; }
+    .header-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; gap: 1.5rem; flex-wrap: wrap; }
     .title { font-weight: 900; font-size: 2rem; color: var(--admin-primary); margin: 0; }
     .subtitle { color: #666; margin: 0.5rem 0 0 0; }
 
-    .actions { display: flex; gap: 1rem; }
+    .actions { display: flex; gap: 0.8rem; }
     .export-btn { background: var(--admin-primary); border: none; color: white; padding: 0.8rem 1.5rem; border-radius: 0.6rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: bold; transition: 0.3s; }
     .export-btn.secondary { background: #666; }
+    .export-btn.bulk-btn { background: linear-gradient(135deg, #7c3aed, #4f46e5); }
+    .export-btn.add-btn { background: var(--admin-primary); }
     .export-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
 
+    /* TABS */
+    .tabs-bar { display: flex; gap: 0; background: white; border-radius: 0.8rem; padding: 0.4rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; width: fit-content; }
+    .tab-btn { padding: 0.65rem 1.5rem; border: none; border-radius: 0.6rem; background: transparent; color: #64748b; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; }
+    .tab-btn.active { background: var(--admin-primary); color: white; box-shadow: 0 4px 10px rgba(0,51,102,0.3); }
+    .tab-badge { background: rgba(255,255,255,0.3); color: white; border-radius: 1rem; padding: 0.1rem 0.5rem; font-size: 0.75rem; font-weight: 900; }
+    .tab-btn:not(.active) .tab-badge { background: #e0f2fe; color: #0369a1; }
+
     .table-container { background: white; border: 1px solid #ddd; border-radius: 1rem; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 2rem; }
-    .table-header { padding: 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: flex-end; }
+    .table-header { padding: 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: flex-end; align-items: center; }
     .search-box { width: 40%; } .search-box input { width: 100%; background: #f9f9f9; border: 1px solid #ddd; padding: 0.8rem 1.2rem; border-radius: 0.5rem; outline: none; }
 
     .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .admin-table { width: 100%; border-collapse: collapse; min-width: 900px; }
-    .admin-table th { background: #f8f9fa; color: var(--admin-primary); padding: 1.2rem; text-align: left; font-size: 0.85rem; text-transform: uppercase; font-weight: 900; border-bottom: 2px solid #eee; }
+    .admin-table th { background: #f8f9fa; color: var(--admin-primary); padding: 1.2rem; text-align: left; font-size: 0.85rem; text-transform: uppercase; font-weight: 900; border-bottom: 2px solid #eee; cursor: pointer; }
     .admin-table td { padding: 1.2rem; border-bottom: 1px solid #eee; font-size: 0.95rem; vertical-align: middle; }
     .admin-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
     .admin-table tbody tr:hover { background-color: #f1f5f9; }
@@ -258,18 +511,69 @@ import { environment } from '../../environments/environment';
     .page-num-btn { width: 32px; height: 32px; border-radius: 0.4rem; border: 1px solid #d1d5db; background: #fff; cursor: pointer; font-weight: 700; }
     .page-num-btn.active { background: var(--admin-primary); color: white; border-color: var(--admin-primary); }
 
-    .mobile-only-info { display: none; margin-top: 0.3rem; font-size: 0.8rem; color: #666; font-weight: 700; }
-
-    @media (max-width: 900px) { .search-box { width: 100% !important; }
+    @media (max-width: 900px) {
+      .search-box { width: 100% !important; }
       .admin-page { margin-left: 0; padding: 5.5rem 1rem 2rem 1rem; }
       .header-row { flex-direction: column; align-items: flex-start; gap: 1rem; }
-      .actions { width: 100%; }
+      .actions { width: 100%; flex-wrap: wrap; }
       .actions button { flex: 1; justify-content: center; font-size: 0.85rem; padding: 0.7rem; }
-      .admin-table { min-width: 1000px; } /* Force scroll */
+      .admin-table { min-width: 1000px; }
       .pagination-inner { flex-direction: column; text-align: center; }
       .pagination-controls { justify-content: center; width: 100%; }
     }
 
+    /* BULK MODAL */
+    .bulk-modal { max-height: 90vh; display: flex; flex-direction: column; }
+    .bulk-body { overflow-y: auto; flex: 1; padding: 2rem; }
+
+    /* Step Indicator */
+    .step-indicator { display: flex; align-items: center; margin-bottom: 2rem; }
+    .step { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+    .step span { width: 36px; height: 36px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.9rem; transition: 0.3s; }
+    .step label { font-size: 0.72rem; color: #94a3b8; font-weight: 700; white-space: nowrap; }
+    .step.active span { background: var(--admin-primary); color: white; box-shadow: 0 4px 12px rgba(0,51,102,0.35); }
+    .step.done span { background: #10b981; color: white; }
+    .step.active label, .step.done label { color: var(--admin-primary); font-weight: 900; }
+    .step-line { flex: 1; height: 2px; background: #e2e8f0; margin: 0 0.5rem; margin-bottom: 1.2rem; transition: 0.3s; }
+    .step-line.active { background: #10b981; }
+
+    /* Drop Zone */
+    .drop-zone { border: 2.5px dashed #cbd5e1; border-radius: 1rem; padding: 2.5rem; cursor: pointer; transition: 0.3s; background: #f8fafc; }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: var(--admin-primary); background: #eff6ff; transform: scale(1.01); }
+
+    /* Format hint */
+    .format-hint { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 0.8rem; padding: 1rem 1.2rem; }
+    .format-hint strong { color: #15803d; font-size: 0.85rem; }
+    .format-table { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
+    .col-tag { background: white; border: 1.5px solid #86efac; color: #15803d; padding: 0.3rem 0.8rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 800; font-family: 'Courier New', monospace; }
+
+    /* Preview */
+    .preview-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; padding: 1rem 1.2rem; background: #f8fafc; border-radius: 0.8rem; border: 1px solid #e2e8f0; }
+    .rows-badge { background: var(--admin-primary); color: white; padding: 0.4rem 1rem; border-radius: 2rem; font-weight: 900; font-size: 0.85rem; white-space: nowrap; }
+    .preview-table-wrapper { max-height: 350px; overflow-y: auto; border-radius: 0.8rem; border: 1px solid #e2e8f0; }
+    .preview-table { min-width: 600px; }
+    .preview-table th { position: sticky; top: 0; z-index: 1; }
+
+    /* Result */
+    .result-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .result-card { background: white; border-radius: 1rem; padding: 1.5rem; text-align: center; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+    .result-card.success { border-color: #86efac; background: #f0fdf4; }
+    .result-card.error { border-color: #fca5a5; background: #fef2f2; }
+    .result-card.project { border-color: #bae6fd; background: #f0f9ff; }
+    .result-number { font-size: 2.5rem; font-weight: 900; color: var(--admin-primary); line-height: 1; }
+    .result-card.success .result-number { color: #16a34a; }
+    .result-card.error .result-number { color: #dc2626; }
+    .result-label { font-size: 0.8rem; font-weight: 700; color: #64748b; margin-top: 0.5rem; }
+    .download-section { margin: 1.5rem 0; }
+    .download-card { display: flex; align-items: center; gap: 1.2rem; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; padding: 1.2rem 1.8rem; border-radius: 1rem; cursor: pointer; transition: 0.3s; }
+    .download-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(79,70,229,0.35); }
+    .download-card strong { font-size: 1rem; }
+    .error-details { background: #fef2f2; border: 1px solid #fecaca; border-radius: 0.8rem; padding: 1rem 1.2rem; }
+    .error-list { max-height: 150px; overflow-y: auto; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem; }
+    .error-row { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0; border-bottom: 1px dashed #fca5a5; font-size: 0.83rem; }
+    .error-msg { background: #fee2e2; color: #dc2626; padding: 0.2rem 0.5rem; border-radius: 0.4rem; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+
+    /* Individual user modal */
     .exclusive-codes-section { margin-top: 1.5rem; }
     .section-header label { display: block; margin-bottom: 1rem; color: var(--admin-primary); font-size: 0.9rem; }
     .codes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; background: #f8fafc; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; }
@@ -284,6 +588,12 @@ import { environment } from '../../environments/environment';
     .reason-textarea { min-height: 100px; resize: vertical; }
     .warning-box { padding: 1rem; background: #fef2f2; border-radius: 0.8rem; border: 1px solid #fee2e2; color: #991b1b; margin: 1rem 0; font-size: 0.85rem; }
     .info-box { padding: 1rem; background: #eff6ff; border-radius: 0.8rem; border: 1px solid #dbeafe; color: #1e40af; margin: 1rem 0; font-size: 0.85rem; }
+
+    .text-center { text-align: center; } .text-right { text-align: right; }
+    .text-blue { color: #2563eb; } .text-gray { color: #94a3b8; }
+    .font-bold { font-weight: 800; } .py-8 { padding: 2rem 0; }
+    .admin-form-group { margin-bottom: 1.2rem; }
+    .admin-form-group label { display: block; font-size: 0.82rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
   `]
 })
 export class AdminUsersComponent implements OnInit {
@@ -292,6 +602,9 @@ export class AdminUsersComponent implements OnInit {
   showUserModal = signal(false);
   editingUser = signal<any>(null);
   projects = signal<any[]>([]);
+  uploadLogs = signal<any[]>([]);
+  activeTab = signal<'users' | 'logs'>('users');
+
   userData = { 
     full_name: '', 
     email: '', 
@@ -306,6 +619,16 @@ export class AdminUsersComponent implements OnInit {
   pageSize = 10;
   Math = Math;
 
+  // Bulk upload state
+  showBulkModal = signal(false);
+  bulkStep = signal(1);
+  bulkFile: File | null = null;
+  bulkRows = signal<any[]>([]);
+  bulkIdProyecto: number | null = null;
+  bulkResult = signal<any>(null);
+  uploading = signal(false);
+  isDragging = false;
+
   private http = inject(HttpClient);
   private toast = inject(ToastService);
   private loader = inject(LoaderService);
@@ -313,37 +636,183 @@ export class AdminUsersComponent implements OnInit {
 
   ngOnInit() {
     this.loadUsers();
+    this.loadProjects();
   }
 
   loadUsers() {
     this.loader.show();
     this.http.get(`${environment.apiUrl}/admin/users`).subscribe({
-      next: (res: any) => {
-        this.users.set(res);
-        this.loader.hide();
-      },
-      error: (e: any) => {
-        console.error(e);
-        this.loader.hide();
-      }
+      next: (res: any) => { this.users.set(res); this.loader.hide(); },
+      error: (e: any) => { console.error(e); this.loader.hide(); }
     });
-    this.loadProjects();
   }
 
   loadProjects() {
-    this.loader.show();
     this.http.get(`${environment.apiUrl}/admin/projects`).subscribe({
+      next: (res: any) => this.projects.set(res),
+      error: (e: any) => console.error(e)
+    });
+  }
+
+  loadUploadLogs() {
+    this.loader.show();
+    this.http.get<any[]>(`${environment.apiUrl}/admin/users/upload-logs`).subscribe({
+      next: (res) => { this.uploadLogs.set(res); this.loader.hide(); },
+      error: () => this.loader.hide()
+    });
+  }
+
+  getProjectName(id: number | null): string {
+    return this.projects().find(p => p.idProyecto == id)?.Proyecto || 'Sin proyecto';
+  }
+
+  formatLogDate(dateStr: string): string {
+    if (!dateStr) return '';
+    const d = new Date(dateStr.replace(' ', 'T'));
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  // ─── BULK UPLOAD ───────────────────────────────────────────
+  openBulkModal() {
+    this.bulkStep.set(1);
+    this.bulkFile = null;
+    this.bulkRows.set([]);
+    this.bulkIdProyecto = null;
+    this.bulkResult.set(null);
+    this.uploading.set(false);
+    this.showBulkModal.set(true);
+  }
+
+  closeBulkModal() {
+    this.showBulkModal.set(false);
+    if (this.bulkResult()) this.loadUsers();
+  }
+
+  onFileDrop(event: DragEvent) {
+    event.preventDefault();
+    this.isDragging = false;
+    const file = event.dataTransfer?.files[0];
+    if (file) this.processFile(file);
+  }
+
+  onFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) this.processFile(file);
+  }
+
+  processFile(file: File) {
+    this.bulkFile = file;
+    const ext = file.name.split('.').pop()?.toLowerCase();
+
+    if (ext === 'csv') {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        const rows = this.parseCSV(e.target.result);
+        this.bulkRows.set(rows);
+      };
+      reader.readAsText(file, 'UTF-8');
+    } else if (ext === 'xlsx' || ext === 'xls') {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const json: any[] = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        const rows = json.map((row: any) => ({
+          full_name: (row['nombre'] || row['full_name'] || row['Nombre'] || '').toString().trim(),
+          email: (row['email'] || row['Email'] || row['correo'] || '').toString().toLowerCase().trim(),
+          points: parseInt((row['puntos'] || row['points'] || row['Puntos'] || '0').toString(), 10) || 0
+        })).filter((r: any) => r.email);
+        this.bulkRows.set(rows);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  }
+
+  parseCSV(text: string): any[] {
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) return [];
+
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/["']/g, ''));
+    const nameIdx = headers.findIndex(h => h.includes('nombre') || h.includes('name') || h.includes('full'));
+    const emailIdx = headers.findIndex(h => h.includes('email') || h.includes('correo'));
+    const pointsIdx = headers.findIndex(h => h.includes('punto') || h.includes('point'));
+
+    return lines.slice(1).map(line => {
+      const cols = line.split(',').map(c => c.trim().replace(/["']/g, ''));
+      return {
+        full_name: cols[nameIdx >= 0 ? nameIdx : 0] || '',
+        email: (cols[emailIdx >= 0 ? emailIdx : 1] || '').toLowerCase().trim(),
+        points: parseInt(cols[pointsIdx >= 0 ? pointsIdx : 2] || '0', 10) || 0
+      };
+    }).filter(r => r.email);
+  }
+
+  processBulkUpload() {
+    if (!this.bulkIdProyecto || this.bulkRows().length === 0) return;
+    this.uploading.set(true);
+    this.loader.show();
+
+    this.http.post(`${environment.apiUrl}/admin/users/bulk-upload`, {
+      id_proyecto: this.bulkIdProyecto,
+      users: this.bulkRows()
+    }).subscribe({
       next: (res: any) => {
-        this.projects.set(res);
+        this.bulkResult.set(res);
+        this.bulkStep.set(3);
+        this.uploading.set(false);
         this.loader.hide();
       },
-      error: (e: any) => {
-        console.error(e);
+      error: (err) => {
+        this.toast.show(err.error?.message || 'Error al procesar la carga', 'error');
+        this.uploading.set(false);
         this.loader.hide();
       }
     });
   }
 
+  getErrorUsers(): any[] {
+    return (this.bulkResult()?.users || []).filter((u: any) => u.status === 'error');
+  }
+
+  downloadBulkReport() {
+    const users = this.bulkResult()?.users || [];
+    this.generateAndDownloadCSV(users, `reporte_usuarios_${Date.now()}.csv`);
+  }
+
+  downloadLogReport(logId: number, projectName: string) {
+    this.loader.show();
+    this.http.get<any>(`${environment.apiUrl}/admin/users/upload-logs/${logId}`).subscribe({
+      next: (log) => {
+        this.generateAndDownloadCSV(log.log_data, `reporte_usuarios_${projectName}_${logId}.csv`);
+        this.loader.hide();
+      },
+      error: () => {
+        this.toast.show('Error al descargar el reporte', 'error');
+        this.loader.hide();
+      }
+    });
+  }
+
+  generateAndDownloadCSV(users: any[], filename: string) {
+    const headers = ['Nombre', 'Email', 'Puntos', 'Contraseña', 'Estado', 'Mensaje'];
+    const rows = users.map((u: any) => [
+      `"${(u.full_name || '').replace(/"/g, '""')}"`,
+      u.email,
+      u.points,
+      u.password || '',
+      u.status === 'success' ? 'Creado' : 'Error',
+      `"${(u.message || '').replace(/"/g, '""')}"`
+    ]);
+    const csv = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ─── INDIVIDUAL USER ────────────────────────────────────────
   openUserModal(user: any = null) {
     if (user) {
       this.editingUser.set(user);
@@ -361,10 +830,7 @@ export class AdminUsersComponent implements OnInit {
     } else {
       this.editingUser.set(null);
       this.userData = { 
-        full_name: '', 
-        email: '', 
-        password: '', 
-        points: 0, 
+        full_name: '', email: '', password: '', points: 0, 
         id_proyecto: null,
         entry_codes: new Array(10).fill(null).map(() => ({ codigo: '', puntos: 0 }))
       };
@@ -386,38 +852,12 @@ export class AdminUsersComponent implements OnInit {
     this.loader.show();
     this.http.post(url, this.userData).subscribe({
       next: (res: any) => {
-        const title = this.editingUser() ? 'USUARIO ACTUALIZADO' : 'USUARIO CREADO';
-        
-        let html = `
-          <div style="text-align: left; font-size: 0.9rem;">
-            <p>✅ <b>Códigos asignados:</b> ${res.code_summary?.success_count || 0}</p>
-            <p>⚠️ <b>Duplicados (omitidos):</b> ${res.code_summary?.duplicate_count || 0}</p>
-            ${res.code_summary?.duplicate_count > 0 ? `
-              <div style="margin-top: 10px;">
-                <b>Códigos repetidos detectados:</b>
-                <div style="max-height: 100px; overflow-y: auto; background: #f5f5f5; padding: 5px; border-radius: 5px; font-family: monospace; font-size: 0.8rem;">
-                  ${res.code_summary.duplicates.join('<br>')}
-                </div>
-              </div>
-            ` : ''}
-          </div>
-        `;
-
-        Swal.fire({
-          title,
-          html,
-          icon: 'success',
-          confirmButtonColor: 'var(--admin-primary)'
-        });
-
+        this.toast.show(this.editingUser() ? 'USUARIO ACTUALIZADO' : 'USUARIO CREADO', 'success');
         this.loadUsers();
         this.closeUserModal();
         this.loader.hide();
       },
-      error: () => {
-        this.toast.show('ERROR AL GUARDAR', 'error');
-        this.loader.hide();
-      }
+      error: () => { this.toast.show('ERROR AL GUARDAR', 'error'); this.loader.hide(); }
     });
   }
 
@@ -434,11 +874,9 @@ export class AdminUsersComponent implements OnInit {
   toggleUserBlock() {
     const user = this.selectedUser();
     const isBlocking = !user.is_blocked;
-
     this.loader.show();
     this.http.post(`${environment.apiUrl}/admin/users/${user.id}/toggle-block`, {
-      block: isBlocking,
-      reason: this.blockReason
+      block: isBlocking, reason: this.blockReason
     }).subscribe({
       next: () => {
         this.loadUsers();
@@ -446,10 +884,7 @@ export class AdminUsersComponent implements OnInit {
         this.toast.show(isBlocking ? 'USUARIO BLOQUEADO' : 'USUARIO DESBLOQUEADO', 'success');
         this.loader.hide();
       },
-      error: () => {
-        this.toast.show('ERROR AL ACTUALIZAR', 'error');
-        this.loader.hide();
-      }
+      error: () => { this.toast.show('ERROR AL ACTUALIZAR', 'error'); this.loader.hide(); }
     });
   }
 
@@ -480,18 +915,12 @@ export class AdminUsersComponent implements OnInit {
       u.full_name?.toLowerCase().includes(term) ||
       u.email?.toLowerCase().includes(term)
     );
-
     const col = this.sortColumn();
     const dir = this.sortDirection();
-
     if (col) {
       data = [...data].sort((a, b) => {
-        let valA = a[col];
-        let valB = b[col];
-        if (typeof valA === 'string') {
-          valA = valA.toLowerCase();
-          valB = valB ? valB.toLowerCase() : '';
-        }
+        let valA = a[col]; let valB = b[col];
+        if (typeof valA === 'string') { valA = valA.toLowerCase(); valB = valB ? valB.toLowerCase() : ''; }
         if (valA < valB) return dir === 'asc' ? -1 : 1;
         if (valA > valB) return dir === 'asc' ? 1 : -1;
         return 0;
@@ -513,12 +942,12 @@ export class AdminUsersComponent implements OnInit {
     const rows = this.filteredUsers().map((u: any) => [
       `"${u.full_name}"`, u.email, u.points || 0, u.is_blocked == 1 ? 'Bloqueado' : 'Activo'
     ]);
-    const csvContent = "\ufeff" + [headers.join(","), ...rows.map((e: any) => e.join(","))].join("\n");
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((e: any) => e.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", "usuarios_tec.csv");
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'usuarios_luxottica.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

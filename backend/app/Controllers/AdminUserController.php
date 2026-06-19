@@ -275,4 +275,153 @@ class AdminUserController extends ResourceController
             'active'   => $userModel->where('is_blocked', 0)->countAllResults()
         ]);
     }
+
+    /**
+     * Bulk upload users from JSON list
+     * Expects: { id_proyecto, users: [{full_name, email, points}] }
+     */
+    public function bulkUpload()
+    {
+        $userModel = new UserModel();
+        $db        = \Config\Database::connect();
+        $data      = $this->request->getJSON(true);
+
+        $idProyecto  = $data['id_proyecto'] ?? null;
+        $usersToLoad = $data['users'] ?? [];
+
+        if (!$idProyecto) {
+            return $this->fail('El proyecto es requerido.', 400);
+        }
+        if (empty($usersToLoad) || !is_array($usersToLoad)) {
+            return $this->fail('No hay usuarios para procesar.', 400);
+        }
+
+        // Get project name for log
+        $project = $db->table('tblProyecto')->where('idProyecto', $idProyecto)->get()->getRow();
+        $projectName = $project ? $project->Proyecto : 'Desconocido';
+
+        // Get admin info from session/token
+        $adminId = $this->request->admin_user->username ?? 'admin';
+
+        $logData      = [];
+        $successCount = 0;
+        $errorCount   = 0;
+
+        foreach ($usersToLoad as $row) {
+            $fullName = trim($row['full_name'] ?? $row['nombre'] ?? '');
+            $email    = strtolower(trim($row['email'] ?? ''));
+            $points   = (int) ($row['points'] ?? $row['puntos'] ?? 0);
+
+            if (empty($email) || empty($fullName)) {
+                $logData[] = [
+                    'full_name' => $fullName,
+                    'email'     => $email,
+                    'points'    => $points,
+                    'password'  => '',
+                    'status'    => 'error',
+                    'message'   => 'Nombre o email vacío'
+                ];
+                $errorCount++;
+                continue;
+            }
+
+            // Check duplicate email
+            if ($userModel->where('email', $email)->first()) {
+                $logData[] = [
+                    'full_name' => $fullName,
+                    'email'     => $email,
+                    'points'    => $points,
+                    'password'  => '',
+                    'status'    => 'error',
+                    'message'   => 'Email ya registrado'
+                ];
+                $errorCount++;
+                continue;
+            }
+
+            // Generate secure random password: 3 words pattern Xxxx#999
+            $adjectives = ['Rojo','Azul','Verde','Oro','Sol','Luna','Mar','Rio','Viento','Fuego'];
+            $adj = $adjectives[array_rand($adjectives)];
+            $num = rand(100, 999);
+            $sym = ['@', '#', '!', '$'][array_rand(['@', '#', '!', '$'])];
+            $plainPassword = $adj . $sym . $num;
+
+            $newUser = [
+                'id_proyecto'   => $idProyecto,
+                'email'         => $email,
+                'full_name'     => $fullName,
+                'password_hash' => password_hash($plainPassword, PASSWORD_DEFAULT),
+                'points'        => $points,
+                'role'          => 'user'
+            ];
+
+            if ($userModel->save($newUser)) {
+                $successCount++;
+                $logData[] = [
+                    'full_name' => $fullName,
+                    'email'     => $email,
+                    'points'    => $points,
+                    'password'  => $plainPassword,
+                    'status'    => 'success',
+                    'message'   => 'Creado correctamente'
+                ];
+            } else {
+                $errorCount++;
+                $logData[] = [
+                    'full_name' => $fullName,
+                    'email'     => $email,
+                    'points'    => $points,
+                    'password'  => '',
+                    'status'    => 'error',
+                    'message'   => 'Error al guardar'
+                ];
+            }
+        }
+
+        // Save log
+        $db->table('user_upload_logs')->insert([
+            'id_proyecto'   => $idProyecto,
+            'project_name'  => $projectName,
+            'uploaded_by'   => $adminId,
+            'total_rows'    => count($usersToLoad),
+            'success_count' => $successCount,
+            'error_count'   => $errorCount,
+            'log_data'      => json_encode($logData, JSON_UNESCAPED_UNICODE)
+        ]);
+
+        return $this->respondCreated([
+            'success_count' => $successCount,
+            'error_count'   => $errorCount,
+            'project_name'  => $projectName,
+            'users'         => $logData
+        ]);
+    }
+
+    /**
+     * List all upload logs (paginated)
+     */
+    public function getUploadLogs()
+    {
+        $db   = \Config\Database::connect();
+        $logs = $db->table('user_upload_logs')
+                   ->select('id, id_proyecto, project_name, uploaded_by, total_rows, success_count, error_count, uploaded_at')
+                   ->orderBy('uploaded_at', 'DESC')
+                   ->get()
+                   ->getResultArray();
+        return $this->respond($logs);
+    }
+
+    /**
+     * Get full detail of a single upload log (with log_data for re-download)
+     */
+    public function getUploadLogDetail($id = null)
+    {
+        $db  = \Config\Database::connect();
+        $log = $db->table('user_upload_logs')->where('id', $id)->get()->getRowArray();
+        if (!$log) {
+            return $this->failNotFound('Log no encontrado');
+        }
+        $log['log_data'] = json_decode($log['log_data'], true);
+        return $this->respond($log);
+    }
 }
