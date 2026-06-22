@@ -65,44 +65,25 @@ interface CodeArea {
              </div>
            </div>
         </div>
-
-        <div class="table-wrapper">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>Imagen</th>
-                <th>Nombre</th>
-                <th>Proyecto</th>
-                <th>Puntos</th>
-                <th>Stock</th>
-                <th>Tipo</th>
-                <th>Vigencia</th>
-                <th class="text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let reward of paginatedRewards()">
-                <td>
-                  <img [src]="reward.image_url ? environment.uploadsUrl + '/rewards/' + reward.image_url : 'assets/img/Logo_Tec.png'" 
-                       (error)="handleImageError($event, reward.image_url)"
-                       class="reward-thumb" alt="Premio">
-                </td>
-                <td>
-                  <div class="reward-info-cell">
-                    <span class="font-bold reward-title-text">{{ reward.title }}</span>
-                  </div>
-                </td>
-                <td>
-                  <div class="project-tag-container">
-                    <span class="project-tag" *ngIf="reward.id_proyecto">{{ getProjectName(reward.id_proyecto) }}</span>
-                    <span class="project-tag global" *ngIf="!reward.id_proyecto">Global</span>
-                  </div>
-                </td>
-                <td class="font-bold text-blue">{{ (reward.cost || 0) | number }} pts</td>
-                <td>
-                   <span class="stock-badge" [class.low]="reward.stock <= 5">{{ reward.stock }}</span>
-                </td>
-                <td>
+        <div class="grid-wrapper">
+          <div class="rewards-grid" *ngIf="paginatedRewards().length > 0">
+            <div class="reward-card" *ngFor="let reward of paginatedRewards()">
+              <div class="reward-card-img">
+                <img [src]="reward.image_url ? environment.uploadsUrl + '/rewards/' + reward.image_url : 'assets/img/Logo_Tec.png'" 
+                     (error)="handleImageError($event, reward.image_url)"
+                     class="reward-img-el" alt="Premio">
+              </div>
+              <div class="reward-card-body">
+                <h4 class="reward-card-title">{{ reward.title }}</h4>
+                <div class="reward-card-project">
+                  <span class="project-tag" *ngIf="reward.id_proyecto">{{ getProjectName(reward.id_proyecto) }}</span>
+                  <span class="project-tag global" *ngIf="!reward.id_proyecto">Global</span>
+                </div>
+                <div class="reward-card-meta">
+                  <span class="reward-cost font-bold text-blue">{{ (reward.cost || 0) | number }} pts</span>
+                  <span class="reward-stock" [class.low]="reward.stock <= 5">Stock: {{ reward.stock }}</span>
+                </div>
+                <div class="reward-card-extra">
                   <span class="type-badge" [ngClass]="{
                     'monedero': reward.tipo_recompensa === 'monedero',
                     'tiempo-aire': reward.tipo_recompensa === 'tiempo_aire'
@@ -110,30 +91,23 @@ interface CodeArea {
                     {{ reward.tipo_recompensa === 'monedero' ? '💳 Monedero' :
                        reward.tipo_recompensa === 'tiempo_aire' ? '📱 Tiempo Aire' : '🎁 Normal' }}
                   </span>
-               </td>
-                <td>
-                   <div *ngIf="reward.vigencias && reward.vigencias.length > 0; else noVigencia" style="font-size: 0.8rem; line-height: 1.3; display: flex; flex-direction: column; gap: 0.25rem;">
-                      <div *ngFor="let v of reward.vigencias" class="status-pill future" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;">
-                         {{ formatShortDate(v.fecha_inicio) }} al {{ formatShortDate(v.fecha_fin) }}
-                      </div>
-                   </div>
-                   <ng-template #noVigencia>
-                      <span class="project-tag global">Sin límite</span>
-                   </ng-template>
-                </td>
-                <td class="text-right">
-                  <div class="btn-group">
-                    <button class="action-btn duplicate" (click)="duplicateReward(reward)" title="Duplicar">Copiar</button>
-                    <button class="action-btn edit" (click)="editReward(reward)">Editar</button>
-                    <button class="action-btn delete" (click)="deleteReward(reward.id)">Eliminar</button>
+                </div>
+                <div class="reward-card-dates" *ngIf="reward.vigencias && reward.vigencias.length > 0">
+                  <div *ngFor="let v of reward.vigencias" class="date-pill">
+                    📅 {{ formatShortDate(v.fecha_inicio) }} al {{ formatShortDate(v.fecha_fin) }}
                   </div>
-                </td>
-              </tr>
-              <tr *ngIf="filteredRewards().length === 0">
-                 <td colspan="8" class="text-center py-8 text-gray">No se encontraron recompensas</td>
-              </tr>
-            </tbody>
-          </table>
+                </div>
+              </div>
+              <div class="reward-card-footer">
+                <button class="action-btn duplicate" (click)="duplicateReward(reward)" title="Duplicar">Copiar</button>
+                <button class="action-btn edit" (click)="editReward(reward)">Editar</button>
+                <button class="action-btn delete" (click)="deleteReward(reward.id)">Eliminar</button>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="filteredRewards().length === 0" class="text-center py-8 text-gray">
+            No se encontraron recompensas
+          </div>
         </div>
 
         <div class="pagination-footer" *ngIf="filteredRewards().length > 0">
@@ -383,12 +357,120 @@ interface CodeArea {
     .filter-select:focus { border-color: var(--admin-primary); }
     .search-box { width: 320px; } .search-box input { width: 100%; background: #f9f9f9; border: 1px solid #ddd; padding: 0.8rem 1.2rem; border-radius: 0.5rem; outline: none; }
     
-    .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .admin-table { width: 100%; border-collapse: collapse; min-width: 800px; }
-    .admin-table th { background: #f8f9fa; color: var(--admin-primary); padding: 1.2rem; text-align: left; font-size: 0.85rem; text-transform: uppercase; font-weight: 900; border-bottom: 2px solid #eee; }
-    .admin-table td { padding: 1.2rem; border-bottom: 1px solid #eee; font-size: 0.95rem; vertical-align: middle; }
-    .admin-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
-    .admin-table tbody tr:hover { background-color: #f1f5f9; }
+    .grid-wrapper { padding: 1.5rem; }
+    .rewards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+    .reward-card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 1rem;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .reward-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 20px -8px rgba(0, 51, 102, 0.2);
+      border-color: var(--admin-primary);
+    }
+    .reward-card-img {
+      height: 160px;
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .reward-img-el {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s;
+    }
+    .reward-card:hover .reward-img-el {
+      transform: scale(1.05);
+    }
+    .reward-card-body {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      flex: 1;
+    }
+    .reward-card-title {
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: #1e293b;
+      line-height: 1.4;
+      margin: 0;
+    }
+    .reward-card-project {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .reward-card-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px dashed #f1f5f9;
+      padding-top: 0.75rem;
+    }
+    .reward-cost {
+      font-size: 1.05rem;
+    }
+    .reward-stock {
+      font-size: 0.8rem;
+      font-weight: 800;
+      background: #dcfce7;
+      color: #166534;
+      padding: 0.25rem 0.6rem;
+      border-radius: 0.5rem;
+      border: 1px solid #bbf7d0;
+    }
+    .reward-stock.low {
+      background: #fee2e2;
+      color: #991b1b;
+      border-color: #fecaca;
+    }
+    .reward-card-extra {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .reward-card-dates {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .date-pill {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #64748b;
+      background: #f1f5f9;
+      padding: 0.3rem 0.6rem;
+      border-radius: 0.4rem;
+      width: fit-content;
+    }
+    .reward-card-footer {
+      padding: 1rem 1.25rem 1.25rem 1.25rem;
+      background: #f8fafc;
+      border-top: 1px solid #f1f5f9;
+      display: flex;
+      gap: 0.5rem;
+      justify-content: space-between;
+    }
+    .reward-card-footer .action-btn {
+      flex: 1;
+      padding: 0.5rem;
+      font-size: 0.75rem;
+      text-align: center;
+      justify-content: center;
+    }
 
     .reward-thumb { width: 48px; height: 48px; border-radius: 0.5rem; object-fit: cover; border: 1px solid #eee; }
     .stock-badge { background: #10b981; color: white; padding: 0.35rem 0.75rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; width: fit-content; }
