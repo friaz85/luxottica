@@ -9,6 +9,7 @@ import { AdminDashboardComponent } from './components/admin-dashboard.component'
 import { AdminUsersComponent } from './components/admin-users.component';
 import { AdminRewardFormComponent } from './components/admin-reward-form.component';
 import { AdminRedemptionsComponent } from './components/admin-redemptions.component';
+import { AdminPendingRewardsComponent } from './components/admin-pending-rewards.component';
 import { AdminProjectsComponent } from './components/admin-projects.component';
 import { AdminEntryCodesComponent } from './components/admin-entry-codes.component';
 import { AdminOrdersComponent } from './components/admin-orders.component';
@@ -84,6 +85,11 @@ export const routes: Routes = [
     {
         path: 'admin/redemptions',
         component: AdminRedemptionsComponent,
+        canActivate: [adminGuard]
+    },
+    {
+        path: 'admin/pending-rewards',
+        component: AdminPendingRewardsComponent,
         canActivate: [adminGuard]
     },
     {

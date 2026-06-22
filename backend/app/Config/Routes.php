@@ -60,6 +60,8 @@ $routes->group('admin', ['filter' => 'admin_auth'], function ($routes) {
     $routes->post('users/(:num)/toggle-block', 'AdminUserController::toggleBlock/$1');
     
     $routes->get('redemptions', 'AdminRedemptionsController::index');
+    $routes->get('redemptions/pending', 'AdminRedemptionsController::pendingRewards');
+    $routes->post('redemptions/(:num)/mark-sent', 'AdminRedemptionsController::markSent/$1');
     $routes->get('orders', 'AdminOrdersController::index');
     $routes->post('orders/(:num)/update', 'AdminOrdersController::updateOrder/$1');
 

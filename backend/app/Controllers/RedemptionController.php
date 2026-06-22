@@ -31,9 +31,14 @@ class RedemptionController extends ResourceController
         $redemptionModel = new RedemptionModel();
         $logModel        = new SecurityLogModel();
 
-        $userId    = $this->request->user->id ?? $this->request->user->uid ?? null;
-        $rewardId  = $this->request->getVar('reward_id');
-        $extraData = $this->request->getVar('extra_data') ?? null;
+        $userId          = $this->request->user->id ?? $this->request->user->uid ?? null;
+        $rewardId        = $this->request->getVar('reward_id');
+        // Separate fields (replaces JSON extra_data)
+        $nombreMonedero  = trim($this->request->getVar('nombre_monedero')  ?? '');
+        $apellidoPaterno = trim($this->request->getVar('apellido_paterno') ?? '');
+        $apellidoMaterno = trim($this->request->getVar('apellido_materno') ?? '');
+        $telefonoRecarga = trim($this->request->getVar('telefono_recarga') ?? '');
+        $idTelefonia     = (int)($this->request->getVar('id_telefonia') ?? 0);
 
         log_message('error', "Redemption attempt: User ID {$userId}, Reward ID: " . json_encode($rewardId));
 
@@ -61,6 +66,16 @@ class RedemptionController extends ResourceController
 
         if ($user['points'] < $reward['cost']) {
             return $this->respond(['message' => 'Puntos insuficientes.'], 400);
+        }
+
+        $tipoRecompensa = $reward['tipo_recompensa'] ?? 'normal';
+
+        // Validate required extra fields by tipo_recompensa
+        if ($tipoRecompensa === 'monedero' && (empty($nombreMonedero) || empty($apellidoPaterno))) {
+            return $this->respond(['message' => 'Nombre y apellido paterno son requeridos para esta recompensa.'], 400);
+        }
+        if ($tipoRecompensa === 'tiempo_aire' && (empty($telefonoRecarga) || !$idTelefonia)) {
+            return $this->respond(['message' => 'Número de teléfono y telefonía son requeridos para esta recompensa.'], 400);
         }
 
         // --- Determine number of codes needed ---
@@ -141,11 +156,17 @@ class RedemptionController extends ResourceController
             $finalCodeString = implode(',', $codesList);
 
             $redemptionData = [
-                'user_id'      => $userId,
-                'reward_id'    => $rewardId,
-                'status'       => ($reward['type'] === 'digital') ? 'completed' : 'pending',
-                'digital_code' => $finalCodeString,
-                'extra_data'   => $extraData ? json_encode($extraData) : null,
+                'user_id'          => $userId,
+                'reward_id'        => $rewardId,
+                'status'           => ($reward['type'] === 'digital') ? 'completed' : 'pending',
+                'digital_code'     => $finalCodeString,
+                'extra_data'       => null, // deprecated, kept for compatibility
+                'nombre_monedero'  => ($tipoRecompensa === 'monedero')   ? $nombreMonedero  : null,
+                'apellido_paterno' => ($tipoRecompensa === 'monedero')   ? $apellidoPaterno : null,
+                'apellido_materno' => ($tipoRecompensa === 'monedero')   ? $apellidoMaterno : null,
+                'telefono_recarga' => ($tipoRecompensa === 'tiempo_aire') ? $telefonoRecarga : null,
+                'id_telefonia'     => ($tipoRecompensa === 'tiempo_aire') ? $idTelefonia     : null,
+                'status_recarga'   => ($tipoRecompensa === 'tiempo_aire') ? 'pending' : null,
             ];
 
             if (!$redemptionModel->save($redemptionData)) {

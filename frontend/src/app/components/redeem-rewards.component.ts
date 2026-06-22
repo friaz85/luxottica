@@ -485,17 +485,20 @@ export class RedeemRewardsComponent implements OnInit {
         cancelButtonText: 'Cancelar',
         cancelButtonColor: '#aaa',
         preConfirm: () => {
-          const primerNombre = (document.getElementById('swal-primer') as HTMLInputElement)?.value?.trim();
+          const primerNombre    = (document.getElementById('swal-primer') as HTMLInputElement)?.value?.trim();
+          const segundoNombre   = (document.getElementById('swal-segundo') as HTMLInputElement)?.value?.trim() || '';
           const apellidoPaterno = (document.getElementById('swal-paterno') as HTMLInputElement)?.value?.trim();
+          const apellidoMaterno = (document.getElementById('swal-materno') as HTMLInputElement)?.value?.trim() || '';
           if (!primerNombre || !apellidoPaterno) {
             Swal.showValidationMessage('Primer nombre y Apellido paterno son requeridos');
             return false;
           }
+          // nombre_monedero = primer + segundo (concatenado, como en Ferreteros)
+          const nombreMonedero = segundoNombre ? `${primerNombre} ${segundoNombre}` : primerNombre;
           return {
-            primer_nombre:   primerNombre,
-            segundo_nombre:  (document.getElementById('swal-segundo') as HTMLInputElement)?.value?.trim() || '',
+            nombre_monedero:  nombreMonedero,
             apellido_paterno: apellidoPaterno,
-            apellido_materno: (document.getElementById('swal-materno') as HTMLInputElement)?.value?.trim() || ''
+            apellido_materno: apellidoMaterno
           };
         }
       }).then((result) => {
@@ -505,9 +508,9 @@ export class RedeemRewardsComponent implements OnInit {
       });
 
     } else if (tipo === 'tiempo_aire') {
-      // Show tiempo aire form with telefonia select
+      // Show tiempo aire form with telefonia select (using id numeric)
       const telefoniaOptions = this.telefonias().map(t =>
-        `<option value="${t.nombre}">${t.nombre}</option>`
+        `<option value="${t.id}">${t.nombre}</option>`
       ).join('');
 
       Swal.fire({
@@ -545,7 +548,7 @@ export class RedeemRewardsComponent implements OnInit {
             Swal.showValidationMessage('Selecciona una operadora');
             return false;
           }
-          return { telefono: tel, telefonia: op };
+          return { telefono_recarga: tel, id_telefonia: parseInt(op, 10) };
         }
       }).then((result) => {
         if (result.isConfirmed && result.value) {
@@ -565,16 +568,33 @@ export class RedeemRewardsComponent implements OnInit {
 
   processRedemption(reward: any, extraData: any) {
     Swal.fire({ title: 'PROCESANDO...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    // Build payload with individual fields (no extra_data JSON wrapper)
     const payload: any = { reward_id: reward.id };
-    if (extraData) payload.extra_data = extraData;
+    if (extraData) Object.assign(payload, extraData);
     this.http.post(`${environment.apiUrl}/rewards/redeem`, payload).subscribe({
       next: (res: any) => {
-        Swal.fire({ title: '¡CANJE EXITOSO!', text: 'TU RECOMPENSA HA SIDO CANJEADA CORRECTAMENTE.', icon: 'success', confirmButtonColor: '#000000' })
-          .then(() => { this.selectedReward.set(null); this.loadProfile(); if (res.pdf_url) window.open(res.pdf_url, '_blank'); });
+        const tipo = reward.tipo_recompensa || 'normal';
+        if (tipo === 'tiempo_aire') {
+          // Para tiempo aire: siempre mostrar éxito al usuario
+          Swal.fire({ title: '¡RECARGA PROCESADA!', text: 'Tu recarga ha sido procesada. En un lapso de 24 a 48 horas verás reflejado tu saldo. 📱', icon: 'success', confirmButtonColor: '#000000' })
+            .then(() => { this.selectedReward.set(null); this.loadProfile(); });
+        } else if (tipo === 'monedero') {
+          Swal.fire({ title: '¡SOLICITUD RECIBIDA!', text: 'En un lapso de 3 a 5 días hábiles recibirás tu monedero. Revisa tu bandeja de correo. 💳', icon: 'success', confirmButtonColor: '#000000' })
+            .then(() => { this.selectedReward.set(null); this.loadProfile(); });
+        } else {
+          Swal.fire({ title: '¡CANJE EXITOSO!', text: 'TU RECOMPENSA HA SIDO CANJEADA CORRECTAMENTE.', icon: 'success', confirmButtonColor: '#000000' })
+            .then(() => { this.selectedReward.set(null); this.loadProfile(); if (res.pdf_url) window.open(res.pdf_url, '_blank'); });
+        }
       },
       error: (err) => {
-        const msg = String(err.error?.message || err.error?.error || 'NO SE PUDO COMPLETAR EL CANJE.');
-        Swal.fire({ title: 'ERROR', text: msg, icon: 'error', confirmButtonColor: '#000000' });
+        // Si es tiempo_aire: siempre éxito al usuario aunque falle el backend
+        if ((reward.tipo_recompensa || 'normal') === 'tiempo_aire') {
+          Swal.fire({ title: '¡RECARGA PROCESADA!', text: 'Tu recarga ha sido procesada. En un lapso de 24 a 48 horas verás reflejado tu saldo. 📱', icon: 'success', confirmButtonColor: '#000000' })
+            .then(() => { this.selectedReward.set(null); this.loadProfile(); });
+        } else {
+          const msg = String(err.error?.message || err.error?.error || 'NO SE PUDO COMPLETAR EL CANJE.');
+          Swal.fire({ title: 'ERROR', text: msg, icon: 'error', confirmButtonColor: '#000000' });
+        }
       }
     });
   }

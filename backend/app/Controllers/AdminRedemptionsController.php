@@ -193,19 +193,28 @@ class AdminRedemptionsController extends ResourceController
             $db      = \Config\Database::connect();
             $builder = $db->table('redemptions');
 
-            // Select required fields for both Dashboard and Entry Codes view
             $builder->select('
-                redemptions.id, 
-                redemptions.created_at, 
+                redemptions.id,
+                redemptions.created_at,
                 redemptions.status,
+                redemptions.nombre_monedero,
+                redemptions.apellido_paterno,
+                redemptions.apellido_materno,
+                redemptions.telefono_recarga,
+                redemptions.id_telefonia,
+                redemptions.status_recarga,
                 users.full_name as user_name,
-                users.email as user_email, 
+                users.email as user_email,
+                users.user as user_login,
                 rewards.title as reward_name,
                 rewards.type as reward_type,
-                rewards.cost as points_cost
+                rewards.tipo_recompensa,
+                rewards.cost as points_cost,
+                tel.Telefonia as nombre_telefonia
             ');
             $builder->join('users', 'users.id = redemptions.user_id', 'left');
             $builder->join('rewards', 'rewards.id = redemptions.reward_id', 'left');
+            $builder->join('tblTelefonia tel', 'tel.idTelefonia = redemptions.id_telefonia', 'left');
 
             // Search Filter
             $search = $this->request->getGet('search');
@@ -286,6 +295,90 @@ class AdminRedemptionsController extends ResourceController
 
         } catch (\Exception $e) {
             log_message('error', 'AdminRedemptionsController error: ' . $e->getMessage());
+            return $this->failServerError($e->getMessage());
+        }
+    }
+
+    /**
+     * pendingRewards() — Lista canjes pendientes de monedero y tiempo aire.
+     */
+    public function pendingRewards()
+    {
+        try {
+            $db = \Config\Database::connect();
+
+            $page    = (int)($this->request->getGet('page') ?? 1);
+            $perPage = (int)($this->request->getGet('per_page') ?? 20);
+            $offset  = ($page - 1) * $perPage;
+            $search  = $this->request->getGet('search');
+
+            $builder = $db->table('redemptions r')
+                ->select('r.id, r.created_at, r.status,
+                          r.nombre_monedero, r.apellido_paterno, r.apellido_materno,
+                          r.telefono_recarga, r.id_telefonia, r.status_recarga,
+                          u.full_name as user_name, u.user as user_login, u.email,
+                          rw.title as reward_name, rw.tipo_recompensa, rw.cost as points_cost,
+                          tel.Telefonia as nombre_telefonia')
+                ->join('users u',          'u.id = r.user_id',              'left')
+                ->join('rewards rw',       'rw.id = r.reward_id',           'left')
+                ->join('tblTelefonia tel', 'tel.idTelefonia = r.id_telefonia', 'left')
+                ->where('r.status', 'pending')
+                ->groupStart()
+                    ->where('rw.tipo_recompensa', 'monedero')
+                    ->orWhere('rw.tipo_recompensa', 'tiempo_aire')
+                ->groupEnd();
+
+            if ($search) {
+                $builder->groupStart()
+                    ->like('u.full_name', $search)
+                    ->orLike('u.user', $search)
+                    ->orLike('r.telefono_recarga', $search)
+                    ->orLike('r.nombre_monedero', $search)
+                ->groupEnd();
+            }
+
+            $builder->orderBy('r.created_at', 'DESC');
+
+            $total = (clone $builder)->countAllResults(false);
+            $data  = $builder->get($perPage, $offset)->getResultArray();
+
+            return $this->respond([
+                'data'  => $data,
+                'pager' => [
+                    'current_page' => $page,
+                    'per_page'     => $perPage,
+                    'total_pages'  => (int)ceil($total / $perPage),
+                    'total_items'  => $total,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'pendingRewards error: ' . $e->getMessage());
+            return $this->failServerError($e->getMessage());
+        }
+    }
+
+    /**
+     * markSent($id) — Admin marca un canje pendiente como completado.
+     */
+    public function markSent($id = null)
+    {
+        try {
+            $db = \Config\Database::connect();
+            $row = $db->table('redemptions')->where('id', $id)->get()->getRowArray();
+
+            if (!$row) {
+                return $this->failNotFound('Canje no encontrado.');
+            }
+
+            $db->table('redemptions')->where('id', $id)->update([
+                'status'         => 'completed',
+                'status_recarga' => 'success',
+                'updated_at'     => date('Y-m-d H:i:s'),
+            ]);
+
+            return $this->respond(['success' => true, 'message' => 'Marcado como enviado correctamente.']);
+        } catch (\Exception $e) {
+            log_message('error', 'markSent error: ' . $e->getMessage());
             return $this->failServerError($e->getMessage());
         }
     }

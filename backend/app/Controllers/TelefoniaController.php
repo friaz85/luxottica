@@ -17,8 +17,9 @@ class TelefoniaController extends ResourceController
     public function index()
     {
         $rows = $this->db->table('tblTelefonia')
-            ->where('active', 1)
-            ->orderBy('nombre', 'ASC')
+            ->select('idTelefonia as id, Telefonia as nombre')
+            ->where('Activo', 1)
+            ->orderBy('Telefonia', 'ASC')
             ->get()
             ->getResultArray();
 
@@ -29,7 +30,8 @@ class TelefoniaController extends ResourceController
     public function adminIndex()
     {
         $rows = $this->db->table('tblTelefonia')
-            ->orderBy('nombre', 'ASC')
+            ->select('idTelefonia as id, Telefonia as nombre, SKU, Activo as active')
+            ->orderBy('Telefonia', 'ASC')
             ->get()
             ->getResultArray();
 
@@ -42,13 +44,13 @@ class TelefoniaController extends ResourceController
         if (empty($nombre)) {
             return $this->response->setStatusCode(400)->setJSON(['message' => 'Nombre requerido']);
         }
-        $this->db->table('tblTelefonia')->insert(['nombre' => $nombre, 'active' => 1]);
+        $this->db->table('tblTelefonia')->insert(['Telefonia' => $nombre, 'Activo' => 1]);
         return $this->response->setJSON(['id' => $this->db->insertID(), 'nombre' => $nombre]);
     }
 
     public function delete($id = null)
     {
-        $this->db->table('tblTelefonia')->where('id', $id)->delete();
+        $this->db->table('tblTelefonia')->where('idTelefonia', $id)->delete();
         return $this->response->setJSON(['success' => true]);
     }
 }

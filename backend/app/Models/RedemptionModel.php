@@ -15,6 +15,12 @@ class RedemptionModel extends Model
         'digital_code',
         'pdf_path',
         'extra_data',
+        'nombre_monedero',
+        'apellido_paterno',
+        'apellido_materno',
+        'telefono_recarga',
+        'id_telefonia',
+        'status_recarga',
     ];
     protected $useTimestamps = true;
     protected $updatedField = '';
