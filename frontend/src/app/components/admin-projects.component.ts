@@ -87,18 +87,14 @@ import Swal from 'sweetalert2';
             <span class="page-info">
                Mostrando <b>{{ (currentPage() - 1) * pageSize + 1 }}</b> a <b>{{ Math.min(currentPage() * pageSize, filteredProjects().length) }}</b> de <b>{{ filteredProjects().length }}</b>
             </span>
-            <div class="pagination-controls">
-              <button class="pag-btn" [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)">« Anterior</button>
-              <div class="page-numbers">
-                <button *ngFor="let p of [].constructor(totalPages()); let i = index" 
-                        class="page-num-btn" 
-                        [class.active]="currentPage() === (i + 1)"
-                        (click)="setPage(i + 1)">
-                  {{ i + 1 }}
-                </button>
+              <div class="pagination-controls">
+                <button class="pag-btn" [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)">«</button>
+                <ng-container *ngFor="let p of pageListProjects()">
+                  <span *ngIf="p === -1" class="pag-ellipsis">…</span>
+                  <button *ngIf="p !== -1" class="page-num-btn" [class.active]="currentPage() === p" (click)="setPage(p)">{{ p }}</button>
+                </ng-container>
+                <button class="pag-btn" [disabled]="currentPage() >= totalPages()" (click)="setPage(currentPage() + 1)">»</button>
               </div>
-              <button class="pag-btn" [disabled]="currentPage() >= totalPages()" (click)="setPage(currentPage() + 1)">Siguiente »</button>
-            </div>
           </div>
         </div>
       </div>
@@ -174,9 +170,14 @@ import Swal from 'sweetalert2';
     .pagination-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; }
     .pagination-controls { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
     .page-numbers { display: flex; gap: 0.3rem; }
-    .pag-btn { background: #fff; border: 1px solid #d1d5db; color: #374151; padding: 0.4rem 0.8rem; border-radius: 0.4rem; font-weight: 600; cursor: pointer; }
-    .page-num-btn { width: 32px; height: 32px; border-radius: 0.4rem; border: 1px solid #d1d5db; background: #fff; cursor: pointer; font-weight: 700; }
-    .page-num-btn.active { background: var(--admin-primary); color: white; border-color: var(--admin-primary); }
+    .pag-btn { background: #fff; border: 1px solid #d1d5db; color: #374151; padding: 0.4rem 0.75rem; border-radius: 0.4rem; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: background 0.15s; min-width: 36px; }
+    .pag-btn:hover:not([disabled]) { background: #f3f4f6; }
+    .pag-btn[disabled] { opacity: 0.4; cursor: default; }
+    .page-num-btn { width: 34px; height: 34px; border-radius: 0.4rem; border: 1px solid #d1d5db; background: #fff; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.15s; }
+    .page-num-btn:hover:not(.active) { background: #f3f4f6; border-color: #9ca3af; }
+    .page-num-btn.active { background: var(--admin-primary); color: white; border-color: var(--admin-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .pag-ellipsis { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; color: #9ca3af; font-weight: 700; letter-spacing: 1px; }
+    .pagination-controls { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 
     @media (max-width: 900px) { .search-box { width: 100% !important; }
       .admin-page { margin-left: 0; padding: 5.5rem 1rem 2rem 1rem; }
@@ -301,6 +302,21 @@ export class AdminProjectsComponent implements OnInit {
   });
 
   totalPages = computed(() => Math.ceil(this.filteredProjects().length / this.pageSize));
+  pageListProjects = computed(() => this.smartPages(this.currentPage(), this.totalPages()));
+
+  smartPages(current: number, total: number): number[] {
+    if (total <= 9) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: number[] = [];
+    const add = (p: number) => { if (!pages.includes(p) && p >= 1 && p <= total) pages.push(p); };
+    const dots = () => { if (pages[pages.length - 1] !== -1) pages.push(-1); };
+    add(1);
+    if (current > 4) dots();
+    for (let p = Math.max(2, current - 2); p <= Math.min(total - 1, current + 2); p++) add(p);
+    if (current < total - 3) dots();
+    add(total);
+    return pages;
+  }
+
 
   setPage(page: number) {
     if (page >= 1 && page <= this.totalPages()) this.currentPage.set(page);
