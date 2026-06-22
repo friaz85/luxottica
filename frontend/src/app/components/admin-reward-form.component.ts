@@ -43,13 +43,26 @@ interface CodeArea {
 
       <div class="table-container">
         <div class="table-header">
-           <div class="search-box">
-             <input 
-               type="text" 
-               [ngModel]="searchTerm()" 
-               (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
-               placeholder="Buscar recompensa..."
-             >
+           <div class="filters-row">
+             <div class="filter-group">
+               <label class="filter-label">Proyecto:</label>
+               <select 
+                 [ngModel]="selectedProject()" 
+                 (ngModelChange)="selectedProject.set($event); currentPage.set(1)"
+                 class="filter-select"
+               >
+                 <option value="">Todos los proyectos</option>
+                 <option *ngFor="let p of projects()" [value]="p.idProyecto">{{ p.Proyecto }}</option>
+               </select>
+             </div>
+             <div class="search-box">
+               <input 
+                 type="text" 
+                 [ngModel]="searchTerm()" 
+                 (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
+                 placeholder="Buscar recompensa..."
+               >
+             </div>
            </div>
         </div>
 
@@ -129,16 +142,12 @@ interface CodeArea {
                Mostrando <b>{{ (currentPage() - 1) * pageSize + 1 }}</b> a <b>{{ Math.min(currentPage() * pageSize, filteredRewards().length) }}</b> de <b>{{ filteredRewards().length }}</b>
             </span>
             <div class="pagination-controls">
-              <button class="pag-btn" [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)">« Anterior</button>
-              <div class="page-numbers">
-                <button *ngFor="let p of [].constructor(totalPages()); let i = index" 
-                        class="page-num-btn" 
-                        [class.active]="currentPage() === (i + 1)"
-                        (click)="setPage(i + 1)">
-                  {{ i + 1 }}
-                </button>
-              </div>
-              <button class="pag-btn" [disabled]="currentPage() >= totalPages()" (click)="setPage(currentPage() + 1)">Siguiente »</button>
+              <button class="pag-btn" [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)">«</button>
+              <ng-container *ngFor="let p of pageListRewards()">
+                <span *ngIf="p === -1" class="pag-ellipsis">…</span>
+                <button *ngIf="p !== -1" class="page-num-btn" [class.active]="currentPage() === p" (click)="setPage(p)">{{ p }}</button>
+              </ng-container>
+              <button class="pag-btn" [disabled]="currentPage() >= totalPages()" (click)="setPage(currentPage() + 1)">»</button>
             </div>
           </div>
         </div>
@@ -366,8 +375,13 @@ interface CodeArea {
     .export-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
     
     .table-container { background: white; border: 1px solid #ddd; border-radius: 1rem; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 2rem; }
-    .table-header { padding: 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: flex-end; }
-    .search-box { width: 40%; } .search-box input { width: 100%; background: #f9f9f9; border: 1px solid #ddd; padding: 0.8rem 1.2rem; border-radius: 0.5rem; outline: none; }
+    .table-header { padding: 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: flex-end; align-items: center; }
+    .filters-row { display: flex; gap: 1.2rem; align-items: center; justify-content: flex-end; width: 100%; flex-wrap: wrap; }
+    .filter-group { display: flex; align-items: center; gap: 0.5rem; }
+    .filter-label { font-size: 0.8rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+    .filter-select { background: #f9f9f9; border: 1px solid #ddd; padding: 0.8rem 1.2rem; border-radius: 0.5rem; outline: none; font-weight: 700; color: #334155; min-width: 220px; transition: border-color 0.2s; }
+    .filter-select:focus { border-color: var(--admin-primary); }
+    .search-box { width: 320px; } .search-box input { width: 100%; background: #f9f9f9; border: 1px solid #ddd; padding: 0.8rem 1.2rem; border-radius: 0.5rem; outline: none; }
     
     .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .admin-table { width: 100%; border-collapse: collapse; min-width: 800px; }
@@ -383,6 +397,7 @@ interface CodeArea {
     .type-badge.monedero { background: #fef3c7; color: #92400e; }
     .type-badge.tiempo-aire { background: #dbeafe; color: #1e40af; }
     .project-tag { background: #e0f2fe; color: #0369a1; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 800; white-space: nowrap; width: fit-content; }
+    .project-tag.global { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
 
     .btn-group { display: flex; gap: 0.5rem; justify-content: flex-end; }
     .action-btn { padding: 0.6rem 1rem; border-radius: 0.6rem; border: none; cursor: pointer; font-weight: 800; font-size: 0.8rem; transition: 0.2s; white-space: nowrap; }
@@ -395,9 +410,13 @@ interface CodeArea {
     .pagination-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; }
     .pagination-controls { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
     .page-numbers { display: flex; gap: 0.3rem; }
-    .pag-btn { background: #fff; border: 1px solid #d1d5db; color: #374151; padding: 0.4rem 0.8rem; border-radius: 0.4rem; font-weight: 600; cursor: pointer; }
-    .page-num-btn { width: 32px; height: 32px; border-radius: 0.4rem; border: 1px solid #d1d5db; background: #fff; cursor: pointer; font-weight: 700; }
-    .page-num-btn.active { background: var(--admin-primary); color: white; border-color: var(--admin-primary); }
+    .pag-btn { background: #fff; border: 1px solid #d1d5db; color: #374151; padding: 0.4rem 0.75rem; border-radius: 0.4rem; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: background 0.15s; min-width: 36px; }
+    .pag-btn:hover:not([disabled]) { background: #f3f4f6; }
+    .pag-btn[disabled] { opacity: 0.4; cursor: default; }
+    .page-num-btn { width: 34px; height: 34px; border-radius: 0.4rem; border: 1px solid #d1d5db; background: #fff; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.15s; }
+    .page-num-btn:hover:not(.active) { background: #f3f4f6; border-color: #9ca3af; }
+    .page-num-btn.active { background: var(--admin-primary); color: white; border-color: var(--admin-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .pag-ellipsis { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; color: #9ca3af; font-weight: 700; letter-spacing: 1px; }
 
     .mobile-only-info { display: none; margin-top: 0.3rem; font-size: 0.8rem; color: #666; font-weight: 700; }
 
@@ -512,6 +531,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   codeAreas = signal<CodeArea[]>([]);
   loadMethod = signal<'manual' | 'csv'>('manual');
   pendingCSVFile: File | null = null;
+  selectedProject = signal<string>('');
   environment = environment;
 
   // Drag state
@@ -612,7 +632,12 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
 
   filteredRewards = computed(() => {
     const term = this.searchTerm().toLowerCase();
-    return this.rewards().filter((r: any) => r.title?.toLowerCase().includes(term));
+    const projId = this.selectedProject();
+    return this.rewards().filter((r: any) => {
+      const matchesSearch = r.title?.toLowerCase().includes(term);
+      const matchesProject = !projId || r.id_proyecto == projId;
+      return matchesSearch && matchesProject;
+    });
   });
 
   paginatedRewards = computed(() => {
@@ -621,6 +646,22 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   });
 
   totalPages = computed(() => Math.ceil(this.filteredRewards().length / this.pageSize));
+
+  pageListRewards = computed(() => this.smartPages(this.currentPage(), this.totalPages()));
+
+  /** Generates smart page list with ellipsis: [1, -1, 5, 6, 7, 8, 9, -1, 75] where -1 = ellipsis */
+  smartPages(current: number, total: number): number[] {
+    if (total <= 9) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: number[] = [];
+    const addPage = (p: number) => { if (!pages.includes(p) && p >= 1 && p <= total) pages.push(p); };
+    const addEllipsis = () => { if (pages[pages.length - 1] !== -1) pages.push(-1); };
+    addPage(1);
+    if (current > 4) addEllipsis();
+    for (let p = Math.max(2, current - 2); p <= Math.min(total - 1, current + 2); p++) addPage(p);
+    if (current < total - 3) addEllipsis();
+    addPage(total);
+    return pages;
+  }
 
   setPage(page: number) {
     if (page >= 1 && page <= this.totalPages()) this.currentPage.set(page);
