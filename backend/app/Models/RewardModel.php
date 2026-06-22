@@ -13,6 +13,7 @@ class RewardModel extends Model
         'title',
         'description',
         'type',
+        'tipo_recompensa',
         'cost',
         'stock',
         'active',

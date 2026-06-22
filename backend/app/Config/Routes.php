@@ -16,6 +16,7 @@ $routes->set404Override();
 
 // Public Catalog
 $routes->get('rewards', 'RewardAdminController::publicCatalog');
+$routes->get('telefonias', 'TelefoniaController::index');
 
 // Auth
 $routes->post('auth/login', 'AuthController::login');
@@ -75,6 +76,11 @@ $routes->group('admin', ['filter' => 'admin_auth'], function ($routes) {
     $routes->post('vigencias', 'AdminVigenciasController::create');
     $routes->post('vigencias/(:num)', 'AdminVigenciasController::update/$1');
     $routes->delete('vigencias/(:num)', 'AdminVigenciasController::delete/$1');
+
+    // Telefonias CRUD
+    $routes->get('telefonias', 'TelefoniaController::adminIndex');
+    $routes->post('telefonias', 'TelefoniaController::create');
+    $routes->delete('telefonias/(:num)', 'TelefoniaController::delete/$1');
 });
 
 $routes->post('analytics/log', 'AnalyticsController::logVisit');

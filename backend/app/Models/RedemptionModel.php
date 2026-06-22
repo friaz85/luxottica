@@ -14,6 +14,7 @@ class RedemptionModel extends Model
         'status',
         'digital_code',
         'pdf_path',
+        'extra_data',
     ];
     protected $useTimestamps = true;
     protected $updatedField = '';

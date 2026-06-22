@@ -90,8 +90,14 @@ interface CodeArea {
                    <span class="stock-badge" [class.low]="reward.stock <= 5">{{ reward.stock }}</span>
                 </td>
                 <td>
-                   <span class="type-badge digital">💾 Digital</span>
-                </td>
+                  <span class="type-badge" [ngClass]="{
+                    'monedero': reward.tipo_recompensa === 'monedero',
+                    'tiempo-aire': reward.tipo_recompensa === 'tiempo_aire'
+                  }">
+                    {{ reward.tipo_recompensa === 'monedero' ? '💳 Monedero' :
+                       reward.tipo_recompensa === 'tiempo_aire' ? '📱 Tiempo Aire' : '🎁 Normal' }}
+                  </span>
+               </td>
                 <td>
                    <div *ngIf="reward.vigencias && reward.vigencias.length > 0; else noVigencia" style="font-size: 0.8rem; line-height: 1.3; display: flex; flex-direction: column; gap: 0.25rem;">
                       <div *ngFor="let v of reward.vigencias" class="status-pill future" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;">
@@ -159,6 +165,15 @@ interface CodeArea {
                 <select [(ngModel)]="editingReward.id_proyecto" class="admin-input">
                   <option [ngValue]="null">Todos los proyectos (Global)</option>
                   <option *ngFor="let p of projects()" [ngValue]="p.idProyecto">{{ p.Proyecto }}</option>
+                </select>
+              </div>
+
+              <div class="admin-form-group">
+                <label>Tipo de Recompensa</label>
+                <select [(ngModel)]="editingReward.tipo_recompensa" class="admin-input">
+                  <option value="normal">🎁 Normal</option>
+                  <option value="monedero">💳 Monedero</option>
+                  <option value="tiempo_aire">📱 Tiempo Aire</option>
                 </select>
               </div>
 
@@ -365,6 +380,8 @@ interface CodeArea {
     .stock-badge { background: #10b981; color: white; padding: 0.35rem 0.75rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; width: fit-content; }
     .stock-badge.low { background: #ef4444; }
     .type-badge { background: #f3f4f6; color: #374151; padding: 0.4rem 0.8rem; border-radius: 2rem; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; width: fit-content; }
+    .type-badge.monedero { background: #fef3c7; color: #92400e; }
+    .type-badge.tiempo-aire { background: #dbeafe; color: #1e40af; }
     .project-tag { background: #e0f2fe; color: #0369a1; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 800; white-space: nowrap; width: fit-content; }
 
     .btn-group { display: flex; gap: 0.5rem; justify-content: flex-end; }
@@ -613,7 +630,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
 
   openCreateModal() {
     this.editingReward = { 
-      title: '', id_proyecto: null, type: 'digital', cost: 0, active: 1, 
+      title: '', id_proyecto: null, type: 'digital', tipo_recompensa: 'normal', cost: 0, active: 1, 
       image_url: '', pdf_template: '', codes_count: 1, exit_codes: '', 
       id_vigencias: [], apply_code_vigencia: false, upload_vigencia_id: null 
     };

@@ -31,8 +31,9 @@ class RedemptionController extends ResourceController
         $redemptionModel = new RedemptionModel();
         $logModel        = new SecurityLogModel();
 
-        $userId   = $this->request->user->id ?? $this->request->user->uid ?? null;
-        $rewardId = $this->request->getVar('reward_id');
+        $userId    = $this->request->user->id ?? $this->request->user->uid ?? null;
+        $rewardId  = $this->request->getVar('reward_id');
+        $extraData = $this->request->getVar('extra_data') ?? null;
 
         log_message('error', "Redemption attempt: User ID {$userId}, Reward ID: " . json_encode($rewardId));
 
@@ -144,6 +145,7 @@ class RedemptionController extends ResourceController
                 'reward_id'    => $rewardId,
                 'status'       => ($reward['type'] === 'digital') ? 'completed' : 'pending',
                 'digital_code' => $finalCodeString,
+                'extra_data'   => $extraData ? json_encode($extraData) : null,
             ];
 
             if (!$redemptionModel->save($redemptionData)) {

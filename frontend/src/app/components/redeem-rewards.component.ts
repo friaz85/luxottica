@@ -310,6 +310,7 @@ export class RedeemRewardsComponent implements OnInit {
   projectStatus  = signal<'active' | 'not_started' | 'expired' | 'no_project'>('active');
   projectStart   = signal<string>('');
   projectEnd     = signal<string>('');
+  telefonias     = signal<any[]>([]);
 
   entryCode = '';
   isSubmittingCode = false;
@@ -322,6 +323,7 @@ export class RedeemRewardsComponent implements OnInit {
 
   ngOnInit() {
     this.loadProfile();
+    this.loadTelefonias();
   }
 
   loadProfile() {
@@ -392,6 +394,13 @@ export class RedeemRewardsComponent implements OnInit {
     });
   }
 
+  loadTelefonias() {
+    this.http.get<any[]>(`${environment.apiUrl}/telefonias`).subscribe({
+      next: (res) => this.telefonias.set(res),
+      error: () => {}
+    });
+  }
+
   formatDate(dateStr: string): string {
     if (!dateStr) return '';
     const [y, m, d] = dateStr.split('-');
@@ -438,16 +447,127 @@ export class RedeemRewardsComponent implements OnInit {
       Swal.fire({ title: 'PUNTOS INSUFICIENTES', text: `TE FALTAN ${reward.cost - this.userPoints()} PUNTOS.`, icon: 'warning', confirmButtonColor: '#000000' });
       return;
     }
-    Swal.fire({
-      title: 'CONFIRMAR CANJE', text: `¿DESEAS CANJEAR "${reward.title}" POR ${reward.cost} PUNTOS?`,
-      icon: 'question', showCancelButton: true, confirmButtonText: 'SÍ, CANJEAR',
-      cancelButtonText: 'CANCELAR', confirmButtonColor: '#000000', cancelButtonColor: '#ff4444'
-    }).then((r) => { if (r.isConfirmed) this.processRedemption(reward); });
+
+    const tipo = reward.tipo_recompensa || 'normal';
+
+    if (tipo === 'monedero') {
+      // Show monedero name form
+      Swal.fire({
+        title: 'VALIDACIÓN DE MONEDERO',
+        html: `
+          <p style="font-size:0.9rem;color:#555;margin-bottom:1.2rem;">Ingresa tu nombre completo como aparece en tu identificación oficial.</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;text-align:left;">
+            <div>
+              <label style="font-size:0.8rem;font-weight:700;color:#333;">Primer nombre</label>
+              <input id="swal-primer" class="swal2-input" placeholder="Primer nombre" style="margin:0.3rem 0 0;width:100%;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="font-size:0.8rem;font-weight:700;color:#333;">Segundo nombre</label>
+              <input id="swal-segundo" class="swal2-input" placeholder="Segundo nombre (opcional)" style="margin:0.3rem 0 0;width:100%;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="font-size:0.8rem;font-weight:700;color:#333;">Apellido Paterno</label>
+              <input id="swal-paterno" class="swal2-input" placeholder="Apellido paterno" style="margin:0.3rem 0 0;width:100%;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="font-size:0.8rem;font-weight:700;color:#333;">Apellido Materno</label>
+              <input id="swal-materno" class="swal2-input" placeholder="Apellido materno" style="margin:0.3rem 0 0;width:100%;box-sizing:border-box;">
+            </div>
+          </div>
+          <p style="font-size:0.75rem;color:#888;margin-top:1rem;text-align:left;">
+            <strong>AVISO IMPORTANTE:</strong> En un lapso de 3 a 5 días hábiles se entregará el monedero al correo registrado. Si no lo ves en tu bandeja de entrada, <strong>revisa tu bandeja de correos no deseados.</strong>
+          </p>`,
+        confirmButtonText: 'Continuar',
+        confirmButtonColor: '#000000',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showCancelButton: true,
+        cancelButtonText: 'Cancelar',
+        cancelButtonColor: '#aaa',
+        preConfirm: () => {
+          const primerNombre = (document.getElementById('swal-primer') as HTMLInputElement)?.value?.trim();
+          const apellidoPaterno = (document.getElementById('swal-paterno') as HTMLInputElement)?.value?.trim();
+          if (!primerNombre || !apellidoPaterno) {
+            Swal.showValidationMessage('Primer nombre y Apellido paterno son requeridos');
+            return false;
+          }
+          return {
+            primer_nombre:   primerNombre,
+            segundo_nombre:  (document.getElementById('swal-segundo') as HTMLInputElement)?.value?.trim() || '',
+            apellido_paterno: apellidoPaterno,
+            apellido_materno: (document.getElementById('swal-materno') as HTMLInputElement)?.value?.trim() || ''
+          };
+        }
+      }).then((result) => {
+        if (result.isConfirmed && result.value) {
+          this.processRedemption(reward, result.value);
+        }
+      });
+
+    } else if (tipo === 'tiempo_aire') {
+      // Show tiempo aire form with telefonia select
+      const telefoniaOptions = this.telefonias().map(t =>
+        `<option value="${t.nombre}">${t.nombre}</option>`
+      ).join('');
+
+      Swal.fire({
+        title: 'TIEMPO AIRE',
+        html: `
+          <p style="font-size:0.9rem;color:#555;margin-bottom:1.2rem;">Ingresa los datos para cargar tu tiempo aire.</p>
+          <div style="text-align:left;display:flex;flex-direction:column;gap:1rem;">
+            <div>
+              <label style="font-size:0.85rem;font-weight:700;color:#333;display:block;margin-bottom:0.3rem;">Número de teléfono</label>
+              <input id="swal-telefono" class="swal2-input" placeholder="10 dígitos" maxlength="10" style="margin:0;width:100%;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="font-size:0.85rem;font-weight:700;color:#333;display:block;margin-bottom:0.3rem;">Telefonía</label>
+              <select id="swal-telefonia" class="swal2-input" style="margin:0;width:100%;box-sizing:border-box;">
+                <option value="">-- Selecciona tu operadora --</option>
+                ${telefoniaOptions}
+              </select>
+            </div>
+          </div>`,
+        confirmButtonText: 'Continuar',
+        confirmButtonColor: '#000000',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showCancelButton: true,
+        cancelButtonText: 'Cancelar',
+        cancelButtonColor: '#aaa',
+        preConfirm: () => {
+          const tel = (document.getElementById('swal-telefono') as HTMLInputElement)?.value?.trim();
+          const op  = (document.getElementById('swal-telefonia') as HTMLSelectElement)?.value;
+          if (!tel || tel.length < 10) {
+            Swal.showValidationMessage('Ingresa un número de teléfono válido de 10 dígitos');
+            return false;
+          }
+          if (!op) {
+            Swal.showValidationMessage('Selecciona una operadora');
+            return false;
+          }
+          return { telefono: tel, telefonia: op };
+        }
+      }).then((result) => {
+        if (result.isConfirmed && result.value) {
+          this.processRedemption(reward, result.value);
+        }
+      });
+
+    } else {
+      // Normal: direct confirm
+      Swal.fire({
+        title: 'CONFIRMAR CANJE', text: `¿DESEAS CANJEAR "${reward.title}" POR ${reward.cost} PUNTOS?`,
+        icon: 'question', showCancelButton: true, confirmButtonText: 'SÍ, CANJEAR',
+        cancelButtonText: 'CANCELAR', confirmButtonColor: '#000000', cancelButtonColor: '#ff4444'
+      }).then((r) => { if (r.isConfirmed) this.processRedemption(reward, null); });
+    }
   }
 
-  processRedemption(reward: any) {
+  processRedemption(reward: any, extraData: any) {
     Swal.fire({ title: 'PROCESANDO...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-    this.http.post(`${environment.apiUrl}/rewards/redeem`, { reward_id: reward.id }).subscribe({
+    const payload: any = { reward_id: reward.id };
+    if (extraData) payload.extra_data = extraData;
+    this.http.post(`${environment.apiUrl}/rewards/redeem`, payload).subscribe({
       next: (res: any) => {
         Swal.fire({ title: '¡CANJE EXITOSO!', text: 'TU RECOMPENSA HA SIDO CANJEADA CORRECTAMENTE.', icon: 'success', confirmButtonColor: '#000000' })
           .then(() => { this.selectedReward.set(null); this.loadProfile(); if (res.pdf_url) window.open(res.pdf_url, '_blank'); });
