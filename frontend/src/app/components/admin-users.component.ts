@@ -47,13 +47,26 @@ import * as XLSX from 'xlsx';
       <div *ngIf="activeTab() === 'users'">
         <div class="table-container">
           <div class="table-header">
-             <div class="search-box">
-               <input 
-                 type="text" 
-                 [ngModel]="searchTerm()" 
-                 (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
-                 placeholder="Buscar por nombre o correo..."
-               >
+             <div class="filters-row">
+               <div class="filter-group">
+                 <label class="filter-label">Proyecto:</label>
+                 <select 
+                   [ngModel]="selectedProject()" 
+                   (ngModelChange)="selectedProject.set($event); currentPage.set(1)"
+                   class="filter-select"
+                 >
+                   <option value="">Todos los proyectos</option>
+                   <option *ngFor="let p of projects()" [value]="p.idProyecto">{{ p.Proyecto }}</option>
+                 </select>
+               </div>
+               <div class="search-box">
+                 <input 
+                   type="text" 
+                   [ngModel]="searchTerm()" 
+                   (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
+                   placeholder="Buscar por nombre o correo..."
+                 >
+               </div>
              </div>
           </div>
 
@@ -486,7 +499,12 @@ import * as XLSX from 'xlsx';
 
     .table-container { background: white; border: 1px solid #ddd; border-radius: 1rem; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 2rem; }
     .table-header { padding: 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: flex-end; align-items: center; }
-    .search-box { width: 40%; } .search-box input { width: 100%; background: #f9f9f9; border: 1px solid #ddd; padding: 0.8rem 1.2rem; border-radius: 0.5rem; outline: none; }
+    .filters-row { display: flex; gap: 1.2rem; align-items: center; justify-content: flex-end; width: 100%; flex-wrap: wrap; }
+    .filter-group { display: flex; align-items: center; gap: 0.5rem; }
+    .filter-label { font-size: 0.8rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+    .filter-select { background: #f9f9f9; border: 1px solid #ddd; padding: 0.8rem 1.2rem; border-radius: 0.5rem; outline: none; font-weight: 700; color: #334155; min-width: 220px; transition: border-color 0.2s; }
+    .filter-select:focus { border-color: var(--admin-primary); }
+    .search-box { width: 320px; } .search-box input { width: 100%; background: #f9f9f9; border: 1px solid #ddd; padding: 0.8rem 1.2rem; border-radius: 0.5rem; outline: none; }
 
     .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .admin-table { width: 100%; border-collapse: collapse; min-width: 900px; }
@@ -615,6 +633,7 @@ export class AdminUsersComponent implements OnInit {
   projects = signal<any[]>([]);
   uploadLogs = signal<any[]>([]);
   activeTab = signal<'users' | 'logs'>('users');
+  selectedProject = signal<string>('');
 
   userData = { 
     full_name: '', 
@@ -960,10 +979,13 @@ export class AdminUsersComponent implements OnInit {
 
   filteredUsers = computed(() => {
     const term = this.searchTerm().toLowerCase();
-    let data = this.users().filter((u: any) =>
-      u.full_name?.toLowerCase().includes(term) ||
-      u.email?.toLowerCase().includes(term)
-    );
+    const projId = this.selectedProject();
+    let data = this.users().filter((u: any) => {
+      const matchesSearch = u.full_name?.toLowerCase().includes(term) ||
+                            u.email?.toLowerCase().includes(term);
+      const matchesProject = !projId || u.id_proyecto == projId;
+      return matchesSearch && matchesProject;
+    });
     const col = this.sortColumn();
     const dir = this.sortDirection();
     if (col) {
