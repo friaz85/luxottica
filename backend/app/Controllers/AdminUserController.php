@@ -484,6 +484,63 @@ class AdminUserController extends ResourceController
     }
 
     /**
+     * migratePasswords() — One-time migration: reads upload logs and populates
+     * password_encrypted for existing users that don't have it yet.
+     * POST /admin/users/migrate-passwords
+     */
+    public function migratePasswords()
+    {
+        $db      = \Config\Database::connect();
+        $updated = 0;
+        $skipped = 0;
+        $errors  = 0;
+
+        // Build a map of email → plain password from all upload logs
+        $logRows = $db->table('user_upload_logs')->select('log_data')->get()->getResultArray();
+        $pwMap   = [];
+        foreach ($logRows as $lr) {
+            $entries = json_decode($lr['log_data'] ?? '[]', true) ?? [];
+            foreach ($entries as $entry) {
+                $email = strtolower(trim($entry['email'] ?? ''));
+                $pw    = trim($entry['password'] ?? '');
+                if ($email && $pw && !isset($pwMap[$email])) {
+                    $pwMap[$email] = $pw;
+                }
+            }
+        }
+
+        // Update each user that still has password_encrypted empty
+        foreach ($pwMap as $email => $plain) {
+            $user = $db->table('users')
+                       ->select('id, password_encrypted')
+                       ->where('email', $email)
+                       ->get()->getRowArray();
+
+            if (!$user) { $skipped++; continue; }
+
+            // Skip if already encrypted
+            if (!empty($user['password_encrypted'])) { $skipped++; continue; }
+
+            try {
+                $encrypted = PasswordCryptoService::encrypt($plain);
+                $db->table('users')->where('id', $user['id'])
+                   ->update(['password_encrypted' => $encrypted]);
+                $updated++;
+            } catch (\Exception $e) {
+                $errors++;
+            }
+        }
+
+        return $this->respond([
+            'success' => true,
+            'updated' => $updated,
+            'skipped' => $skipped,
+            'errors'  => $errors,
+            'message' => "Migración completada: $updated actualizados, $skipped omitidos, $errors errores."
+        ]);
+    }
+
+    /**
      * userReport() — Reporte de usuarios por proyecto con puntos.
      * GET /admin/users/report?id_proyecto=1&export=csv
      */

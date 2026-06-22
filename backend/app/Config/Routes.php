@@ -52,6 +52,7 @@ $routes->group('admin', ['filter' => 'admin_auth'], function ($routes) {
     $routes->get('users', 'AdminUserController::index');
     $routes->post('users/bulk-upload', 'AdminUserController::bulkUpload');
     $routes->get('users/report', 'AdminUserController::userReport');
+    $routes->post('users/migrate-passwords', 'AdminUserController::migratePasswords');
     $routes->get('users/upload-logs', 'AdminUserController::getUploadLogs');
     $routes->get('users/upload-logs/(:num)', 'AdminUserController::getUploadLogDetail/$1');
     $routes->get('users/upload-logs/(:num)/original-file', 'AdminUserController::downloadOriginalFile/$1');
