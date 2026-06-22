@@ -30,7 +30,6 @@ import { LoaderComponent } from './loader.component';
         </div>
         <small>Portal Administrativo</small>
       </div>
-      
       <nav class="nav-links">
         <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">📊</span> Dashboard
@@ -124,25 +123,32 @@ import { LoaderComponent } from './loader.component';
     }
     .admin-sidebar.closed { left: -260px; }
 
-    .logo-section { padding: 2.5rem 1rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); text-align: center; position: relative; }
-    .logo-wrapper { margin-bottom: 0.5rem; display: flex; justify-content: center; }
-    .admin-logo { height: 60px; filter: invert(1) drop-shadow(0 0 10px rgba(255,255,255,0.1)); }
+    .logo-section { padding: 1.5rem 1rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); text-align: center; position: relative; }
+    .logo-wrapper { margin-bottom: 0.3rem; display: flex; justify-content: center; }
+    .admin-logo { height: 48px; filter: invert(1) drop-shadow(0 0 10px rgba(255,255,255,0.1)); }
     .highlight { color: #ffffff; text-decoration: underline; }
     small { color: #888; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; }
     
     .nav-links { 
-      flex: 1; 
+      flex: 1;
       min-height: 0;
-      padding: 1.5rem 1rem; 
+      padding: 0.8rem 0.8rem;
       display: flex; 
       flex-direction: column; 
-      gap: 0.5rem; 
+      gap: 0.2rem;
       overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(197,168,128,0.3) transparent;
     }
+    .nav-links::-webkit-scrollbar { width: 4px; }
+    .nav-links::-webkit-scrollbar-track { background: transparent; }
+    .nav-links::-webkit-scrollbar-thumb { background: rgba(197,168,128,0.3); border-radius: 4px; }
+
     .nav-item { 
-      display: flex; align-items: center; gap: 1rem; padding: 0.8rem 1.2rem; 
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1rem; 
       color: #aaa; text-decoration: none; border-radius: 0.5rem; 
-      font-weight: 500; transition: all 0.2s; flex-shrink: 0;
+      font-weight: 500; font-size: 0.9rem; transition: all 0.2s; flex-shrink: 0;
     }
     .nav-item:hover { background: rgba(197, 168, 128, 0.08); color: var(--admin-accent); transform: translateX(5px); }
     .nav-item.active { background: var(--admin-accent); color: #000000; box-shadow: 0 4px 15px rgba(197, 168, 128, 0.25); font-weight: 700; }

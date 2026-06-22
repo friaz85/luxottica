@@ -176,10 +176,6 @@ Chart.register(...registerables);
             <button class="export-btn" (click)="exportReportCsv()" style="padding:0.5rem 1rem;font-size:0.85rem;">
               <span class="icon">📥</span> Exportar CSV
             </button>
-            <button class="export-btn" (click)="migratePasswords()" [disabled]="migrating()"
-              style="padding:0.5rem 1rem;font-size:0.85rem;background:#f59e0b;" title="Recupera las contraseñas de los logs de carga masiva y las encripta en la BD">
-              <span class="icon">🔑</span> {{ migrating() ? 'Migrando...' : 'Recuperar contraseñas' }}
-            </button>
           </div>
         </div>
         <div class="table-wrapper">
@@ -437,24 +433,6 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
   onReportSearch() {
     clearTimeout(this.reportSearchTimer);
     this.reportSearchTimer = setTimeout(() => {}, 0); // triggers computed signal
-  }
-
-  migrating = signal(false);
-
-  migratePasswords() {
-    if (this.migrating()) return;
-    this.migrating.set(true);
-    this.http.post<any>(`${environment.apiUrl}/admin/users/migrate-passwords`, {}).subscribe({
-      next: (res) => {
-        this.migrating.set(false);
-        this.toast.show(res.message || 'Migración completada', 'success');
-        this.loadUserReport();
-      },
-      error: () => {
-        this.migrating.set(false);
-        this.toast.show('Error al migrar contraseñas', 'error');
-      }
-    });
   }
 
   exportReportCsv() {

@@ -362,12 +362,17 @@ class AdminUserController extends ResourceController
                 continue;
             }
 
-            // Generate secure random password: pattern Palabra@999
-            $adjectives    = ['Rojo','Azul','Verde','Oro','Sol','Luna','Mar','Rio','Viento','Fuego'];
-            $adj           = $adjectives[array_rand($adjectives)];
-            $num           = rand(100, 999);
-            $sym           = ['@', '#', '!', '$'][array_rand(['@', '#', '!', '$'])];
-            $plainPassword = $adj . $sym . $num;
+            // Generate a truly random 10-char password: uppercase + lowercase + digits + symbol
+            $chars  = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            $syms   = '!@#$%&*';
+            $pwd    = '';
+            for ($i = 0; $i < 8; $i++) {
+                $pwd .= $chars[random_int(0, strlen($chars) - 1)];
+            }
+            // Insert one random symbol at a random position
+            $pos           = random_int(1, 7);
+            $plainPassword = substr($pwd, 0, $pos) . $syms[random_int(0, strlen($syms) - 1)] . substr($pwd, $pos);
+
 
             $newUser = [
                 'id_proyecto'      => $idProyecto,
