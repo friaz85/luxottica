@@ -13,6 +13,7 @@ class UserModel extends Model
         'depto_id',
         'email',
         'password_hash',
+        'password_encrypted',
         'full_name',
         'phone',
         'role',

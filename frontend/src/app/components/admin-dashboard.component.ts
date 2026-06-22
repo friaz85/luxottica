@@ -160,6 +160,60 @@ Chart.register(...registerables);
           </div>
         </div>
       </div>
+
+      <!-- ============================== -->
+      <!-- USER REPORT TABLE             -->
+      <!-- ============================== -->
+      <div class="dashboard-panel table-panel full-width" style="margin-top:2rem;">
+        <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+          <h3>👥 Reporte de Usuarios por Proyecto</h3>
+          <div style="display:flex;gap:0.8rem;align-items:center;flex-wrap:wrap;">
+            <select [(ngModel)]="reportProject" (change)="loadUserReport()" style="background:#f9f9f9;border:1px solid #ddd;padding:0.5rem 0.8rem;border-radius:0.5rem;font-size:0.9rem;outline:none;">
+              <option value="">— Todos los proyectos —</option>
+              <option *ngFor="let p of projects()" [value]="p.idProyecto">{{ p.Proyecto }}</option>
+            </select>
+            <input type="text" [(ngModel)]="reportSearch" (input)="onReportSearch()" placeholder="Buscar usuario..." style="background:#f9f9f9;border:1px solid #ddd;padding:0.5rem 0.8rem;border-radius:0.5rem;font-size:0.9rem;outline:none;min-width:200px;">
+            <button class="export-btn" (click)="exportReportCsv()" style="padding:0.5rem 1rem;font-size:0.85rem;">
+              <span class="icon">📥</span> Exportar CSV
+            </button>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table class="simple-table" *ngIf="!reportLoading()">
+            <thead><tr>
+              <th>Usuario</th><th>Nombre</th><th>Contraseña</th><th>Depto</th>
+              <th class="text-right">Asignados</th>
+              <th class="text-right">Utilizados</th>
+              <th class="text-right">Restantes</th>
+              <th>Proyecto</th>
+            </tr></thead>
+            <tbody>
+              <tr *ngFor="let u of filteredReport()">
+                <td style="font-family:monospace;font-size:0.85rem;">{{ u.user_login }}</td>
+                <td class="font-bold">{{ u.full_name }}</td>
+                <td>
+                  <span style="font-family:monospace;font-size:0.82rem;background:#f1f5f9;padding:2px 8px;border-radius:6px;">{{ u.password_display || '—' }}</span>
+                </td>
+                <td style="font-size:0.82rem;color:#64748b;">{{ u.depto_id || '—' }}</td>
+                <td class="text-right font-bold" style="color:#0f172a;">{{ u.points | number }}</td>
+                <td class="text-right" style="color:#dc2626;font-weight:700;">{{ u.points_used | number }}</td>
+                <td class="text-right" style="color:#16a34a;font-weight:700;">{{ u.points_remaining | number }}</td>
+                <td style="font-size:0.82rem;">{{ u.project_name || '—' }}</td>
+              </tr>
+              <tr *ngIf="!reportLoading() && !filteredReport().length">
+                <td colspan="8" class="text-center" style="padding:40px;color:#94a3b8;">Sin usuarios registrados para este filtro</td>
+              </tr>
+            </tbody>
+          </table>
+          <div *ngIf="reportLoading()" style="text-align:center;padding:40px;">
+            <div style="display:inline-block;width:28px;height:28px;border:3px solid #e2e8f0;border-top-color:var(--admin-primary);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+          </div>
+        </div>
+        <div style="padding:1rem 1.5rem;border-top:1px solid #eee;font-size:0.82rem;color:#94a3b8;" *ngIf="!reportLoading()">
+          Total: <strong>{{ filteredReport().length }}</strong> usuarios
+        </div>
+      </div>
+
     </div>
   `,
   styles: [`
@@ -277,10 +331,29 @@ Chart.register(...registerables);
   `]
 })
 export class AdminDashboardComponent implements OnInit, AfterViewInit {
-  stats = signal<any>(null);
-  loading = signal(true);
-  startDate: string = '';
-  endDate: string = '';
+  stats        = signal<any>(null);
+  loading      = signal(true);
+  startDate    = '';
+  endDate      = '';
+
+  // User report
+  reportUsers  = signal<any[]>([]);
+  reportLoading = signal(false);
+  reportProject = '';
+  reportSearch  = '';
+  projects      = signal<any[]>([]);
+  private reportSearchTimer: any;
+
+  filteredReport = computed(() => {
+    const term = this.reportSearch.toLowerCase();
+    if (!term) return this.reportUsers();
+    return this.reportUsers().filter(u =>
+      (u.user_login || '').toLowerCase().includes(term) ||
+      (u.full_name || '').toLowerCase().includes(term) ||
+      (u.depto_id || '').toLowerCase().includes(term)
+    );
+  });
+
   showRedemptions = true;
   showCodes = true;
   showRedemptionsPoints = false;
@@ -322,6 +395,8 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
 
   ngOnInit() {
     this.resetFilters(false);
+    this.loadProjects();
+    this.loadUserReport();
   }
 
   resetFilters(fetchData: boolean = true) {
@@ -336,6 +411,34 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit() {
     if (this.stats()) this.initCharts();
+  }
+
+  loadProjects() {
+    this.http.get<any[]>(`${environment.apiUrl}/admin/projects`).subscribe({
+      next: rows => this.projects.set(rows || []),
+      error: () => {}
+    });
+  }
+
+  loadUserReport() {
+    this.reportLoading.set(true);
+    let url = `${environment.apiUrl}/admin/users/report`;
+    if (this.reportProject) url += `?id_proyecto=${this.reportProject}`;
+    this.http.get<any[]>(url).subscribe({
+      next: data => { this.reportUsers.set(data || []); this.reportLoading.set(false); },
+      error: () => this.reportLoading.set(false)
+    });
+  }
+
+  onReportSearch() {
+    clearTimeout(this.reportSearchTimer);
+    this.reportSearchTimer = setTimeout(() => {}, 0); // triggers computed signal
+  }
+
+  exportReportCsv() {
+    let url = `${environment.apiUrl}/admin/users/report?export=csv`;
+    if (this.reportProject) url += `&id_proyecto=${this.reportProject}`;
+    window.open(url, '_blank');
   }
 
   loadStats() {

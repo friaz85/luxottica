@@ -5,6 +5,7 @@ namespace App\Controllers;
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\UserModel;
 use App\Models\SecurityLogModel;
+use App\Services\PasswordCryptoService;
 
 class AdminUserController extends ResourceController
 {
@@ -369,13 +370,14 @@ class AdminUserController extends ResourceController
             $plainPassword = $adj . $sym . $num;
 
             $newUser = [
-                'id_proyecto'   => $idProyecto,
-                'email'         => $email,
-                'full_name'     => $fullName,
-                'depto_id'      => $deptoId ?: null,
-                'password_hash' => password_hash($plainPassword, PASSWORD_DEFAULT),
-                'points'        => $points,
-                'role'          => 'user'
+                'id_proyecto'      => $idProyecto,
+                'email'            => $email,
+                'full_name'        => $fullName,
+                'depto_id'         => $deptoId ?: null,
+                'password_hash'    => password_hash($plainPassword, PASSWORD_DEFAULT),
+                'password_encrypted' => PasswordCryptoService::encrypt($plainPassword),
+                'points'           => $points,
+                'role'             => 'user'
             ];
 
             if ($userModel->save($newUser)) {
@@ -479,5 +481,70 @@ class AdminUserController extends ResourceController
         }
         $log['log_data'] = json_decode($log['log_data'], true);
         return $this->respond($log);
+    }
+
+    /**
+     * userReport() — Reporte de usuarios por proyecto con puntos.
+     * GET /admin/users/report?id_proyecto=1&export=csv
+     */
+    public function userReport()
+    {
+        $db         = \Config\Database::connect();
+        $idProyecto = $this->request->getGet('id_proyecto');
+        $exportCsv  = $this->request->getGet('export') === 'csv';
+
+        $builder = $db->table('users u')
+            ->select('u.email as user_login, u.full_name, u.password_encrypted,
+                      u.depto_id, u.points, u.points_used, u.points_remaining,
+                      u.is_blocked, u.created_at,
+                      p.Proyecto as project_name')
+            ->join('tblProyecto p', 'p.idProyecto = u.id_proyecto', 'left')
+            ->where('u.role', 'user')
+            ->orderBy('u.full_name', 'ASC');
+
+        if ($idProyecto) {
+            $builder->where('u.id_proyecto', $idProyecto);
+        }
+
+        $data = $builder->get()->getResultArray();
+
+        // Decrypt passwords for report
+        foreach ($data as &$row) {
+            try {
+                $row['password_display'] = !empty($row['password_encrypted'])
+                    ? PasswordCryptoService::decrypt($row['password_encrypted'])
+                    : '—';
+            } catch (\Exception $e) {
+                $row['password_display'] = '—';
+            }
+            unset($row['password_encrypted']); // never expose raw encrypted field
+        }
+        unset($row);
+
+        if ($exportCsv) {
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename="reporte_usuarios_' . date('Y-m-d') . '.csv"');
+            $out = fopen('php://output', 'w');
+            fprintf($out, chr(0xEF) . chr(0xBB) . chr(0xBF)); // UTF-8 BOM
+            fputcsv($out, ['Usuario', 'Nombre', 'Contraseña', 'Depto', 'Puntos Asignados', 'Puntos Utilizados', 'Puntos Restantes', 'Proyecto', 'Bloqueado', 'Alta']);
+            foreach ($data as $row) {
+                fputcsv($out, [
+                    $row['user_login'],
+                    $row['full_name'],
+                    $row['password_display'],
+                    $row['depto_id'] ?? '',
+                    $row['points'],
+                    $row['points_used'],
+                    $row['points_remaining'],
+                    $row['project_name'] ?? '',
+                    $row['is_blocked'] ? 'Sí' : 'No',
+                    date('Y-m-d', strtotime($row['created_at']))
+                ]);
+            }
+            fclose($out);
+            exit;
+        }
+
+        return $this->respond($data);
     }
 }

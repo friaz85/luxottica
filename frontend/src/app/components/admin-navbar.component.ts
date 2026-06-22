@@ -132,11 +132,13 @@ import { LoaderComponent } from './loader.component';
     
     .nav-links { 
       flex: 1; 
-      padding: 2rem 1rem; 
+      padding: 2rem 1rem 1rem; 
       display: flex; 
       flex-direction: column; 
       gap: 0.5rem; 
       overflow-y: auto;
+      /* Prevent last item from hiding behind the logout footer */
+      padding-bottom: 1rem;
     }
     .nav-item { 
       display: flex; align-items: center; gap: 1rem; padding: 0.8rem 1.2rem; 

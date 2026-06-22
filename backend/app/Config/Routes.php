@@ -50,8 +50,8 @@ $routes->group('admin', ['filter' => 'admin_auth'], function ($routes) {
     $routes->get('dashboard', 'DashboardAdminController::getStats');
     $routes->get('entry-codes/report', 'AdminEntryCodeController::usageReport');
     $routes->get('users', 'AdminUserController::index');
-    $routes->get('users/stats', 'AdminUserController::getStats');
     $routes->post('users/bulk-upload', 'AdminUserController::bulkUpload');
+    $routes->get('users/report', 'AdminUserController::userReport');
     $routes->get('users/upload-logs', 'AdminUserController::getUploadLogs');
     $routes->get('users/upload-logs/(:num)', 'AdminUserController::getUploadLogDetail/$1');
     $routes->get('users/upload-logs/(:num)/original-file', 'AdminUserController::downloadOriginalFile/$1');
