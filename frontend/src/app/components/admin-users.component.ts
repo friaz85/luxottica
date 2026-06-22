@@ -1011,9 +1011,13 @@ export class AdminUsersComponent implements OnInit {
   totalPages = computed(() => Math.ceil(this.filteredUsers().length / this.pageSize));
 
   exportToCSV() {
-    const headers = ['Nombre', 'Email', 'Puntos', 'Estado'];
+    const headers = ['Nombre', 'Usuario', 'Proyecto', 'Puntos', 'Estado'];
     const rows = this.filteredUsers().map((u: any) => [
-      `"${u.full_name}"`, u.email, u.points || 0, u.is_blocked == 1 ? 'Bloqueado' : 'Activo'
+      `"${(u.full_name || '').replace(/"/g, '""')}"`,
+      u.email,
+      `"${(u.project_name || 'Sin Proyecto').replace(/"/g, '""')}"`,
+      u.points || 0,
+      u.is_blocked == 1 ? 'Bloqueado' : 'Activo'
     ]);
     const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((e: any) => e.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

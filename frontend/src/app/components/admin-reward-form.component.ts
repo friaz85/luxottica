@@ -970,13 +970,28 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   }
 
   exportToCSV() {
-    const headers = ['ID', 'Nombre', 'Puntos', 'Stock', 'Tipo'];
-    const rows = this.filteredRewards().map(r => [r.id, `"${r.title}"`, r.cost, r.stock, r.type]);
+    const headers = ['Nombre', 'Proyecto', 'Puntos', 'Stock', 'Tipo', 'Vigencia'];
+    const rows = this.filteredRewards().map(r => {
+      const projName = r.id_proyecto ? this.getProjectName(r.id_proyecto) : 'Global';
+      const typeStr = r.tipo_recompensa === 'monedero' ? 'Monedero' :
+                      r.tipo_recompensa === 'tiempo_aire' ? 'Tiempo Aire' : 'Normal';
+      const vigenciaStr = r.vigencias && r.vigencias.length > 0
+        ? r.vigencias.map((v: any) => `${this.formatShortDate(v.fecha_inicio)} al ${this.formatShortDate(v.fecha_fin)}`).join(' | ')
+        : 'Sin límite';
+      return [
+        `"${(r.title || '').replace(/"/g, '""')}"`,
+        `"${projName.replace(/"/g, '""')}"`,
+        r.cost || 0,
+        r.stock || 0,
+        `"${typeStr}"`,
+        `"${vigenciaStr}"`
+      ];
+    });
     const csvContent = "\ufeff" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = url; link.download = "recompensas_tec.csv"; link.click();
+    link.href = url; link.download = "recompensas_luxottica.csv"; link.click();
   }
 
   onCodesCSVSelected(event: any) {
