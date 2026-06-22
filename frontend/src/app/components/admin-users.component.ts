@@ -394,8 +394,8 @@ import * as XLSX from 'xlsx';
           </div>
           
           <div class="admin-form-group">
-            <label>Correo Electrónico</label>
-            <input type="email" [(ngModel)]="userData.email" name="email" class="admin-input" placeholder="juan@ejemplo.com" required>
+            <label>Usuario</label>
+            <input type="text" [(ngModel)]="userData.email" name="email" class="admin-input" placeholder="Ej: 10125" required>
           </div>
           
           <div class="admin-form-group">
@@ -414,20 +414,6 @@ import * as XLSX from 'xlsx';
               <option [ngValue]="null" disabled>Seleccionar Proyecto...</option>
               <option *ngFor="let p of projects()" [ngValue]="p.idProyecto">{{ p.Proyecto }}</option>
             </select>
-          </div>
-
-          <div class="exclusive-codes-section">
-            <div class="section-header">
-              <label>🎟️ Códigos de Entrada Exclusivos (Hasta 10)</label>
-            </div>
-            <div class="codes-grid">
-              <div *ngFor="let code of userData.entry_codes; let i = index" class="code-row">
-                <span class="code-label">Código {{ i + 1 }}</span>
-                <span class="pts-label">Puntos</span>
-                <input type="text" [(ngModel)]="code.codigo" [name]="'code_' + i" placeholder="COD-{{i+1}}" class="admin-input">
-                <input type="number" [(ngModel)]="code.puntos" [name]="'pts_' + i" placeholder="0" class="admin-input">
-              </div>
-            </div>
           </div>
           
           <div class="admin-modal-footer">
