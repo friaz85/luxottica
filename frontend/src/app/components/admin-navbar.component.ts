@@ -132,24 +132,23 @@ import { LoaderComponent } from './loader.component';
     
     .nav-links { 
       flex: 1; 
-      padding: 2rem 1rem 1rem; 
+      min-height: 0;
+      padding: 1.5rem 1rem; 
       display: flex; 
       flex-direction: column; 
       gap: 0.5rem; 
       overflow-y: auto;
-      /* Prevent last item from hiding behind the logout footer */
-      padding-bottom: 1rem;
     }
     .nav-item { 
       display: flex; align-items: center; gap: 1rem; padding: 0.8rem 1.2rem; 
       color: #aaa; text-decoration: none; border-radius: 0.5rem; 
-      font-weight: 500; transition: all 0.2s; 
+      font-weight: 500; transition: all 0.2s; flex-shrink: 0;
     }
     .nav-item:hover { background: rgba(197, 168, 128, 0.08); color: var(--admin-accent); transform: translateX(5px); }
     .nav-item.active { background: var(--admin-accent); color: #000000; box-shadow: 0 4px 15px rgba(197, 168, 128, 0.25); font-weight: 700; }
     .icon { font-size: 1.2rem; }
 
-    .user-footer { padding: 1.5rem; border-top: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 0.5rem; }
+    .user-footer { padding: 1.5rem; border-top: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 0.5rem; flex-shrink: 0; }
     .action-btn { 
       background: transparent; border: 1px solid rgba(255,255,255,0.1); 
       color: #888; padding: 0.6rem; border-radius: 0.4rem; cursor: pointer; 

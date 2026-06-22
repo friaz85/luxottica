@@ -316,7 +316,7 @@ class AdminRedemptionsController extends ResourceController
                 ->select('r.id, r.created_at, r.status,
                           r.nombre_monedero, r.apellido_paterno, r.apellido_materno,
                           r.telefono_recarga, r.id_telefonia, r.status_recarga,
-                          u.full_name as user_name, u.user as user_login, u.email,
+                          u.full_name as user_name, u.email as user_login,
                           rw.title as reward_name, rw.tipo_recompensa, rw.cost as points_cost,
                           tel.Telefonia as nombre_telefonia')
                 ->join('users u',          'u.id = r.user_id',              'left')
@@ -331,7 +331,7 @@ class AdminRedemptionsController extends ResourceController
             if ($search) {
                 $builder->groupStart()
                     ->like('u.full_name', $search)
-                    ->orLike('u.user', $search)
+                    ->orLike('u.email', $search)
                     ->orLike('r.telefono_recarga', $search)
                     ->orLike('r.nombre_monedero', $search)
                 ->groupEnd();
