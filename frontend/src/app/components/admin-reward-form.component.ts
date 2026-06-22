@@ -63,9 +63,30 @@ interface CodeArea {
                  placeholder="Buscar recompensa..."
                >
              </div>
+             <div class="view-toggle">
+               <button 
+                 type="button" 
+                 class="view-toggle-btn" 
+                 [class.active]="viewMode() === 'grid'" 
+                 (click)="viewMode.set('grid')"
+                 title="Vista Cuadrícula"
+               >
+                 🎴 Grid
+               </button>
+               <button 
+                 type="button" 
+                 class="view-toggle-btn" 
+                 [class.active]="viewMode() === 'table'" 
+                 (click)="viewMode.set('table')"
+                 title="Vista Tabla"
+               >
+                 📋 Tabla
+               </button>
+             </div>
            </div>
         </div>
-        <div class="grid-wrapper">
+        <!-- VISTA GRID -->
+        <div class="grid-wrapper" *ngIf="viewMode() === 'grid'">
           <div class="rewards-grid" *ngIf="paginatedRewards().length > 0">
             <div class="reward-card" *ngFor="let reward of paginatedRewards()">
               <div class="reward-card-img">
@@ -108,6 +129,77 @@ interface CodeArea {
           <div *ngIf="filteredRewards().length === 0" class="text-center py-8 text-gray">
             No se encontraron recompensas
           </div>
+        </div>
+
+        <!-- VISTA TABLA -->
+        <div class="table-wrapper" *ngIf="viewMode() === 'table'">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Imagen</th>
+                <th>Nombre</th>
+                <th>Proyecto</th>
+                <th>Puntos</th>
+                <th>Stock</th>
+                <th>Tipo</th>
+                <th>Vigencia</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let reward of paginatedRewards()">
+                <td>
+                  <img [src]="reward.image_url ? environment.uploadsUrl + '/rewards/' + reward.image_url : 'assets/img/Logo_Tec.png'" 
+                       (error)="handleImageError($event, reward.image_url)"
+                       class="reward-thumb" alt="Premio">
+                </td>
+                <td>
+                  <div class="reward-info-cell">
+                     <span class="font-bold reward-title-text">{{ reward.title }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="project-tag-container">
+                    <span class="project-tag" *ngIf="reward.id_proyecto">{{ getProjectName(reward.id_proyecto) }}</span>
+                    <span class="project-tag global" *ngIf="!reward.id_proyecto">Global</span>
+                  </div>
+                </td>
+                <td class="font-bold text-blue">{{ (reward.cost || 0) | number }} pts</td>
+                <td>
+                   <span class="stock-badge" [class.low]="reward.stock <= 5">{{ reward.stock }}</span>
+                </td>
+                <td>
+                  <span class="type-badge" [ngClass]="{
+                    'monedero': reward.tipo_recompensa === 'monedero',
+                    'tiempo-aire': reward.tipo_recompensa === 'tiempo_aire'
+                  }">
+                    {{ reward.tipo_recompensa === 'monedero' ? '💳 Monedero' :
+                       reward.tipo_recompensa === 'tiempo_aire' ? '📱 Tiempo Aire' : '🎁 Normal' }}
+                  </span>
+               </td>
+                <td>
+                   <div *ngIf="reward.vigencias && reward.vigencias.length > 0; else noVigencia" style="font-size: 0.8rem; line-height: 1.3; display: flex; flex-direction: column; gap: 0.25rem;">
+                      <div *ngFor="let v of reward.vigencias" class="status-pill future" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;">
+                         {{ formatShortDate(v.fecha_inicio) }} al {{ formatShortDate(v.fecha_fin) }}
+                      </div>
+                   </div>
+                   <ng-template #noVigencia>
+                      <span class="project-tag global">Sin límite</span>
+                   </ng-template>
+                </td>
+                <td class="text-right">
+                  <div class="btn-group">
+                    <button class="action-btn duplicate" (click)="duplicateReward(reward)" title="Duplicar">Copiar</button>
+                    <button class="action-btn edit" (click)="editReward(reward)">Editar</button>
+                    <button class="action-btn delete" (click)="deleteReward(reward.id)">Eliminar</button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="filteredRewards().length === 0">
+                 <td colspan="8" class="text-center py-8 text-gray">No se encontraron recompensas</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         <div class="pagination-footer" *ngIf="filteredRewards().length > 0">
@@ -358,6 +450,16 @@ interface CodeArea {
     .search-box { width: 320px; } .search-box input { width: 100%; background: #f9f9f9; border: 1px solid #ddd; padding: 0.8rem 1.2rem; border-radius: 0.5rem; outline: none; }
     
     .grid-wrapper { padding: 1.5rem; }
+    .view-toggle { display: flex; background: #f1f5f9; padding: 0.25rem; border-radius: 0.6rem; border: 1px solid #e2e8f0; }
+    .view-toggle-btn { border: none; padding: 0.5rem 1rem; border-radius: 0.4rem; background: transparent; color: #64748b; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 0.3rem; }
+    .view-toggle-btn.active { background: white; color: var(--admin-primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+    .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .admin-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+    .admin-table th { background: #f8f9fa; color: var(--admin-primary); padding: 1.2rem; text-align: left; font-size: 0.85rem; text-transform: uppercase; font-weight: 900; border-bottom: 2px solid #eee; }
+    .admin-table td { padding: 1.2rem; border-bottom: 1px solid #eee; font-size: 0.95rem; vertical-align: middle; }
+    .admin-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
+    .admin-table tbody tr:hover { background-color: #f1f5f9; }
     .rewards-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -614,6 +716,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   loadMethod = signal<'manual' | 'csv'>('manual');
   pendingCSVFile: File | null = null;
   selectedProject = signal<string>('');
+  viewMode = signal<'grid' | 'table'>('grid');
   environment = environment;
 
   // Drag state
