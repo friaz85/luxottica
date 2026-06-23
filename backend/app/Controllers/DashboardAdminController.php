@@ -146,6 +146,33 @@ class DashboardAdminController extends ResourceController
             $histPoints = $histPointsRow->total ?? 0;
             $dbName = $db->getDatabase();
 
+            // 7. Validity Alerts (Cine Codes)
+            $limitDate = date('Y-m-d H:i:s', strtotime('+56 days'));
+            $warningDate = date('Y-m-d H:i:s', strtotime('+71 days')); // 56 + 15 days
+            
+            $alertsQuery = "
+                SELECT 
+                    r.id as reward_id, 
+                    r.title as reward_title, 
+                    v.id as vigencia_id, 
+                    v.fecha_inicio, 
+                    v.fecha_fin,
+                    COUNT(rc.id) as unused_codes_count,
+                    CASE 
+                        WHEN v.fecha_fin < '$limitDate' THEN 'danger'
+                        ELSE 'warning'
+                    END as status
+                FROM reward_codes rc
+                JOIN vigencias v ON v.id = rc.id_vigencia
+                JOIN rewards r ON r.id = rc.reward_id
+                WHERE rc.is_used = 0 
+                  AND v.fecha_fin < '$warningDate'
+                GROUP BY r.id, r.title, v.id, v.fecha_inicio, v.fecha_fin
+                ORDER BY v.fecha_fin ASC
+            ";
+            
+            $validityAlerts = $db->query($alertsQuery)->getResultArray();
+
             return $this->respond([
                 'cards' => [
                     'users' => $totalUsers,
@@ -162,7 +189,8 @@ class DashboardAdminController extends ResourceController
                 ],
                 'chart' => array_values($dates),
                 'top_rewards' => $topRewards,
-                'recent' => $recentActivity
+                'recent' => $recentActivity,
+                'validity_alerts' => $validityAlerts
             ]);
 
         } catch (\Exception $e) {
@@ -172,6 +200,7 @@ class DashboardAdminController extends ResourceController
                 'chart' => [],
                 'top_rewards' => [],
                 'recent' => [],
+                'validity_alerts' => [],
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

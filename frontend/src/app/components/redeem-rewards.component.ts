@@ -314,6 +314,7 @@ export class RedeemRewardsComponent implements OnInit {
 
   entryCode = '';
   isSubmittingCode = false;
+  verifiedPin = '';
 
   private http   = inject(HttpClient);
   private toast  = inject(ToastService);
@@ -339,6 +340,9 @@ export class RedeemRewardsComponent implements OnInit {
 
         if (status === 'active') {
           this.loadRewards();
+          if (!user.has_pin) {
+            this.promptCreatePin();
+          }
         } else {
           this.loading.set(false);
         }
@@ -356,6 +360,58 @@ export class RedeemRewardsComponent implements OnInit {
         }).then(() => {
           this.auth.logout();
           this.router.navigate(['/auth/login']);
+        });
+      }
+    });
+  }
+
+  promptCreatePin() {
+    Swal.fire({
+      title: 'Generar PIN de Seguridad',
+      text: 'Para realizar canjes, es necesario que generes un PIN de seguridad de 4 dígitos. Por favor guarda este PIN, ya que será requerido para realizar todos tus canjes de recompensas.',
+      input: 'password',
+      inputPlaceholder: 'Ingresa tu nuevo PIN de 4 dígitos',
+      inputAttributes: {
+        maxlength: '4',
+        autocapitalize: 'off',
+        autocorrect: 'off',
+        inputmode: 'numeric',
+        pattern: '[0-9]*'
+      },
+      confirmButtonText: 'Guardar PIN',
+      confirmButtonColor: '#000000',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      inputValidator: (value) => {
+        if (!value || !/^\d{4}$/.test(value)) {
+          return 'El PIN debe ser de exactamente 4 números';
+        }
+        return null;
+      }
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        const pin = result.value;
+        this.http.post(`${environment.apiUrl}/profile/set-pin`, { pin }).subscribe({
+          next: () => {
+            Swal.fire({
+              title: 'PIN Guardado',
+              text: 'Tu PIN de seguridad se ha guardado correctamente. Utilízalo para confirmar tus canjes.',
+              icon: 'success',
+              confirmButtonColor: '#000000'
+            }).then(() => {
+              this.loadProfile();
+            });
+          },
+          error: (err: any) => {
+            Swal.fire({
+              title: 'Error',
+              text: err.error?.message || 'No se pudo guardar el PIN. Inténtalo de nuevo.',
+              icon: 'error',
+              confirmButtonColor: '#000000'
+            }).then(() => {
+              this.promptCreatePin();
+            });
+          }
         });
       }
     });
@@ -448,6 +504,50 @@ export class RedeemRewardsComponent implements OnInit {
       return;
     }
 
+    Swal.fire({
+      title: 'Ingresa tu PIN de Seguridad',
+      text: 'Por favor ingresa tu PIN de 4 dígitos para confirmar el canje.',
+      input: 'password',
+      inputPlaceholder: 'PIN de 4 dígitos',
+      inputAttributes: {
+        maxlength: '4',
+        autocapitalize: 'off',
+        autocorrect: 'off',
+        inputmode: 'numeric',
+        pattern: '[0-9]*'
+      },
+      confirmButtonText: 'Verificar',
+      confirmButtonColor: '#000000',
+      showCancelButton: true,
+      cancelButtonText: 'Cancelar',
+      inputValidator: (value) => {
+        if (!value || !/^\d{4}$/.test(value)) {
+          return 'El PIN debe ser de exactamente 4 números';
+        }
+        return null;
+      }
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        const pin = result.value;
+        this.http.post(`${environment.apiUrl}/profile/verify-pin`, { pin }).subscribe({
+          next: () => {
+            this.verifiedPin = pin;
+            this.continueRedemption(reward);
+          },
+          error: (err: any) => {
+            Swal.fire({
+              title: 'PIN Incorrecto',
+              text: err.error?.message || 'El PIN ingresado es incorrecto.',
+              icon: 'error',
+              confirmButtonColor: '#000000'
+            });
+          }
+        });
+      }
+    });
+  }
+
+  continueRedemption(reward: any) {
     const tipo = reward.tipo_recompensa || 'normal';
 
     if (tipo === 'monedero') {
@@ -493,7 +593,6 @@ export class RedeemRewardsComponent implements OnInit {
             Swal.showValidationMessage('Primer nombre y Apellido paterno son requeridos');
             return false;
           }
-          // nombre_monedero = primer + segundo (concatenado, como en Ferreteros)
           const nombreMonedero = segundoNombre ? `${primerNombre} ${segundoNombre}` : primerNombre;
           return {
             nombre_monedero:  nombreMonedero,
@@ -508,7 +607,6 @@ export class RedeemRewardsComponent implements OnInit {
       });
 
     } else if (tipo === 'tiempo_aire') {
-      // Show tiempo aire form with telefonia select (using id numeric)
       const telefoniaOptions = this.telefonias().map(t =>
         `<option value="${t.id}">${t.nombre}</option>`
       ).join('');
@@ -557,7 +655,6 @@ export class RedeemRewardsComponent implements OnInit {
       });
 
     } else {
-      // Normal: direct confirm
       Swal.fire({
         title: 'CONFIRMAR CANJE', text: `¿DESEAS CANJEAR "${reward.title}" POR ${reward.cost} PUNTOS?`,
         icon: 'question', showCancelButton: true, confirmButtonText: 'SÍ, CANJEAR',
@@ -568,14 +665,12 @@ export class RedeemRewardsComponent implements OnInit {
 
   processRedemption(reward: any, extraData: any) {
     Swal.fire({ title: 'PROCESANDO...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-    // Build payload with individual fields (no extra_data JSON wrapper)
-    const payload: any = { reward_id: reward.id };
+    const payload: any = { reward_id: reward.id, pin: this.verifiedPin };
     if (extraData) Object.assign(payload, extraData);
     this.http.post(`${environment.apiUrl}/rewards/redeem`, payload).subscribe({
       next: (res: any) => {
         const tipo = reward.tipo_recompensa || 'normal';
         if (tipo === 'tiempo_aire') {
-          // Para tiempo aire: siempre mostrar éxito al usuario
           Swal.fire({ title: '¡RECARGA PROCESADA!', text: 'Tu recarga ha sido procesada. En un lapso de 24 a 48 horas verás reflejado tu saldo. 📱', icon: 'success', confirmButtonColor: '#000000' })
             .then(() => { this.selectedReward.set(null); this.loadProfile(); });
         } else if (tipo === 'monedero') {
@@ -587,7 +682,6 @@ export class RedeemRewardsComponent implements OnInit {
         }
       },
       error: (err) => {
-        // Si es tiempo_aire: siempre éxito al usuario aunque falle el backend
         if ((reward.tipo_recompensa || 'normal') === 'tiempo_aire') {
           Swal.fire({ title: '¡RECARGA PROCESADA!', text: 'Tu recarga ha sido procesada. En un lapso de 24 a 48 horas verás reflejado tu saldo. 📱', icon: 'success', confirmButtonColor: '#000000' })
             .then(() => { this.selectedReward.set(null); this.loadProfile(); });

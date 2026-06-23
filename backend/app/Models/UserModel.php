@@ -23,6 +23,7 @@ class UserModel extends Model
         'is_blocked',
         'blocked_reason',
         'blocked_at',
+        'pin',
         'created_at',
         'updated_at'
     ];

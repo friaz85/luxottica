@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { tap, catchError } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
+import Swal from 'sweetalert2';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -22,10 +23,14 @@ export class AuthService {
 
   constructor() {
     this.checkSession();
+    this.initInactivityTimer();
   }
 
   private checkSession() {
-    const data = localStorage.getItem('emb_session');
+    if (typeof window === 'undefined') return;
+    const isAdminPath = window.location.pathname.startsWith('/admin');
+    const sessionKey = isAdminPath ? 'admin_session' : 'client_session';
+    const data = localStorage.getItem(sessionKey);
     if (data) {
       try {
         const session = JSON.parse(data);
@@ -46,13 +51,13 @@ export class AuthService {
 
   login(credentials: { email: string, password: string }): Observable<any> {
     return this.http.post(`${this.apiUrl}/auth/login`, credentials).pipe(
-      tap((res: any) => this.saveSession(res))
+      tap((res: any) => this.saveSession(res, false))
     );
   }
 
   adminLogin(credentials: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/admin/auth/login`, credentials).pipe(
-      tap((res: any) => this.saveSession(res))
+      tap((res: any) => this.saveSession(res, true))
     );
   }
 
@@ -60,22 +65,29 @@ export class AuthService {
     return this.http.get(`${this.apiUrl}/profile`);
   }
 
-  private saveSession(res: any) {
+  private saveSession(res: any, isAdmin: boolean) {
     if (!res.token || !res.user) return;
     const sessionData = {
       user: res.user,
       token: res.token,
       timestamp: Date.now()
     };
-    localStorage.setItem('emb_session', JSON.stringify(sessionData));
-    localStorage.setItem('emb_token', res.token);
+    const sessionKey = isAdmin ? 'admin_session' : 'client_session';
+    const tokenKey = isAdmin ? 'admin_token' : 'client_token';
+    localStorage.setItem(sessionKey, JSON.stringify(sessionData));
+    localStorage.setItem(tokenKey, res.token);
     this._user.set(res.user);
   }
 
   logout() {
-    const isAdminPath = window.location.pathname.startsWith('/admin');
-    localStorage.removeItem('emb_session');
-    localStorage.removeItem('emb_token');
+    const isAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+    const sessionKey = isAdminPath ? 'admin_session' : 'client_session';
+    const tokenKey = isAdminPath ? 'admin_token' : 'client_token';
+    localStorage.removeItem(sessionKey);
+    localStorage.removeItem(tokenKey);
+    if (!isAdminPath) {
+      localStorage.removeItem('last_activity');
+    }
     this._user.set(null);
     this.router.navigate([isAdminPath ? '/admin/login' : '/auth/login']);
   }
@@ -85,12 +97,55 @@ export class AuthService {
   }
 
   getToken() {
-    return localStorage.getItem('emb_token');
+    const isAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+    return localStorage.getItem(isAdminPath ? 'admin_token' : 'client_token');
+  }
+
+  private initInactivityTimer() {
+    if (typeof window === 'undefined') return;
+
+    const events = ['mousemove', 'click', 'keypress', 'scroll', 'touchstart'];
+    let lastUpdate = 0;
+
+    const updateActivity = () => {
+      const now = Date.now();
+      // Throttle localStorage updates to every 5 seconds to reduce writes
+      if (now - lastUpdate > 5000) {
+        localStorage.setItem('last_activity', now.toString());
+        lastUpdate = now;
+      }
+    };
+
+    events.forEach(event => {
+      window.addEventListener(event, updateActivity, { passive: true });
+    });
+
+    setInterval(() => {
+      if (this.isLoggedIn() && !this.isAdmin()) {
+        const lastActivityStr = localStorage.getItem('last_activity');
+        const now = Date.now();
+        if (lastActivityStr) {
+          const lastActivity = parseInt(lastActivityStr, 10);
+          if (now - lastActivity > 5 * 60 * 1000) {
+            this.logout();
+            Swal.fire({
+              title: 'Sesión expirada',
+              text: 'Tu sesión se ha cerrado automáticamente después de 5 minutos de inactividad.',
+              icon: 'warning',
+              confirmButtonColor: '#000000'
+            });
+          }
+        } else {
+          localStorage.setItem('last_activity', now.toString());
+        }
+      }
+    }, 5000);
   }
 }
 
 export const jwtInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn) => {
-  const token = localStorage.getItem('emb_token');
+  const isAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+  const token = localStorage.getItem(isAdminPath ? 'admin_token' : 'client_token');
   if (token) {
     req = req.clone({
       setHeaders: { Authorization: `Bearer ${token}` }

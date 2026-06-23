@@ -228,7 +228,7 @@ interface CodeArea {
         </div>
         
         <div class="admin-modal-body no-padding">
-          <div class="editor-container" *ngIf="editingReward">
+          <div class="editor-container" *ngIf="editingReward" [class.single-column]="editingReward.tipo_recompensa === 'monedero' || editingReward.tipo_recompensa === 'tiempo_aire'">
             <div class="editor-left">
               <div class="admin-form-group">
                 <label>Título de la Recompensa</label>
@@ -250,6 +250,11 @@ interface CodeArea {
                   <option value="monedero">💳 Monedero</option>
                   <option value="tiempo_aire">📱 Tiempo Aire</option>
                 </select>
+              </div>
+
+              <div class="admin-form-group" *ngIf="editingReward.tipo_recompensa === 'tiempo_aire'">
+                <label>Monto de la Recarga ($)</label>
+                <input type="number" [(ngModel)]="editingReward.monto_recarga" class="admin-input" placeholder="Ej: 100">
               </div>
 
 
@@ -286,7 +291,7 @@ interface CodeArea {
                 </select>
               </div>
 
-              <div class="digital-section">
+              <div class="digital-section" *ngIf="editingReward.tipo_recompensa !== 'monedero' && editingReward.tipo_recompensa !== 'tiempo_aire'">
                 <div class="section-header"><h4>⚙️ Configuración Digital</h4></div>
                 <div class="admin-form-group">
                   <label>Plantilla PDF</label>
@@ -397,7 +402,7 @@ interface CodeArea {
               </div>
             </div>
 
-            <div class="editor-right">
+            <div class="editor-right" *ngIf="editingReward.tipo_recompensa !== 'monedero' && editingReward.tipo_recompensa !== 'tiempo_aire'">
               <div class="preview-container">
                 <h4>Vista Previa PDF</h4>
                 <div class="pdf-preview-wrapper" #pdfPreviewWrapper>
@@ -633,6 +638,7 @@ interface CodeArea {
 
     .no-padding { padding: 0 !important; }
     .editor-container { display: grid; grid-template-columns: 450px minmax(0, 1fr); gap: 2.5rem; padding: 2.5rem; overflow-y: auto; flex: 1; background: #fff; }
+    .editor-container.single-column { grid-template-columns: 1fr; max-width: 650px; margin: 0 auto; }
     @media (max-width: 1200px) {
       .editor-container { grid-template-columns: 1fr; padding: 1.5rem; }
       .editor-right { order: -1; } /* PDF Preview first on mobile editor */
@@ -858,7 +864,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     this.editingReward = { 
       title: '', id_proyecto: null, type: 'digital', tipo_recompensa: 'normal', cost: 0, active: 1, 
       image_url: '', pdf_template: '', codes_count: 1, exit_codes: '', 
-      id_vigencias: [], apply_code_vigencia: false, upload_vigencia_id: null 
+      id_vigencias: [], apply_code_vigencia: false, upload_vigencia_id: null, monto_recarga: 0 
     };
     this.selectedImage = null;
     this.selectedPDF = null;

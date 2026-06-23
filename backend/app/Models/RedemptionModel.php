@@ -21,6 +21,8 @@ class RedemptionModel extends Model
         'telefono_recarga',
         'id_telefonia',
         'status_recarga',
+        'fecha_validez_inicio',
+        'fecha_validez_fin',
     ];
     protected $useTimestamps = true;
     protected $updatedField = '';

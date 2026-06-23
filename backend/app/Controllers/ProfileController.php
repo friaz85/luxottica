@@ -19,7 +19,8 @@ class ProfileController extends ResourceController
             if (!$user)
                 return $this->respond(['status' => 'error', 'message' => 'Usuario no encontrado'], 404);
 
-            unset($user["password_hash"], $user["otp"], $user["otp_expiry"]);
+            $user['has_pin'] = !empty($user['pin']);
+            unset($user["password_hash"], $user["otp"], $user["otp_expiry"], $user["pin"]);
 
             // Attach project validity info
             if (!empty($user['id_proyecto'])) {
@@ -102,6 +103,65 @@ class ProfileController extends ResourceController
             } else {
                 $errors = $userModel->errors();
                 return $this->respond(['status' => 'error', 'message' => $errors ? implode(', ', $errors) : "Error al actualizar base de datos"], 400);
+            }
+        } catch (\Exception $e) {
+            return $this->respond(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function setPin()
+    {
+        try {
+            $userId = $this->request->user->id ?? $this->request->user->uid ?? null;
+            if (!$userId) {
+                return $this->respond(['status' => 'error', 'message' => 'No autorizado'], 401);
+            }
+
+            $pin = $this->request->getVar('pin');
+            if (empty($pin) || !preg_match('/^\d{4}$/', $pin)) {
+                return $this->respond(['status' => 'error', 'message' => 'El PIN debe ser de 4 dígitos'], 400);
+            }
+
+            $userModel = new UserModel();
+            $pinHash = password_hash($pin, PASSWORD_BCRYPT);
+
+            if ($userModel->update($userId, ['pin' => $pinHash])) {
+                return $this->respond(['status' => 'success', 'message' => 'PIN guardado correctamente']);
+            } else {
+                return $this->respond(['status' => 'error', 'message' => 'Error al guardar el PIN'], 500);
+            }
+        } catch (\Exception $e) {
+            return $this->respond(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function verifyPin()
+    {
+        try {
+            $userId = $this->request->user->id ?? $this->request->user->uid ?? null;
+            if (!$userId) {
+                return $this->respond(['status' => 'error', 'message' => 'No autorizado'], 401);
+            }
+
+            $pin = $this->request->getVar('pin');
+            if (empty($pin)) {
+                return $this->respond(['status' => 'error', 'message' => 'PIN requerido'], 400);
+            }
+
+            $userModel = new UserModel();
+            $user = $userModel->find($userId);
+            if (!$user) {
+                return $this->respond(['status' => 'error', 'message' => 'Usuario no encontrado'], 404);
+            }
+
+            if (empty($user['pin'])) {
+                return $this->respond(['status' => 'error', 'message' => 'No has configurado un PIN de seguridad'], 400);
+            }
+
+            if (password_verify($pin, $user['pin'])) {
+                return $this->respond(['status' => 'success', 'message' => 'PIN verificado']);
+            } else {
+                return $this->respond(['status' => 'error', 'message' => 'El PIN es incorrecto'], 400);
             }
         } catch (\Exception $e) {
             return $this->respond(['status' => 'error', 'message' => $e->getMessage()], 500);

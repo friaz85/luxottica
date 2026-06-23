@@ -44,10 +44,16 @@ class RedemptionController extends ResourceController
 
         $user = $userModel->find($userId);
 
-        $user = $userModel->find($userId);
-
         if ($user && isset($user['is_blocked']) && (int) $user['is_blocked'] === 1) {
             return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
+        }
+
+        $pin = $this->request->getVar('pin');
+        if (empty($pin)) {
+            return $this->respond(['message' => 'El PIN de seguridad es requerido.'], 400);
+        }
+        if (empty($user['pin']) || !password_verify($pin, $user['pin'])) {
+            return $this->respond(['message' => 'El PIN de seguridad es incorrecto.'], 400);
         }
 
         // Check Project Expiration
@@ -97,9 +103,9 @@ class RedemptionController extends ResourceController
             $db->transStart();
 
             if ($hasInventory) {
-                // Find a code where the associated validity (if any) is currently active, or has no validity limit.
-                // We connect to the DB and check which codes are unused.
+                // Find a code where the associated validity (if any) complies with the +56 days rule, or has no validity limit.
                 $nowStr = date('Y-m-d H:i:s');
+                $limitDateStr = date('Y-m-d H:i:s', strtotime('+56 days'));
                 $availableRow = $rewardCodeModel->select('reward_codes.*')
                     ->join('vigencias', 'vigencias.id = reward_codes.id_vigencia', 'left')
                     ->where('reward_codes.reward_id', $rewardId)
@@ -108,7 +114,7 @@ class RedemptionController extends ResourceController
                         ->where('reward_codes.id_vigencia IS NULL')
                         ->orGroupStart()
                             ->where('vigencias.fecha_inicio <=', $nowStr)
-                            ->where('vigencias.fecha_fin >=', $nowStr)
+                            ->where('vigencias.fecha_fin >=', $limitDateStr)
                         ->groupEnd()
                     ->groupEnd()
                     ->orderBy('reward_codes.id', 'ASC')
@@ -116,7 +122,7 @@ class RedemptionController extends ResourceController
 
                 if (!$availableRow) {
                     $db->transRollback();
-                    return $this->respond(['message' => 'Lo sentimos, no hay suficientes códigos disponibles que no hayan caducado para esta recompensa.'], 400);
+                    return $this->respond(['message' => 'Lo sentimos, no hay suficientes códigos disponibles que cumplan con el periodo mínimo de validez de 56 días para esta recompensa.'], 400);
                 }
 
                 // Mark as used
@@ -135,6 +141,16 @@ class RedemptionController extends ResourceController
                     $generatedCode = 'TEC-' . str_pad($userId . rand(0, 99), 6, '0', STR_PAD_LEFT) . '-' . strtoupper(substr(md5($tempId), 0, 4));
                     $codesList[]   = $generatedCode;
                 }
+            }
+
+            // Calculate coupon validity dates (today + 56 days) if associated with a vigencia
+            $fechaValidezInicio = null;
+            $fechaValidezFin = null;
+            if ($hasInventory && $availableRow && !empty($availableRow['id_vigencia'])) {
+                $fechaValidezInicio = date('Y-m-d');
+                $startDate = new \DateTime($fechaValidezInicio);
+                $startDate->modify('+56 days');
+                $fechaValidezFin = $startDate->format('Y-m-d');
             }
 
             // Deduct Points and Stock
@@ -156,17 +172,19 @@ class RedemptionController extends ResourceController
             $finalCodeString = implode(',', $codesList);
 
             $redemptionData = [
-                'user_id'          => $userId,
-                'reward_id'        => $rewardId,
-                'status'           => ($reward['type'] === 'digital') ? 'completed' : 'pending',
-                'digital_code'     => $finalCodeString,
-                'extra_data'       => null, // deprecated, kept for compatibility
-                'nombre_monedero'  => ($tipoRecompensa === 'monedero')   ? $nombreMonedero  : null,
-                'apellido_paterno' => ($tipoRecompensa === 'monedero')   ? $apellidoPaterno : null,
-                'apellido_materno' => ($tipoRecompensa === 'monedero')   ? $apellidoMaterno : null,
-                'telefono_recarga' => ($tipoRecompensa === 'tiempo_aire') ? $telefonoRecarga : null,
-                'id_telefonia'     => ($tipoRecompensa === 'tiempo_aire') ? $idTelefonia     : null,
-                'status_recarga'   => ($tipoRecompensa === 'tiempo_aire') ? 'pending' : null,
+                'user_id'              => $userId,
+                'reward_id'            => $rewardId,
+                'status'               => ($reward['type'] === 'digital') ? 'completed' : 'pending',
+                'digital_code'         => $finalCodeString,
+                'extra_data'           => null, // deprecated, kept for compatibility
+                'nombre_monedero'      => ($tipoRecompensa === 'monedero')   ? $nombreMonedero  : null,
+                'apellido_paterno'     => ($tipoRecompensa === 'monedero')   ? $apellidoPaterno : null,
+                'apellido_materno'     => ($tipoRecompensa === 'monedero')   ? $apellidoMaterno : null,
+                'telefono_recarga'     => ($tipoRecompensa === 'tiempo_aire') ? $telefonoRecarga : null,
+                'id_telefonia'         => ($tipoRecompensa === 'tiempo_aire') ? $idTelefonia     : null,
+                'status_recarga'       => ($tipoRecompensa === 'tiempo_aire') ? 'pending' : null,
+                'fecha_validez_inicio' => $fechaValidezInicio,
+                'fecha_validez_fin'    => $fechaValidezFin,
             ];
 
             if (!$redemptionModel->save($redemptionData)) {
@@ -186,7 +204,7 @@ class RedemptionController extends ResourceController
                     $pdfUrl      = base_url('uploads/rewards/' . $sourceFile);
                     $redemptionModel->update($redemptionId, ['pdf_path' => $sourceFile]);
                 } else {
-                    $pdfUrl = $this->generateAndSavePdf($user, $reward, $redemptionId, $codesList); 
+                    $pdfUrl = $this->generateAndSavePdf($user, $reward, $redemptionId, $codesList, $fechaValidezInicio, $fechaValidezFin); 
                     if ($pdfUrl) {
                         $filename = basename($pdfUrl);
                         $redemptionModel->update($redemptionId, ['pdf_path' => $filename]);
@@ -222,7 +240,7 @@ class RedemptionController extends ResourceController
         }
     }
 
-    private function generateAndSavePdf($user, $reward, $redemptionId, $codes)
+    private function generateAndSavePdf($user, $reward, $redemptionId, $codes, $fechaValidezInicio = null, $fechaValidezFin = null)
     {
         try {
             if (empty($reward['pdf_template'])) return null;
@@ -278,6 +296,19 @@ class RedemptionController extends ResourceController
                 }
             }
 
+            // Print Coupon Validity Date (dd-mmm-yy format) if available
+            if ($fechaValidezInicio && $fechaValidezFin) {
+                $pdf->SetFont('Arial', 'B', 12);
+                $pdf->SetTextColor(0, 0, 0);
+                
+                $formattedInicio = $this->formatCouponDate($fechaValidezInicio);
+                $formattedFin = $this->formatCouponDate($fechaValidezFin);
+                
+                $text = "Vigencia del cupon: del {$formattedInicio} al {$formattedFin}";
+                // Centered slightly at the bottom (FPDI measurement is in millimeters by default, but let's draw it near the bottom)
+                $pdf->Text(($size['width'] / 2) - 45, $size['height'] - 12, $text);
+            }
+
             $pdf->Output($outputPath, 'F');
             log_message('info', "PDF generated OK: " . $outputPath);
             return base_url('uploads/redeemed/' . $filename);
@@ -286,6 +317,21 @@ class RedemptionController extends ResourceController
             log_message('error', "PDF Generation Error: " . $e->getMessage());
             return null;
         }
+    }
+
+    private function formatCouponDate($dateStr)
+    {
+        $timestamp = strtotime($dateStr);
+        $day = date('d', $timestamp);
+        $engMonth = strtolower(date('M', $timestamp));
+        $monthsMap = [
+            'jan' => 'ene', 'feb' => 'feb', 'mar' => 'mar', 'apr' => 'abr',
+            'may' => 'may', 'jun' => 'jun', 'jul' => 'jul', 'aug' => 'ago',
+            'sep' => 'sep', 'oct' => 'oct', 'nov' => 'nov', 'dec' => 'dic'
+        ];
+        $month = $monthsMap[$engMonth] ?? $engMonth;
+        $year = date('y', $timestamp);
+        return "$day-$month-$year";
     }
 
     public function history()

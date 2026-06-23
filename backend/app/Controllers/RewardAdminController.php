@@ -33,7 +33,12 @@ class RewardAdminController extends ResourceController
         $rewardModel = new RewardModel();
         
         $now = date('Y-m-d H:i:s');
-        $query = $rewardModel->where('active', 1)->where('stock >', 0);
+        $query = $rewardModel->where('active', 1)
+                             ->groupStart()
+                                 ->where('stock >', 0)
+                                 ->orWhere('tipo_recompensa', 'monedero')
+                                 ->orWhere('tipo_recompensa', 'tiempo_aire')
+                             ->groupEnd();
         
         if ($user && isset($user->id_proyecto)) {
             $db = \Config\Database::connect();
@@ -59,16 +64,29 @@ class RewardAdminController extends ResourceController
         $filteredRewards = [];
         
         foreach ($rewards as $reward) {
-            // First check if reward has any codes (inventory)
-            $hasCodes = $db->table('reward_codes')
-                           ->where('reward_id', $reward['id'])
-                           ->countAllResults() > 0;
+            $tipo = $reward['tipo_recompensa'] ?? 'normal';
             
-            if (!$hasCodes) {
-                // If it's a wallpaper or generated reward with no inventory, it's global/always valid
+            // 1. Monederos and tiempo_aire: no validation, always show.
+            if ($tipo === 'monedero' || $tipo === 'tiempo_aire') {
                 $reward['vigencias'] = [];
                 $filteredRewards[] = $reward;
-            } else {
+                continue;
+            }
+            
+            // 2. Normal rewards must have stock > 0
+            if ((int)$reward['stock'] <= 0) {
+                continue;
+            }
+            
+            // 3. Determine if the reward has validity.
+            // Check if there is any active code with validity associated
+            $hasVigenciaCodes = $db->table('reward_codes')
+                                   ->where('reward_id', $reward['id'])
+                                   ->where('is_used', 0)
+                                   ->where('id_vigencia IS NOT NULL')
+                                   ->countAllResults() > 0;
+            
+            if ($hasVigenciaCodes) {
                 // Look up all vigencias that have at least one active, non-used code
                 $vigencias = $db->table('reward_codes')
                                 ->select('vigencias.*')
@@ -78,34 +96,23 @@ class RewardAdminController extends ResourceController
                                 ->groupBy('vigencias.id')
                                 ->get()
                                 ->getResultArray();
-
-                // Also check if there is at least one active code that is GLOBAL (no associated validity)
-                $hasGlobalActiveCode = $db->table('reward_codes')
-                                          ->where('reward_id', $reward['id'])
-                                          ->where('is_used', 0)
-                                          ->where('id_vigencia IS NULL')
-                                          ->countAllResults() > 0;
-
-                if (empty($vigencias)) {
-                    // No codes with validity. Check if there are active global codes
-                    if ($hasGlobalActiveCode) {
-                        $reward['vigencias'] = [];
-                        $filteredRewards[] = $reward;
-                    }
-                } else {
-                    $isValid = $hasGlobalActiveCode; // if has global code, it's already active
-                    $validVigencias = [];
-                    foreach ($vigencias as $v) {
-                        if ($v['fecha_inicio'] <= $now && $v['fecha_fin'] >= $now) {
-                            $isValid = true;
-                            $validVigencias[] = $v;
-                        }
-                    }
-                    if ($isValid) {
-                        $reward['vigencias'] = $validVigencias;
-                        $filteredRewards[] = $reward;
+                                
+                $validVigencias = [];
+                $limitDate = date('Y-m-d H:i:s', strtotime('+56 days'));
+                foreach ($vigencias as $v) {
+                    if ($v['fecha_inicio'] <= $now && $v['fecha_fin'] >= $limitDate) {
+                        $validVigencias[] = $v;
                     }
                 }
+                
+                if (!empty($validVigencias)) {
+                    $reward['vigencias'] = $validVigencias;
+                    $filteredRewards[] = $reward;
+                }
+            } else {
+                // If it does NOT have validity, it is shown directly because stock > 0.
+                $reward['vigencias'] = [];
+                $filteredRewards[] = $reward;
             }
         }
         
@@ -130,8 +137,10 @@ class RewardAdminController extends ResourceController
             'codes_count'  => (int)($data['codes_count'] ?? 1),
             'coordinates'  => !empty($data['coordinates']) ? $data['coordinates'] : null,
             'code_areas'   => !empty($data['code_areas']) ? $data['code_areas'] : null,
-            'font_size'    => $data['font_size'] ?? 12,
-            'idVigencia'   => !empty($data['idVigencia']) ? $data['idVigencia'] : null,
+            'font_size'       => $data['font_size'] ?? 12,
+            'idVigencia'      => !empty($data['idVigencia']) ? $data['idVigencia'] : null,
+            'tipo_recompensa' => !empty($data['tipo_recompensa']) ? $data['tipo_recompensa'] : 'normal',
+            'monto_recarga'   => !empty($data['monto_recarga']) ? (int)$data['monto_recarga'] : 0,
         ];
 
         // Handle File Uploads
@@ -180,6 +189,23 @@ class RewardAdminController extends ResourceController
                     $rewardModel->update($rewardId, ['stock' => $addedCount]);
                 }
 
+                // Log reward creation/status
+                if (isset($saveData['active'])) {
+                    $admin = $this->request->admin_user ?? null;
+                    $adminId = $admin->id ?? null;
+                    $adminUsername = $admin->username ?? 'Unknown Admin';
+                    
+                    $statusStr = ((int)$saveData['active'] === 1) ? 'ENCENDIDO' : 'APAGADO';
+                    
+                    $logModel = new \App\Models\SecurityLogModel();
+                    $logModel->save([
+                        'ip_address' => $this->request->getIPAddress(),
+                        'user_id'    => $adminId,
+                        'action'     => 'reward_toggle',
+                        'details'    => "El administrador '{$adminUsername}' (ID: {$adminId}) creó la recompensa ID {$rewardId} ('{$saveData['title']}') con estado {$statusStr}."
+                    ]);
+                }
+
                 return $this->respondCreated(['message' => 'Recompensa creada', 'id' => $rewardId]);
             }
         } catch (\Exception $e) {
@@ -211,6 +237,8 @@ class RewardAdminController extends ResourceController
         if (key_exists('code_areas', $data)) $updateData['code_areas'] = !empty($data['code_areas']) ? $data['code_areas'] : null;
         if (isset($data['font_size'])) $updateData['font_size'] = $data['font_size'];
         if (key_exists('idVigencia', $data)) $updateData['idVigencia'] = !empty($data['idVigencia']) ? $data['idVigencia'] : null;
+        if (isset($data['tipo_recompensa'])) $updateData['tipo_recompensa'] = $data['tipo_recompensa'];
+        if (isset($data['monto_recarga'])) $updateData['monto_recarga'] = (int)$data['monto_recarga'];
 
         // Handle File Uploads
         $img = $this->request->getFile('image');
@@ -228,6 +256,7 @@ class RewardAdminController extends ResourceController
         }
 
         try {
+            $currentReward = $rewardModel->find($id);
             if ($rewardModel->update($id, $updateData)) {
                 // Sync reward_vigencias
                 if (isset($data['id_vigencias'])) {
@@ -258,6 +287,28 @@ class RewardAdminController extends ResourceController
                     $newStock = $rewardCodeModel->where('reward_id', $id)->where('is_used', 0)->countAllResults();
                     $rewardModel->update($id, ['stock' => $newStock]);
                 }
+
+                // Log status toggle
+                if ($currentReward && isset($updateData['active'])) {
+                    $oldActive = (int)$currentReward['active'];
+                    $newActive = (int)$updateData['active'];
+                    if ($oldActive !== $newActive) {
+                        $admin = $this->request->admin_user ?? null;
+                        $adminId = $admin->id ?? null;
+                        $adminUsername = $admin->username ?? 'Unknown Admin';
+                        
+                        $statusStr = $newActive === 1 ? 'ENCENDIDO' : 'APAGADO';
+                        
+                        $logModel = new \App\Models\SecurityLogModel();
+                        $logModel->save([
+                            'ip_address' => $this->request->getIPAddress(),
+                            'user_id'    => $adminId,
+                            'action'     => 'reward_toggle',
+                            'details'    => "El administrador '{$adminUsername}' (ID: {$adminId}) cambió el estado de la recompensa ID {$id} ('{$currentReward['title']}') a {$statusStr}."
+                        ]);
+                    }
+                }
+
                 return $this->respond(['message' => 'Recompensa actualizada']);
             }
         } catch (\Exception $e) {

@@ -34,6 +34,7 @@ CREATE TABLE users (
     is_blocked TINYINT(1) DEFAULT 0,
     blocked_reason TEXT,
     blocked_at DATETIME,
+    pin VARCHAR(255) DEFAULT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -51,6 +52,7 @@ CREATE TABLE rewards (
     coordinates TEXT,
     code_areas TEXT,
     font_size INT DEFAULT 12,
+    monto_recarga INT DEFAULT 0,
     active TINYINT(1) DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -63,6 +65,8 @@ CREATE TABLE redemptions (
     status ENUM('pending', 'review', 'processing', 'shipped', 'delivered', 'completed') DEFAULT 'pending',
     shipping_details JSON,
     pdf_path VARCHAR(255),
+    fecha_validez_inicio DATE DEFAULT NULL,
+    fecha_validez_fin DATE DEFAULT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (reward_id) REFERENCES rewards(id)

@@ -28,6 +28,8 @@ $routes->post('admin/auth/login', 'AdminAuthController::login');
 // Protected Routes (User)
 $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('profile', 'ProfileController::getProfile');
+    $routes->post('profile/set-pin', 'ProfileController::setPin');
+    $routes->post('profile/verify-pin', 'ProfileController::verifyPin');
     $routes->get('user/rewards/(:num)', 'RedemptionController::rewardsHistory/$1');
     $routes->get('user/history', 'RedemptionController::history');
     $routes->post('redeem', 'RedemptionController::redeemReward');

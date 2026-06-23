@@ -80,6 +80,53 @@ Chart.register(...registerables);
          </div>
       </div>
 
+       <!-- VALIDITY ALERTS FOR CINE CODES -->
+       <div class="dashboard-panel full-width" *ngIf="stats()?.validity_alerts?.length" style="margin-bottom: 2rem; border-left: 5px solid #dc2626; padding: 1.5rem 2rem;">
+         <div class="panel-header" style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 0.8rem;">
+            <h3 style="color: #dc2626; display: flex; align-items: center; gap: 0.5rem; margin: 0; font-size: 1.15rem; font-weight: 800;">
+              ⚠️ Alertas de Vigencia (Códigos de Cine)
+            </h3>
+            <small style="color: #64748b; font-weight: 600;">Códigos próximos a no cumplir o que ya no cumplen con la regla de validez (+56 días)</small>
+         </div>
+         <div class="table-wrapper" style="max-height: 300px;">
+           <table class="simple-table">
+             <thead>
+               <tr>
+                 <th>Recompensa</th>
+                 <th>Vigencia en BD</th>
+                 <th class="text-right">Códigos Unused</th>
+                 <th>Estado</th>
+                 <th>Acción Sugerida</th>
+               </tr>
+             </thead>
+             <tbody>
+               <tr *ngFor="let alert of stats().validity_alerts" [style.background-color]="alert.status === 'danger' ? '#fef2f2' : '#fffbeb'">
+                 <td class="font-bold">{{ alert.reward_title }}</td>
+                 <td>
+                   <span class="date-pill" style="font-weight: 700; color: #4b5563; background: #f1f5f9; padding: 0.25rem 0.5rem; border-radius: 0.4rem; font-size: 0.8rem;">
+                     📅 {{ formatShortDate(alert.fecha_inicio) }} al {{ formatShortDate(alert.fecha_fin) }}
+                   </span>
+                 </td>
+                 <td class="text-right font-bold">{{ alert.unused_codes_count }}</td>
+                 <td>
+                   <span class="type-badge" [ngStyle]="{
+                     'background': alert.status === 'danger' ? '#fee2e2' : '#fef3c7',
+                     'color': alert.status === 'danger' ? '#991b1b' : '#92400e'
+                   }" style="border-radius: 4px; padding: 0.35rem 0.6rem; font-size: 0.75rem; font-weight: 800;">
+                     {{ alert.status === 'danger' ? '❌ Expirado (< 56 días)' : '⚠️ Advertencia (< 71 días)' }}
+                   </span>
+                 </td>
+                 <td>
+                   <span style="font-size: 0.8rem; font-weight: 700; color: #475569;">
+                     {{ alert.status === 'danger' ? '🔴 Cargar nuevos códigos / Ampliar vigencia' : '🟡 Planear ampliación de vigencia de códigos' }}
+                   </span>
+                 </td>
+               </tr>
+             </tbody>
+           </table>
+         </div>
+       </div>
+
       <div class="charts-row">
         <!-- Main Activity Chart -->
         <div class="dashboard-panel chart-panel">
@@ -581,5 +628,18 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
         }
       }
     });
+  }
+
+  formatShortDate(dateStr: string): string {
+    if (!dateStr) return '';
+    const parts = dateStr.split(' ');
+    const dStr = parts[0];
+    const subParts = dStr.split('-');
+    if (subParts.length === 3) {
+      return `${subParts[2]}/${subParts[1]}/${subParts[0].substring(2)}`;
+    }
+    const d = new Date(dateStr.replace(' ', 'T'));
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear().toString().substring(2)}`;
   }
 }

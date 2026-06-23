@@ -75,11 +75,12 @@ class AuthController extends ResourceController
             'message' => 'Login exitoso.',
             'token'   => $token,
             'user'    => [
-                'id'     => $user['id'],
-                'name'   => $user['full_name'],
-                'email'  => $user['email'],
-                'points' => $user['points'],
-                'role'   => $user['role'] ?? 'user'
+                'id'      => $user['id'],
+                'name'    => $user['full_name'],
+                'email'   => $user['email'],
+                'points'  => $user['points'],
+                'role'    => $user['role'] ?? 'user',
+                'has_pin' => !empty($user['pin'])
             ]
         ]);
     }
