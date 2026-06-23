@@ -362,16 +362,12 @@ class AdminUserController extends ResourceController
                 continue;
             }
 
-            // Generate a truly random 10-char password: uppercase + lowercase + digits + symbol
-            $chars  = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            $syms   = '!@#$%&*';
-            $pwd    = '';
-            for ($i = 0; $i < 8; $i++) {
-                $pwd .= $chars[random_int(0, strlen($chars) - 1)];
+            // Generate password: only uppercase letters and digits, excluding 0, O, I, 1, 2, Z, G, 6 (10 characters)
+            $allowedChars = 'ABCDEFHJKLNMPQRSTUVWXY345789';
+            $plainPassword = '';
+            for ($i = 0; $i < 10; $i++) {
+                $plainPassword .= $allowedChars[random_int(0, strlen($allowedChars) - 1)];
             }
-            // Insert one random symbol at a random position
-            $pos           = random_int(1, 7);
-            $plainPassword = substr($pwd, 0, $pos) . $syms[random_int(0, strlen($syms) - 1)] . substr($pwd, $pos);
 
 
             $newUser = [
