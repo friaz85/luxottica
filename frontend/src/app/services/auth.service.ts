@@ -28,7 +28,7 @@ export class AuthService {
 
   private checkSession() {
     if (typeof window === 'undefined') return;
-    const isAdminPath = window.location.pathname.startsWith('/admin');
+    const isAdminPath = window.location.pathname.includes('/admin');
     const sessionKey = isAdminPath ? 'admin_session' : 'client_session';
     const data = localStorage.getItem(sessionKey);
     if (data) {
@@ -80,7 +80,7 @@ export class AuthService {
   }
 
   logout() {
-    const isAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+    const isAdminPath = typeof window !== 'undefined' && window.location.pathname.includes('/admin');
     const sessionKey = isAdminPath ? 'admin_session' : 'client_session';
     const tokenKey = isAdminPath ? 'admin_token' : 'client_token';
     localStorage.removeItem(sessionKey);
@@ -97,7 +97,7 @@ export class AuthService {
   }
 
   getToken() {
-    const isAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+    const isAdminPath = typeof window !== 'undefined' && window.location.pathname.includes('/admin');
     return localStorage.getItem(isAdminPath ? 'admin_token' : 'client_token');
   }
 
@@ -144,7 +144,7 @@ export class AuthService {
 }
 
 export const jwtInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn) => {
-  const isAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+  const isAdminPath = typeof window !== 'undefined' && window.location.pathname.includes('/admin');
   const token = localStorage.getItem(isAdminPath ? 'admin_token' : 'client_token');
   if (token) {
     req = req.clone({
