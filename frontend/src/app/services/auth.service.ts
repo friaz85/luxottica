@@ -157,7 +157,7 @@ export const jwtInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, nex
     catchError((error: HttpErrorResponse) => {
       const isBlocked = error.error?.message?.toLowerCase().includes('bloqueada');
       const isExpired = error.error?.message?.includes('Sesion expirada');
-      if (error.status === 401 && (isExpired || isBlocked)) {
+      if (error.status === 401 && (isExpired || isBlocked || isAdminPath)) {
         auth.logout();
       }
       return throwError(() => error);
