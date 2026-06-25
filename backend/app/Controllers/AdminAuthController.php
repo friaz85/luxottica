@@ -10,7 +10,12 @@ class AdminAuthController extends ResourceController
 {
     protected $modelName = 'App\Models\AdminUserModel';
     protected $format = 'json';
-    private $key = 'kYiFLGycgRRp31CIOcwRASFw5e5JOqu6D/LKt+AaYlWMGAKlK/gYq9SlB1j9m2Bl/lqBs6l6fQaJat5riEtEPA==';
+    private string $key;
+
+    public function __construct()
+    {
+        $this->key = env('JWT_SECRET', 'CHANGE_ME_IN_ENV');
+    }
 
     public function login()
     {

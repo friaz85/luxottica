@@ -11,7 +11,7 @@ class AuthFilter implements FilterInterface
 {
     public function before(RequestInterface $request, $arguments = null)
     {
-        $key        = 'kYiFLGycgRRp31CIOcwRASFw5e5JOqu6D/LKt+AaYlWMGAKlK/gYq9SlB1j9m2Bl/lqBs6l6fQaJat5riEtEPA==';
+        $key        = env('JWT_SECRET', 'CHANGE_ME_IN_ENV');
         $authHeader = $request->getServer('HTTP_AUTHORIZATION') ?? $request->getServer('REDIRECT_HTTP_AUTHORIZATION');
 
         if (!$authHeader && function_exists('apache_request_headers')) {
