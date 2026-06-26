@@ -19,6 +19,15 @@ interface CodeArea {
   isPercent?: boolean;
 }
 
+interface VigenciaArea {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fontSize: number;
+  isPercent?: boolean;
+}
+
 @Component({
   selector: 'app-admin-rewards',
   standalone: true,
@@ -298,6 +307,7 @@ interface CodeArea {
                   <input type="file" (change)="onPDFSelected($event)" accept=".pdf" class="admin-input">
                   <small class="help-text" *ngIf="editingReward.pdf_template && !selectedPDF">Archivo actual: {{editingReward.pdf_template}}</small>
                 </div>
+                
                 <div class="code-areas-manager" *ngIf="pdfLoaded()">
                   <div class="areas-header">
                     <div class="header-titles">
@@ -328,6 +338,42 @@ interface CodeArea {
                   <button class="btn-add-area-bottom" (click)="addCodeArea()">
                     <span class="icon-plus">＋</span> Agregar Nueva Área
                   </button>
+
+                  <!-- VIGENCIA AREA -->
+                  <div class="vigencia-area-section" *ngIf="editingReward.id_vigencias && editingReward.id_vigencias.length > 0">
+                    <div class="areas-header" style="margin-top:1.5rem">
+                      <div class="header-titles">
+                        <label>📅 Área de Vigencia</label>
+                        <small>Define donde se imprimirá la fecha de vigencia en el PDF</small>
+                      </div>
+                    </div>
+                    <div *ngIf="!vigenciaArea()" style="text-align:center; padding: 1rem 0;">
+                      <button class="btn-add-area-bottom" (click)="addVigenciaArea()">
+                        <span class="icon-plus">＋</span> Agregar Área de Vigencia
+                      </button>
+                    </div>
+                    <div class="areas-list" *ngIf="vigenciaArea()">
+                      <div class="area-item vigencia-item">
+                        <div class="area-top-row">
+                          <div class="area-label-group">
+                            <span class="pin-icon">📅</span>
+                            <span class="area-number">Fecha de Vigencia</span>
+                          </div>
+                          <span class="area-coords">📐 {{Math.round(vigenciaArea()!.x)}}px, {{Math.round(vigenciaArea()!.y)}}px</span>
+                        </div>
+                        <div class="area-bottom-row">
+                          <div class="font-control">
+                            <label>TAMAÑO FUENTE:</label>
+                            <input type="number" [(ngModel)]="vigenciaArea()!.fontSize" min="8" max="72" class="admin-input font-input"
+                              (ngModelChange)="updateVigenciaFontSize($event)">
+                          </div>
+                          <button class="btn-remove-alt" (click)="removeVigenciaArea()" title="Eliminar">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="inventory-section">
@@ -413,6 +459,14 @@ interface CodeArea {
                       (mousedown)="startDrag($event, i)">
                       <div class="demo-text" [style.font-size.pt]="area.fontSize">Código {{i + 1}}</div>
                       <div class="resize-handle" (mousedown)="startResize($event, i)"></div>
+                    </div>
+                    <!-- Vigencia area box -->
+                    <div *ngIf="vigenciaArea()" class="code-area-box vigencia-area-box"
+                      [style.left.px]="vigenciaArea()!.x" [style.top.px]="vigenciaArea()!.y"
+                      [style.width.px]="vigenciaArea()!.width" [style.height.px]="vigenciaArea()!.height"
+                      (mousedown)="startDragVigencia($event)">
+                      <div class="demo-text" [style.font-size.pt]="vigenciaArea()!.fontSize">📅 Vigencia</div>
+                      <div class="resize-handle" (mousedown)="startResizeVigencia($event)"></div>
                     </div>
                   </div>
                 </div>
@@ -655,6 +709,9 @@ interface CodeArea {
     .pdf-canvas-container { position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3); background: white; margin: 0 auto; display: inline-block; }
     .code-area-box { position: absolute; border: 2px solid var(--admin-primary); background: rgba(0, 51, 102, 0.15); cursor: move; }
     .demo-text { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 900; color: var(--admin-primary); }
+    .vigencia-area-box { border-color: #d97706; background: rgba(217, 119, 6, 0.15); }
+    .vigencia-area-box .demo-text { color: #d97706; }
+    .vigencia-item { border-left-color: #d97706; }
 
     /* STATUS TOGGLE STYLES - ULTRA CLEAR */
     .status-toggle-container { display: flex; background: #f1f5f9; padding: 0.5rem; border-radius: 1.2rem; gap: 0.5rem; margin-top: 0.5rem; border: 1px solid #e2e8f0; }
@@ -719,13 +776,14 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   saving = signal(false);
   pdfLoaded = signal(false);
   codeAreas = signal<CodeArea[]>([]);
+  vigenciaArea = signal<VigenciaArea | null>(null);
   loadMethod = signal<'manual' | 'csv'>('manual');
   pendingCSVFile: File | null = null;
   selectedProject = signal<string>('');
   viewMode = signal<'grid' | 'table'>('grid');
   environment = environment;
 
-  // Drag state
+  // Drag state (codes)
   draggingIndex: number | null = null;
   resizingIndex: number | null = null;
   dragStartX = 0; dragStartY = 0;
@@ -734,6 +792,14 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   dragStartScrollX = 0; dragStartScrollY = 0;
   lastMouseEvent: MouseEvent | null = null;
   autoScrollInterval: any = null;
+
+  // Drag state (vigencia)
+  draggingVigencia = false;
+  resizingVigencia = false;
+  vigDragStartX = 0; vigDragStartY = 0;
+  vigDragStartAreaX = 0; vigDragStartAreaY = 0;
+  vigDragStartWidth = 0; vigDragStartHeight = 0;
+  vigDragStartScrollX = 0; vigDragStartScrollY = 0;
 
   private http = inject(HttpClient);
   public layoutService = inject(AdminLayoutService);
@@ -871,6 +937,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     this.pendingCSVFile = null;
     this.pdfLoaded.set(false);
     this.codeAreas.set([]);
+    this.vigenciaArea.set(null);
     this.loadMethod.set('manual');
     this.showCreateModal = true;
   }
@@ -896,6 +963,18 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     this.pendingCSVFile = null;
     this.pdfLoaded.set(false);
     this.loadMethod.set('manual');
+    this.vigenciaArea.set(null);
+
+    // Pre-load vigencia_area if any vigencia has it (use first vigencia with area)
+    if (reward.vigencias && reward.vigencias.length > 0) {
+      const vWithArea = reward.vigencias.find((v: any) => v.vigencia_area);
+      if (vWithArea && vWithArea.vigencia_area) {
+        const parts = vWithArea.vigencia_area.split(',').map(Number);
+        if (parts.length >= 4) {
+          this.editingReward._vigencia_area_raw = vWithArea.vigencia_area;
+        }
+      }
+    }
     
     if (reward.coordinates) {
       const areas = reward.coordinates.split(';').filter((c: any) => c).map((c: string, idx: number) => {
@@ -989,6 +1068,22 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
         return a;
       });
     });
+
+    // Recalculate vigencia area if raw data exists
+    const raw = this.editingReward?._vigencia_area_raw;
+    if (raw) {
+      const parts = raw.split(',').map(Number);
+      if (parts.length >= 4) {
+        this.vigenciaArea.set({
+          x: (parts[0] / 100) * w,
+          y: (parts[1] / 100) * h,
+          width: (parts[2] / 100) * w,
+          height: (parts[3] / 100) * h,
+          fontSize: parts[4] || 12,
+          isPercent: false
+        });
+      }
+    }
   }
 
   addCodeArea() {
@@ -1031,6 +1126,25 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     if (this.draggingIndex !== null || this.resizingIndex !== null) {
       this.handleAutoScroll(e);
       this.updateDragPosition();
+    }
+    if (this.draggingVigencia || this.resizingVigencia) {
+      this.handleAutoScroll(e);
+      this.updateVigenciaDragPosition(e);
+    }
+  }
+
+  updateVigenciaDragPosition(e: MouseEvent) {
+    const container = this.pdfPreviewWrapper?.nativeElement;
+    const dScrollX = container ? (container.scrollLeft - this.vigDragStartScrollX) : 0;
+    const dScrollY = container ? (container.scrollTop - this.vigDragStartScrollY) : 0;
+    const dx = e.clientX - this.vigDragStartX + dScrollX;
+    const dy = e.clientY - this.vigDragStartY + dScrollY;
+    const curr = this.vigenciaArea();
+    if (!curr) return;
+    if (this.draggingVigencia) {
+      this.vigenciaArea.set({ ...curr, x: this.vigDragStartAreaX + dx, y: this.vigDragStartAreaY + dy });
+    } else if (this.resizingVigencia) {
+      this.vigenciaArea.set({ ...curr, width: Math.max(50, this.vigDragStartWidth + dx), height: Math.max(20, this.vigDragStartHeight + dy) });
     }
   }
 
@@ -1085,7 +1199,52 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     if (this.autoScrollInterval) { clearInterval(this.autoScrollInterval); this.autoScrollInterval = null; }
   }
 
-  onMouseUp() { this.draggingIndex = null; this.resizingIndex = null; this.stopAutoScroll(); }
+  onMouseUp() { 
+    this.draggingIndex = null; 
+    this.resizingIndex = null; 
+    this.draggingVigencia = false;
+    this.resizingVigencia = false;
+    this.stopAutoScroll(); 
+  }
+
+  addVigenciaArea() {
+    if (!this.pdfCanvas) return;
+    const canvas = this.pdfCanvas.nativeElement;
+    this.vigenciaArea.set({ x: 50, y: 50, width: 200, height: 40, fontSize: 12 });
+  }
+
+  removeVigenciaArea() {
+    this.vigenciaArea.set(null);
+  }
+
+  updateVigenciaFontSize(fs: number) {
+    const curr = this.vigenciaArea();
+    if (curr) this.vigenciaArea.set({ ...curr, fontSize: fs });
+  }
+
+  startDragVigencia(e: MouseEvent) {
+    e.stopPropagation();
+    this.draggingVigencia = true;
+    this.vigDragStartX = e.clientX; this.vigDragStartY = e.clientY;
+    const curr = this.vigenciaArea()!;
+    this.vigDragStartAreaX = curr.x; this.vigDragStartAreaY = curr.y;
+    if (this.pdfPreviewWrapper) {
+      const container = this.pdfPreviewWrapper.nativeElement;
+      this.vigDragStartScrollX = container.scrollLeft; this.vigDragStartScrollY = container.scrollTop;
+    }
+  }
+
+  startResizeVigencia(e: MouseEvent) {
+    e.stopPropagation();
+    this.resizingVigencia = true;
+    this.vigDragStartX = e.clientX; this.vigDragStartY = e.clientY;
+    const curr = this.vigenciaArea()!;
+    this.vigDragStartWidth = curr.width; this.vigDragStartHeight = curr.height;
+    if (this.pdfPreviewWrapper) {
+      const container = this.pdfPreviewWrapper.nativeElement;
+      this.vigDragStartScrollX = container.scrollLeft; this.vigDragStartScrollY = container.scrollTop;
+    }
+  }
 
   saveReward() {
     this.saving.set(true);
@@ -1114,6 +1273,19 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
         formData.append('coordinates', coords);
         formData.append('code_areas', JSON.stringify(this.codeAreas()));
         if (this.codeAreas().length > 0) formData.append('font_size', this.codeAreas()[0].fontSize.toString());
+
+        // Append vigencia_area_map: same area for all selected vigencias
+        const va = this.vigenciaArea();
+        if (va && this.editingReward.id_vigencias && this.editingReward.id_vigencias.length > 0) {
+          const vaPx = (va.x / w) * 100; const vaPy = (va.y / h) * 100;
+          const vaPw = (va.width / w) * 100; const vaPh = (va.height / h) * 100;
+          const vaStr = `${vaPx},${vaPy},${vaPw},${vaPh},${va.fontSize}`;
+          const vigenciaAreaMap: Record<string, string> = {};
+          for (const vId of this.editingReward.id_vigencias) {
+            vigenciaAreaMap[String(vId)] = vaStr;
+          }
+          formData.append('vigencia_area_map', JSON.stringify(vigenciaAreaMap));
+        }
       }
     }
 

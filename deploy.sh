@@ -84,6 +84,8 @@ ssh -p 18765 -o StrictHostKeyChecking=no -i "$SSH_KEY" $REMOTE_USER "
     fi
     # Add password_encrypted column if not exists
     mysql -h localhost -u ughgtdncr7ro5 -p'mrL*1*P7ke&f' db4ccgnbnclgjg -e \"ALTER TABLE users ADD COLUMN IF NOT EXISTS password_encrypted TEXT NULL AFTER password_hash;\" 2>/dev/null || true
+    # Add vigencia_area column to reward_vigencias if not exists
+    mysql -h localhost -u ughgtdncr7ro5 -p'mrL*1*P7ke&f' db4ccgnbnclgjg -e \"ALTER TABLE reward_vigencias ADD COLUMN IF NOT EXISTS vigencia_area VARCHAR(500) NULL DEFAULT NULL;\" 2>/dev/null || true
 "
 
 # 6. Create API .htaccess

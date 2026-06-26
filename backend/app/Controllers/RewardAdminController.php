@@ -35,6 +35,21 @@ class RewardAdminController extends ResourceController
                                      ->groupBy('vigencias.id')
                                      ->get()
                                      ->getResultArray();
+
+            // Enrich vigencias with vigencia_area from reward_vigencias
+            $rvRows = $db->table('reward_vigencias')
+                         ->select('id_vigencia, vigencia_area')
+                         ->where('id_reward', $reward['id'])
+                         ->get()
+                         ->getResultArray();
+            $areaMap = [];
+            foreach ($rvRows as $rv) {
+                $areaMap[(string)$rv['id_vigencia']] = $rv['vigencia_area'];
+            }
+            foreach ($reward['vigencias'] as &$v) {
+                $v['vigencia_area'] = $areaMap[(string)$v['id']] ?? null;
+            }
+            unset($v);
         }
         return $this->respond($rewards);
     }
@@ -184,12 +199,19 @@ class RewardAdminController extends ResourceController
                         $idVigencias = array_filter(explode(',', $idVigencias));
                     }
                 }
+                // Parse vigencia_area map: JSON {"id_vigencia": "area_string"}
+                $vigenciaAreaMap = [];
+                if (!empty($data['vigencia_area_map'])) {
+                    $decodedMap = json_decode($data['vigencia_area_map'], true);
+                    if (is_array($decodedMap)) $vigenciaAreaMap = $decodedMap;
+                }
                 if (!empty($idVigencias)) {
                     $db = \Config\Database::connect();
                     foreach ($idVigencias as $idVigencia) {
                         $db->table('reward_vigencias')->insert([
-                            'id_reward'   => $rewardId,
-                            'id_vigencia' => $idVigencia
+                            'id_reward'    => $rewardId,
+                            'id_vigencia'  => $idVigencia,
+                            'vigencia_area'=> $vigenciaAreaMap[(string)$idVigencia] ?? null
                         ]);
                     }
                 }
@@ -283,12 +305,19 @@ class RewardAdminController extends ResourceController
                             $idVigencias = array_filter(explode(',', $idVigencias));
                         }
                     }
+                    // Parse vigencia_area map
+                    $vigenciaAreaMap = [];
+                    if (!empty($data['vigencia_area_map'])) {
+                        $decodedMap = json_decode($data['vigencia_area_map'], true);
+                        if (is_array($decodedMap)) $vigenciaAreaMap = $decodedMap;
+                    }
                     $db = \Config\Database::connect();
                     $db->table('reward_vigencias')->where('id_reward', $id)->delete();
                     foreach ($idVigencias as $idVigencia) {
                         $db->table('reward_vigencias')->insert([
-                            'id_reward'   => $id,
-                            'id_vigencia' => $idVigencia
+                            'id_reward'    => $id,
+                            'id_vigencia'  => $idVigencia,
+                            'vigencia_area'=> $vigenciaAreaMap[(string)$idVigencia] ?? null
                         ]);
                     }
                 }
