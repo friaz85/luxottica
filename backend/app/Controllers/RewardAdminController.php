@@ -26,6 +26,7 @@ class RewardAdminController extends ResourceController
         $rewards = $rewardModel->orderBy('cost', 'ASC')->findAll();
         
         $db = \Config\Database::connect();
+        $now = date('Y-m-d H:i:s');
         foreach ($rewards as &$reward) {
             $reward['vigencias'] = $db->table('reward_codes')
                                      ->select('vigencias.*')
@@ -35,6 +36,14 @@ class RewardAdminController extends ResourceController
                                      ->groupBy('vigencias.id')
                                      ->get()
                                      ->getResultArray();
+
+            // Stock activo: solo códigos de vigencias no expiradas
+            $reward['active_stock'] = (int) $db->table('reward_codes')
+                                               ->join('vigencias', 'vigencias.id = reward_codes.id_vigencia')
+                                               ->where('reward_codes.reward_id', $reward['id'])
+                                               ->where('reward_codes.is_used', 0)
+                                               ->where('vigencias.fecha_fin >=', $now)
+                                               ->countAllResults();
         }
         return $this->respond($rewards);
     }

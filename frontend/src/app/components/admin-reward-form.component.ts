@@ -111,7 +111,7 @@ interface VigenciaArea {
                 </div>
                 <div class="reward-card-meta">
                   <span class="reward-cost font-bold text-blue">{{ (reward.cost || 0) | number }} pts</span>
-                  <span class="reward-stock" [class.low]="reward.stock <= 5">Stock: {{ reward.stock }}</span>
+                  <span class="reward-stock" [class.low]="(reward.active_stock ?? reward.stock) <= 5">Stock: {{ reward.active_stock ?? reward.stock }}</span>
                 </div>
                 <div class="reward-card-extra">
                   <span class="type-badge" [ngClass]="{
