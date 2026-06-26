@@ -85,6 +85,7 @@ import Swal from 'sweetalert2';
     .file-input { display: none; }
     .file-label { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: 2px dashed #cbd5e1; border-radius: 8px; cursor: pointer; font-size: 0.85rem; color: #475569; background: #f8fafc; transition: 0.2s; }
     .file-label:hover { border-color: var(--admin-primary); background: #f0f4ff; color: var(--admin-primary); }
+    .file-label.has-file { border-color: #16a34a; background: #f0fdf4; }
     .file-selected { color: #166534; font-weight: 700; }
 
     @media (max-width: 900px) {
@@ -230,17 +231,17 @@ import Swal from 'sweetalert2';
             <span class="detail-lbl">🔑 PRODUCTO A RECARGAR</span>
             <span class="detail-val" style="font-family:monospace;font-size:1.3rem;font-weight:900;color:#1e40af;letter-spacing:2px;background:#dbeafe;padding:6px 12px;border-radius:8px;display:inline-block;margin-top:4px;">{{ currentRow()?.producto || '—' }}</span>
           </div>
-          <!-- Adjuntar cupón del monedero -->
+          <!-- Adjuntar cupón del monedero (OBLIGATORIO) -->
           <div class="detail-block" style="margin-bottom:12px;">
-            <span class="detail-lbl">📎 Adjuntar cupón del monedero (PDF o imagen)</span>
+            <span class="detail-lbl">📎 Adjuntar cupón del monedero <span style="color:#cc0000;">*</span></span>
             <div class="file-upload-area">
               <input type="file" id="monedero-file" accept=".pdf,.jpg,.jpeg,.png" (change)="onFileSelected($event)" class="file-input">
-              <label for="monedero-file" class="file-label">
+              <label for="monedero-file" class="file-label" [class.has-file]="selectedFile()">
                 <span *ngIf="!selectedFile()">🗂 Seleccionar archivo (PDF o imagen)</span>
                 <span *ngIf="selectedFile()" class="file-selected">✅ {{ selectedFile()!.name }}</span>
               </label>
             </div>
-            <small style="color:#888;font-size:0.75rem;">Opcional — el usuario podrá descargarlo desde su Historial</small>
+            <small style="color:#cc0000;font-size:0.75rem;font-weight:600;">Requerido — el usuario podrá descargarlo desde su Historial</small>
           </div>
           <div class="success-box">
             <strong>¿Qué sucederá?</strong><br>
@@ -249,7 +250,7 @@ import Swal from 'sweetalert2';
         </div>
         <div class="modal-foot">
           <button class="action-btn secondary" (click)="showModal.set(false)">Cancelar</button>
-          <button class="action-btn primary" [disabled]="saving()" (click)="confirmSend()">
+          <button class="action-btn primary" [disabled]="saving() || !selectedFile()" (click)="confirmSend()">
             {{ saving() ? 'Guardando...' : '✅ Confirmar' }}
           </button>
         </div>
@@ -319,6 +320,10 @@ export class AdminPendingRewardsComponent implements OnInit {
   confirmSend() {
     const row = this.currentRow();
     if (!row) return;
+    if (!this.selectedFile()) {
+      this.toast.show('Debes adjuntar el cupón del monedero antes de confirmar.', 'error');
+      return;
+    }
     this.saving.set(true);
     this.showModal.set(false);
 
