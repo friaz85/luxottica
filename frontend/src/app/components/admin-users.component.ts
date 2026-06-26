@@ -105,8 +105,14 @@ import * as XLSX from 'xlsx';
                   <td class="text-right">
                     <div class="btn-group">
                       <button class="action-btn edit" (click)="openUserModal(user)">Editar</button>
-                      <button 
-                        class="action-btn" 
+                      <button
+                        class="action-btn pin-reset"
+                        *ngIf="user.has_pin"
+                        (click)="resetUserPin(user)"
+                        title="Borrar PIN para que el usuario cree uno nuevo"
+                      >🔑 Reset PIN</button>
+                      <button
+                        class="action-btn"
                         [class.unblock]="user.is_blocked"
                         (click)="openBlockModal(user)"
                       >
@@ -519,8 +525,9 @@ import * as XLSX from 'xlsx';
     .btn-group { display: flex; gap: 0.5rem; justify-content: flex-end; }
     .action-btn { padding: 0.6rem 1rem; border-radius: 0.6rem; border: none; cursor: pointer; font-weight: 800; font-size: 0.8rem; transition: 0.2s; white-space: nowrap; }
     .action-btn.edit { background: #f3f4f6; color: #4b5563; }
-    .action-btn:not(.edit) { background: #fef2f2; color: #dc2626; }
+    .action-btn:not(.edit):not(.unblock):not(.pin-reset) { background: #fef2f2; color: #dc2626; }
     .action-btn.unblock { background: #eff6ff; color: #2563eb; }
+    .action-btn.pin-reset { background: #fff7ed; color: #ea580c; }
     .action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
 
     .project-tag { background: #e0f2fe; color: #0369a1; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 800; white-space: nowrap; border: 1px solid #bae6fd; }
@@ -977,6 +984,30 @@ export class AdminUsersComponent implements OnInit {
         this.loader.hide();
       },
       error: () => { this.toast.show('ERROR AL ACTUALIZAR', 'error'); this.loader.hide(); }
+    });
+  }
+
+  resetUserPin(user: any) {
+    Swal.fire({
+      title: '¿Resetear PIN?',
+      html: `El PIN de <strong>${user.full_name || user.email}</strong> será eliminado.<br>La próxima vez que intente canjear, el sistema le pedirá crear uno nuevo.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: '🔑 Sí, resetear PIN',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      this.loader.show();
+      this.http.post(`${environment.apiUrl}/admin/users/${user.id}/reset-pin`, {}).subscribe({
+        next: () => {
+          this.loadUsers();
+          this.toast.show('PIN RESETEADO CORRECTAMENTE', 'success');
+          this.loader.hide();
+        },
+        error: () => { this.toast.show('ERROR AL RESETEAR PIN', 'error'); this.loader.hide(); }
+      });
     });
   }
 

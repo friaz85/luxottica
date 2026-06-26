@@ -61,6 +61,7 @@ $routes->group('admin', ['filter' => 'admin_auth'], function ($routes) {
     $routes->post('users', 'AdminUserController::create');
     $routes->post('users/(:num)', 'AdminUserController::update/$1');
     $routes->post('users/(:num)/toggle-block', 'AdminUserController::toggleBlock/$1');
+    $routes->post('users/(:num)/reset-pin', 'AdminUserController::resetPin/$1');
     
     $routes->get('redemptions', 'AdminRedemptionsController::index');
     $routes->get('redemptions/pending', 'AdminRedemptionsController::pendingRewards');

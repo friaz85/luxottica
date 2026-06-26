@@ -65,6 +65,8 @@ class AdminUserController extends ResourceController
 
             $user['points_earned'] = $earned;
             $user['points_spent']  = $spent;
+            $user['has_pin']       = !empty($user['pin']);
+            unset($user['pin']);
         }
 
         return $this->respond($users);
@@ -311,6 +313,20 @@ class AdminUserController extends ResourceController
         }
 
         return $this->respond(['status' => 'success', 'message' => $message]);
+    }
+
+    public function resetPin($id = null)
+    {
+        if (!$id) return $this->fail('ID de usuario requerido');
+
+        $userModel = new UserModel();
+        $user = $userModel->find($id);
+        if (!$user) return $this->failNotFound('Usuario no encontrado');
+
+        $userModel->update($id, ['pin' => null]);
+        $this->logActivity('reset_pin', "PIN reseteado para usuario: {$user['email']} (ID: {$id})");
+
+        return $this->respond(['status' => 'success', 'message' => 'PIN reseteado. El usuario deberá crear uno nuevo al siguiente canje.']);
     }
 
     public function getStats()
