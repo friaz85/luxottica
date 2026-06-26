@@ -70,14 +70,22 @@ class AdminUserController extends ResourceController
             return $this->fail('Email, password y nombre son requeridos.', 400);
         }
 
+        $idProyecto = $data['id_proyecto'] ?? null;
+        $email = strtolower(trim($data['email'] ?? ''));
+        if ($idProyecto) {
+            $prefix = 'pr' . $idProyecto;
+            $emailClean = preg_replace('/^pr\d+/', '', $email);
+            $email = $prefix . $emailClean;
+        }
+
         // Check if user already exists
-        if ($userModel->where('email', $data['email'])->first()) {
+        if ($userModel->where('email', $email)->first()) {
             return $this->fail('El usuario ya existe.', 409);
         }
 
         $newUser = [
-            'id_proyecto'   => $data['id_proyecto'] ?? null,
-            'email'         => $data['email'],
+            'id_proyecto'   => $idProyecto,
+            'email'         => $email,
             'full_name'     => $data['full_name'],
             'password_hash' => password_hash($data['password'], PASSWORD_DEFAULT),
             'points'        => $data['points'] ?? 0,
@@ -152,12 +160,29 @@ class AdminUserController extends ResourceController
         
         $updateData = [];
         if (isset($data['full_name'])) $updateData['full_name'] = $data['full_name'];
-        if (isset($data['email'])) $updateData['email'] = $data['email'];
         if (isset($data['points'])) $updateData['points'] = $data['points'];
         if (isset($data['role'])) $updateData['role'] = $data['role'];
         if (isset($data['id_proyecto'])) $updateData['id_proyecto'] = $data['id_proyecto'];
         if (!empty($data['password'])) {
             $updateData['password_hash'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        }
+
+        $currentUser = $userModel->find($id);
+        $email = isset($data['email']) ? strtolower(trim($data['email'])) : strtolower(trim($currentUser['email']));
+        $targetProject = isset($updateData['id_proyecto']) ? $updateData['id_proyecto'] : $currentUser['id_proyecto'];
+        if ($targetProject) {
+            $prefix = 'pr' . $targetProject;
+            $emailClean = preg_replace('/^pr\d+/', '', $email);
+            $email = $prefix . $emailClean;
+        }
+
+        if (isset($data['email']) || isset($updateData['id_proyecto'])) {
+            // Check if updated email is already taken by another user
+            $existingUser = $userModel->where('email', $email)->first();
+            if ($existingUser && $existingUser['id'] != $id) {
+                return $this->fail('El usuario ya existe con ese identificador.', 409);
+            }
+            $updateData['email'] = $email;
         }
 
         if ($userModel->update($id, $updateData)) {
@@ -330,8 +355,15 @@ class AdminUserController extends ResourceController
             $deptoId  = trim($row['depto_id'] ?? $row['Depto_ID'] ?? '');
             $points   = (int) ($row['points'] ?? $row['puntos'] ?? $row['$$'] ?? 0);
 
-            // Use userLogin as the email/identifier
-            $email = strtolower($userLogin);
+            // Use userLogin as the email/identifier with PR + project_id prefix
+            $emailRaw = strtolower($userLogin);
+            if ($idProyecto) {
+                $prefix = 'pr' . $idProyecto;
+                $emailClean = preg_replace('/^pr\d+/', '', $emailRaw);
+                $email = $prefix . $emailClean;
+            } else {
+                $email = $emailRaw;
+            }
 
             if (empty($email) || empty($fullName)) {
                 $logData[] = [
