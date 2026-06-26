@@ -91,7 +91,7 @@ import { AuthService } from '../services/auth.service';
                         *ngIf="r.tipo_recompensa === 'monedero' && r.status === 'completed' && r.pdf_path"
                         (click)="reprintCoupon(r)"
                         class="reprint-btn monedero-btn">
-                        ⬇ DESCARGAR MONEDERO
+                        ⬇ DESCARGAR
                       </button>
                       <!-- Monedero pendiente -->
                       <span *ngIf="r.tipo_recompensa === 'monedero' && r.status === 'pending'" class="pending-label">
