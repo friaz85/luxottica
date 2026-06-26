@@ -94,7 +94,21 @@ ssh -p 18765 -o StrictHostKeyChecking=no -i "$SSH_KEY" $REMOTE_USER "
     mysql -h localhost -u ughgtdncr7ro5 -p'mrL*1*P7ke&f' db4ccgnbnclgjg -e \"ALTER TABLE users ADD COLUMN password_encrypted TEXT NULL AFTER password_hash;\" 2>/dev/null || true
     # Add vigencia_area column to rewards table if not exists
     mysql -h localhost -u ughgtdncr7ro5 -p'mrL*1*P7ke&f' db4ccgnbnclgjg -e \"ALTER TABLE rewards ADD COLUMN vigencia_area VARCHAR(500) NULL DEFAULT NULL;\" 2>/dev/null || true
+    # Create CORS .htaccess for uploads folder (needed for PDF.js preview)
+    mkdir -p $REMOTE_PATH/api/public/uploads/templates
+    cat > $REMOTE_PATH/api/public/uploads/.htaccess << 'HTEOF'
+Options -Indexes
+<IfModule mod_headers.c>
+    Header always set Access-Control-Allow-Origin \"*\"
+    Header always set Access-Control-Allow-Methods \"GET, OPTIONS\"
+    Header always set Access-Control-Allow-Headers \"Origin, Accept, Content-Type\"
+</IfModule>
+<IfModule mod_rewrite.c>
+    RewriteEngine Off
+</IfModule>
+HTEOF
 "
+
 
 # 6. Create API .htaccess
 echo "📄 Creating API .htaccess for redirection..."

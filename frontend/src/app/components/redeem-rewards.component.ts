@@ -704,7 +704,7 @@ export class RedeemRewardsComponent implements OnInit {
           Swal.fire({ title: '¡RECARGA PROCESADA!', text: 'Tu recarga ha sido procesada. En un lapso de 24 a 48 horas verás reflejado tu saldo. 📱', icon: 'success', confirmButtonColor: '#000000' })
             .then(() => { this.selectedReward.set(null); this.loadProfile(); });
         } else if (tipo === 'monedero') {
-          Swal.fire({ title: '¡SOLICITUD RECIBIDA!', text: 'En un lapso de 3 a 5 días hábiles recibirás tu monedero. Revisa tu bandeja de correo. 💳', icon: 'success', confirmButtonColor: '#000000' })
+          Swal.fire({ title: '¡SOLICITUD RECIBIDA!', text: 'En un lapso de 3 a 5 días hábiles recibirás tu monedero y podrás descargarlo en el apartado de HISTORIAL. 💳', icon: 'success', confirmButtonColor: '#000000' })
             .then(() => { this.selectedReward.set(null); this.loadProfile(); });
         } else {
           Swal.fire({ title: '¡CANJE EXITOSO!', text: 'TU RECOMPENSA HA SIDO CANJEADA CORRECTAMENTE.', icon: 'success', confirmButtonColor: '#000000' })
