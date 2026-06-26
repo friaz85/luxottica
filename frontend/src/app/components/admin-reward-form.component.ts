@@ -1026,18 +1026,29 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   async loadExistingPDF(filename: string) {
     const url = `${environment.uploadsUrl}/templates/${filename}`;
     const pdfjsLib = (window as any)['pdfjsLib'];
-    if (!pdfjsLib) return;
-    const pdf = await pdfjsLib.getDocument(url).promise;
-    const page = await pdf.getPage(1);
-    this.cdr.detectChanges();
-    setTimeout(async () => {
-      const canvas = this.pdfCanvas.nativeElement;
-      const viewport = page.getViewport({ scale: 1.0 });
-      canvas.width = viewport.width; canvas.height = viewport.height;
-      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-      this.pdfLoaded.set(true);
-      this.recalculatePixels();
-    }, 100);
+    if (!pdfjsLib) {
+      this.toastService.show('PDF.js no disponible. Recarga la página.', 'error');
+      return;
+    }
+    try {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const pdf = await pdfjsLib.getDocument({ url, withCredentials: false }).promise;
+      const page = await pdf.getPage(1);
+      this.cdr.detectChanges();
+      setTimeout(async () => {
+        const canvas = this.pdfCanvas.nativeElement;
+        const viewport = page.getViewport({ scale: 1.0 });
+        canvas.width = viewport.width; canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        this.pdfLoaded.set(true);
+        this.recalculatePixels();
+      }, 150);
+    } catch (err: any) {
+      console.warn('loadExistingPDF error:', err);
+      // PDF is stored in DB — coordinates are preserved. Only the preview fails.
+      // Mark as loaded so the sections still show for the user.
+      this.toastService.show('Vista previa del PDF no disponible (el archivo sí está guardado). Puedes guardar sin re-seleccionarlo.', 'info');
+    }
   }
 
   recalculatePixels() {
@@ -1260,7 +1271,8 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     if (this.pdfCanvas) {
       const canvas = this.pdfCanvas.nativeElement;
       const w = canvas.width; const h = canvas.height;
-      if (w > 0 && h > 0) {
+      // Only send new coordinate values if the PDF is actually loaded in canvas
+      if (w > 0 && h > 0 && this.pdfLoaded()) {
         const coords = this.codeAreas().map(a => {
           const px = (a.x / w) * 100; const py = (a.y / h) * 100;
           const pw = (a.width / w) * 100; const ph = (a.height / h) * 100;
@@ -1280,8 +1292,8 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
           formData.append('vigencia_area', '');
         }
       }
+      // If PDF not loaded in canvas, coordinates/code_areas come from Object.keys loop (preserving DB values)
     }
-    // If no PDF canvas, don't send vigencia_area (backend won't update it, preserving existing value)
 
     const url = this.editingReward.id ? `${environment.apiUrl}/admin/rewards/${this.editingReward.id}/update` : `${environment.apiUrl}/admin/rewards`;
     this.loader.show();
