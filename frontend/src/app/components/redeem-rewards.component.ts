@@ -607,20 +607,20 @@ export class RedeemRewardsComponent implements OnInit {
           <p style="font-size:0.9rem;color:#555;margin-bottom:1.2rem;">Ingresa tu nombre completo como aparece en tu identificación oficial.</p>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;text-align:left;">
             <div>
-              <label style="font-size:0.8rem;font-weight:700;color:#333;">Primer nombre</label>
-              <input id="swal-primer" class="swal2-input" placeholder="Primer nombre" style="margin:0.3rem 0 0;width:100%;box-sizing:border-box;">
+              <label style="font-size:0.8rem;font-weight:700;color:#333;">Primer nombre <span style="color:#dc2626;">*</span></label>
+              <input id="swal-primer" class="swal2-input" placeholder="Primer nombre" required style="margin:0.3rem 0 0;width:100%;box-sizing:border-box;font-size:0.85rem;">
             </div>
             <div>
-              <label style="font-size:0.8rem;font-weight:700;color:#333;">Segundo nombre</label>
-              <input id="swal-segundo" class="swal2-input" placeholder="Segundo nombre (opcional)" style="margin:0.3rem 0 0;width:100%;box-sizing:border-box;">
+              <label style="font-size:0.8rem;font-weight:700;color:#333;">Segundo nombre <span style="color:#999;font-weight:400;">(opcional)</span></label>
+              <input id="swal-segundo" class="swal2-input" placeholder="Segundo nombre" style="margin:0.3rem 0 0;width:100%;box-sizing:border-box;font-size:0.85rem;">
             </div>
             <div>
-              <label style="font-size:0.8rem;font-weight:700;color:#333;">Apellido Paterno</label>
-              <input id="swal-paterno" class="swal2-input" placeholder="Apellido paterno" style="margin:0.3rem 0 0;width:100%;box-sizing:border-box;">
+              <label style="font-size:0.8rem;font-weight:700;color:#333;">Apellido Paterno <span style="color:#dc2626;">*</span></label>
+              <input id="swal-paterno" class="swal2-input" placeholder="Apellido paterno" required style="margin:0.3rem 0 0;width:100%;box-sizing:border-box;font-size:0.85rem;">
             </div>
             <div>
-              <label style="font-size:0.8rem;font-weight:700;color:#333;">Apellido Materno</label>
-              <input id="swal-materno" class="swal2-input" placeholder="Apellido materno" style="margin:0.3rem 0 0;width:100%;box-sizing:border-box;">
+              <label style="font-size:0.8rem;font-weight:700;color:#333;">Apellido Materno <span style="color:#dc2626;">*</span></label>
+              <input id="swal-materno" class="swal2-input" placeholder="Apellido materno" required style="margin:0.3rem 0 0;width:100%;box-sizing:border-box;font-size:0.85rem;">
             </div>
           </div>
           <p style="font-size:0.75rem;color:#888;margin-top:1rem;text-align:left;">
@@ -637,9 +637,9 @@ export class RedeemRewardsComponent implements OnInit {
           const primerNombre    = (document.getElementById('swal-primer') as HTMLInputElement)?.value?.trim();
           const segundoNombre   = (document.getElementById('swal-segundo') as HTMLInputElement)?.value?.trim() || '';
           const apellidoPaterno = (document.getElementById('swal-paterno') as HTMLInputElement)?.value?.trim();
-          const apellidoMaterno = (document.getElementById('swal-materno') as HTMLInputElement)?.value?.trim() || '';
-          if (!primerNombre || !apellidoPaterno) {
-            Swal.showValidationMessage('Primer nombre y Apellido paterno son requeridos');
+          const apellidoMaterno = (document.getElementById('swal-materno') as HTMLInputElement)?.value?.trim();
+          if (!primerNombre || !apellidoPaterno || !apellidoMaterno) {
+            Swal.showValidationMessage('Primer nombre, Apellido paterno y Apellido materno son obligatorios');
             return false;
           }
           const nombreMonedero = segundoNombre ? `${primerNombre} ${segundoNombre}` : primerNombre;
