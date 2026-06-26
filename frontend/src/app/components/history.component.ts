@@ -90,7 +90,7 @@ import { AuthService } from '../services/auth.service';
                       <button
                         *ngIf="r.tipo_recompensa === 'monedero' && r.status === 'completed' && r.pdf_path"
                         (click)="reprintCoupon(r)"
-                        class="reprint-btn">
+                        class="reprint-btn monedero-btn">
                         ⬇ DESCARGAR MONEDERO
                       </button>
                       <!-- Monedero pendiente -->
@@ -279,6 +279,8 @@ import { AuthService } from '../services/auth.service';
       white-space: nowrap;
     }
     .reprint-btn:hover { background: #333; transform: translateY(-2px); }
+    .reprint-btn.monedero-btn { background: #CC0000; }
+    .reprint-btn.monedero-btn:hover { background: #aa0000; }
 
     .home-btn {
       display: inline-block;
