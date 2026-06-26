@@ -55,7 +55,7 @@ import { environment } from '../../environments/environment';
                 <td>
                   <div class="redemption-info-cell">
                     <span class="font-bold">{{ redemption.user_name }}</span>
-                    <small class="block text-gray">{{ redemption.user_email }}</small>
+                    <small style="color:#94a3b8; display:block; font-size:0.75rem; font-family:monospace;">{{ redemption.user_email }}</small>
                   </div>
                 </td>
                 <td>
