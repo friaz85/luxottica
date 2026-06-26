@@ -205,7 +205,7 @@ class AdminRedemptionsController extends ResourceController
                 redemptions.status_recarga,
                 users.full_name as user_name,
                 users.email as user_email,
-                users.user as user_login,
+                users.email as user_login,
                 rewards.title as reward_name,
                 rewards.type as reward_type,
                 rewards.tipo_recompensa,
