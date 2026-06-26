@@ -340,13 +340,26 @@ class RedemptionController extends ResourceController
             'digital_code'   => $transID ? "TXN:{$transID}" : '',
         ]);
 
-        // --- Log ---
+        // --- Log en tblLogRecarga (igual que Postit2026) ---
+        try {
+            $db->table('tblLogRecarga')->insert([
+                'idRegistro'    => $redemptionId,
+                'Mensaje'       => $logMensaje ?: ($recargarExitosa ? 'Recarga exitosa' : 'Recarga fallida'),
+                'Codigo'        => $recargarExitosa ? '0' : (string)($txnResponse['error'] ?? $statusResponse['error'] ?? 'E'),
+                'FechaRegistro' => date('Y-m-d H:i:s'),
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'tblLogRecarga insert error: ' . $e->getMessage());
+        }
+
+        // --- Log en security_logs ---
         $logModel->save([
             'ip_address' => $this->request->getIPAddress(),
             'user_id'    => $userId,
             'action'     => $recargarExitosa ? 'taecel_recarga_exitosa' : 'taecel_recarga_fallida',
             'details'    => "Producto: {$producto} | Tel: {$telefono} | {$logMensaje}",
         ]);
+
 
         // Always return success to user (they should not see Taecel internal errors)
         return $this->respond([
