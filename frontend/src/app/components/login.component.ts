@@ -46,11 +46,8 @@ import Swal from 'sweetalert2';
             </div>
 
             <div class="buttons-row">
-              <button type="submit" class="btn-black" [disabled]="loading()">
+              <button type="submit" class="btn-black" [disabled]="loading()" style="width: 100%;">
                 {{ loading() ? 'Iniciando...' : 'Iniciar sesión' }}
-              </button>
-              <button type="button" class="btn-black" (click)="registerNewUser()">
-                Regístrate
               </button>
             </div>
           </form>
