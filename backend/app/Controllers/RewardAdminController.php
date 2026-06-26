@@ -28,6 +28,7 @@ class RewardAdminController extends ResourceController
         $db = \Config\Database::connect();
         $now = date('Y-m-d H:i:s');
         foreach ($rewards as &$reward) {
+            // Códigos con vigencia asignada
             $vigencias = $db->table('reward_codes')
                             ->select('vigencias.*, COUNT(reward_codes.id) as codes_available')
                             ->join('vigencias', 'vigencias.id = reward_codes.id_vigencia')
@@ -38,11 +39,20 @@ class RewardAdminController extends ResourceController
                             ->get()
                             ->getResultArray();
 
-            $reward['vigencias']     = $vigencias;
-            $reward['active_stock']  = array_sum(array_column(
+            // Códigos sin vigencia (sin restricción de fecha — siempre activos)
+            $codesNoVigencia = (int) $db->table('reward_codes')
+                                        ->where('reward_id', $reward['id'])
+                                        ->where('is_used', 0)
+                                        ->where('id_vigencia IS NULL', null, false)
+                                        ->countAllResults();
+
+            $stockFromVigencias = array_sum(array_column(
                 array_filter($vigencias, fn($v) => $v['fecha_fin'] >= $now),
                 'codes_available'
             ));
+
+            $reward['vigencias']    = $vigencias;
+            $reward['active_stock'] = $stockFromVigencias + $codesNoVigencia;
         }
         return $this->respond($rewards);
     }
