@@ -64,8 +64,11 @@ import Swal from 'sweetalert2';
                 <td>{{ p.Fecha_Inicio | date:'dd/MM/yyyy' }}</td>
                 <td>{{ p.Fecha_Fin | date:'dd/MM/yyyy' }}</td>
                 <td>
-                  <span class="status-pill" [class.expired]="isExpired(p.Fecha_Fin) || p.activo == 0" [class.desactivado]="p.activo == 0">
-                    {{ p.activo == 0 ? '❌ Desactivado' : (isExpired(p.Fecha_Fin) ? '⌛ Finalizado' : '✅ Activo') }}
+                  <span class="status-pill" 
+                        [class.expired]="isExpired(p.Fecha_Fin) || p.activo == 0" 
+                        [class.desactivado]="p.activo == 0"
+                        [class.pending]="isFuture(p.Fecha_Inicio) && p.activo != 0">
+                    {{ p.activo == 0 ? '❌ Desactivado' : (isExpired(p.Fecha_Fin) ? '⌛ Finalizado' : (isFuture(p.Fecha_Inicio) ? '⏳ Por iniciar' : '✅ Activo')) }}
                   </span>
                 </td>
                 <td class="text-right">
@@ -158,6 +161,7 @@ import Swal from 'sweetalert2';
     .status-pill { padding: 0.4rem 0.8rem; border-radius: 2rem; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; white-space: nowrap; width: fit-content; }
     .status-pill.expired { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
     .status-pill.desactivado { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .status-pill.pending { background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
 
     .btn-group { display: flex; gap: 0.5rem; justify-content: flex-end; }
     .action-btn { padding: 0.6rem 1rem; border-radius: 0.6rem; border: none; cursor: pointer; font-weight: 800; font-size: 0.8rem; transition: 0.2s; white-space: nowrap; }
@@ -289,6 +293,10 @@ export class AdminProjectsComponent implements OnInit {
 
   isExpired(date: string) {
     return new Date(date) < new Date(new Date().setHours(0,0,0,0));
+  }
+
+  isFuture(date: string) {
+    return new Date(date) > new Date();
   }
 
   filteredProjects = computed(() => {
