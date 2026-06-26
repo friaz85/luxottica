@@ -318,7 +318,9 @@ class AdminRedemptionsController extends ResourceController
                           r.telefono_recarga, r.id_telefonia, r.status_recarga,
                           u.full_name as user_name, u.email as user_login,
                           rw.title as reward_name, rw.tipo_recompensa, rw.cost as points_cost,
-                          tel.Telefonia as nombre_telefonia')
+                          rw.monto_recarga,
+                          tel.Telefonia as nombre_telefonia, tel.SKU as telefonia_sku,
+                          CONCAT(tel.SKU, LPAD(rw.monto_recarga, 3, "0")) as producto')
                 ->join('users u',          'u.id = r.user_id',              'left')
                 ->join('rewards rw',       'rw.id = r.reward_id',           'left')
                 ->join('tblTelefonia tel', 'tel.idTelefonia = r.id_telefonia', 'left')

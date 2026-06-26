@@ -162,6 +162,8 @@ import Swal from 'sweetalert2';
                   <div *ngIf="r.tipo_recompensa === 'tiempo_aire'" class="detail-block">
                     <span class="detail-lbl">Teléfono · Operadora</span>
                     <span class="detail-val">{{ r.telefono_recarga }} · {{ r.nombre_telefonia || '—' }}</span>
+                    <span class="detail-lbl" style="margin-top:4px;">Producto a recargar</span>
+                    <span class="detail-val" style="font-family:monospace;font-size:15px;font-weight:900;color:#1e40af;letter-spacing:1px;">{{ r.producto || '—' }}</span>
                   </div>
                 </td>
                 <td style="color:#6b7280;font-size:0.82rem;">{{ fmtDate(r.created_at) }}</td>
@@ -218,6 +220,10 @@ import Swal from 'sweetalert2';
           <div *ngIf="currentRow()?.tipo_recompensa === 'tiempo_aire'" class="detail-block" style="margin-bottom:12px;">
             <span class="detail-lbl">Teléfono · Operadora</span>
             <span class="detail-val">{{ currentRow()?.telefono_recarga }} · {{ currentRow()?.nombre_telefonia }}</span>
+          </div>
+          <div *ngIf="currentRow()?.tipo_recompensa === 'tiempo_aire'" class="detail-block" style="margin-bottom:12px;">
+            <span class="detail-lbl">🔑 PRODUCTO A RECARGAR</span>
+            <span class="detail-val" style="font-family:monospace;font-size:1.3rem;font-weight:900;color:#1e40af;letter-spacing:2px;background:#dbeafe;padding:6px 12px;border-radius:8px;display:inline-block;margin-top:4px;">{{ currentRow()?.producto || '—' }}</span>
           </div>
           <div class="success-box">
             <strong>¿Qué sucederá?</strong><br>
