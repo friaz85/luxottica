@@ -7,6 +7,18 @@ use CodeIgniter\RESTful\ResourceController;
 
 class AdminVigenciasController extends ResourceController
 {
+    private function logActivity($action, $details)
+    {
+        $logModel = new \App\Models\AdminActivityLogModel();
+        $logModel->save([
+            'admin_id'       => $this->request->admin_user->id ?? null,
+            'admin_username' => $this->request->admin_user->username ?? 'admin',
+            'action'         => $action,
+            'details'        => $details,
+            'ip_address'     => $this->request->getIPAddress()
+        ]);
+    }
+
     public function index()
     {
         $model = new VigenciaModel();
@@ -30,6 +42,7 @@ class AdminVigenciasController extends ResourceController
         try {
             if ($model->insert($saveData)) {
                 $id = $model->insertID();
+                $this->logActivity('create_vigencia', "Creada vigencia: {$data['fecha_inicio']} a {$data['fecha_fin']} (ID: {$id})");
                 return $this->respondCreated(['message' => 'Vigencia creada', 'id' => $id]);
             }
         } catch (\Exception $e) {
@@ -55,6 +68,7 @@ class AdminVigenciasController extends ResourceController
 
         try {
             if ($model->update($id, $updateData)) {
+                $this->logActivity('update_vigencia', "Actualizada vigencia: {$data['fecha_inicio']} a {$data['fecha_fin']} (ID: {$id})");
                 return $this->respond(['message' => 'Vigencia actualizada']);
             }
         } catch (\Exception $e) {
@@ -67,8 +81,11 @@ class AdminVigenciasController extends ResourceController
     public function delete($id = null)
     {
         $model = new VigenciaModel();
+        $vigencia = $model->find($id);
         try {
             if ($model->delete($id)) {
+                $desc = $vigencia ? "{$vigencia['fecha_inicio']} a {$vigencia['fecha_fin']}" : "ID {$id}";
+                $this->logActivity('delete_vigencia', "Eliminada vigencia: {$desc} (ID: {$id})");
                 return $this->respondDeleted(['message' => 'Vigencia eliminada']);
             }
         } catch (\Exception $e) {

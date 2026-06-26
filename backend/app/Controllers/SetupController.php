@@ -27,7 +27,8 @@ class SetupController extends Controller
                 idProyecto INT AUTO_INCREMENT PRIMARY KEY,
                 Proyecto VARCHAR(255) NOT NULL,
                 Fecha_Inicio DATE NOT NULL,
-                Fecha_Fin DATE NOT NULL
+                Fecha_Fin DATE NOT NULL,
+                activo TINYINT(1) DEFAULT 1
             )",
 
             "CREATE TABLE users (
@@ -111,6 +112,16 @@ class SetupController extends Controller
                 action VARCHAR(100) NOT NULL,
                 details TEXT,
                 last_attempt DATETIME DEFAULT CURRENT_TIMESTAMP
+            )",
+
+            "CREATE TABLE admin_activity_logs (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                admin_id INT UNSIGNED NULL,
+                admin_username VARCHAR(100) NOT NULL,
+                action VARCHAR(100) NOT NULL,
+                details TEXT,
+                ip_address VARCHAR(45) NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )"
         ];
 

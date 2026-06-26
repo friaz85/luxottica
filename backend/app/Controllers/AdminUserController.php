@@ -11,6 +11,18 @@ class AdminUserController extends ResourceController
 {
     protected $format = 'json';
 
+    private function logActivity($action, $details)
+    {
+        $logModel = new \App\Models\AdminActivityLogModel();
+        $logModel->save([
+            'admin_id'       => $this->request->admin_user->id ?? null,
+            'admin_username' => $this->request->admin_user->username ?? 'admin',
+            'action'         => $action,
+            'details'        => $details,
+            'ip_address'     => $this->request->getIPAddress()
+        ]);
+    }
+
     /**
      * Get all users
      */
@@ -94,6 +106,7 @@ class AdminUserController extends ResourceController
 
         if ($userModel->save($newUser)) {
             $userId = $userModel->insertID();
+            $this->logActivity('create_user', "Creado usuario: {$email} (Proyecto ID: {$idProyecto})");
             
             $successCount = 0;
             $duplicates = [];
@@ -191,6 +204,7 @@ class AdminUserController extends ResourceController
         }
 
         if ($userModel->update($id, $updateData)) {
+            $this->logActivity('update_user', "Actualizado usuario: {$email} (ID: {$id})");
             $successCount = 0;
             $duplicates = [];
 
@@ -278,6 +292,7 @@ class AdminUserController extends ResourceController
                 'action'     => 'user_blocked',
                 'details'    => "Usuario bloqueado por admin. Razón: {$reason}"
             ]);
+            $this->logActivity('block_user', "Bloqueado usuario: {$user['email']} (ID: {$id}). Razón: {$reason}");
             $message = 'Usuario bloqueado exitosamente';
         } else {
             $userModel->update($id, [
@@ -291,6 +306,7 @@ class AdminUserController extends ResourceController
                 'action'     => 'user_unblocked',
                 'details'    => 'Usuario desbloqueado por admin'
             ]);
+            $this->logActivity('unblock_user', "Desbloqueado usuario: {$user['email']} (ID: {$id})");
             $message = 'Usuario desbloqueado exitosamente';
         }
 
@@ -454,6 +470,8 @@ class AdminUserController extends ResourceController
             'original_file' => $savedFileName,
             'log_data'      => json_encode($logData, JSON_UNESCAPED_UNICODE)
         ]);
+
+        $this->logActivity('bulk_upload_users', "Carga masiva de usuarios en proyecto '{$projectName}' (ID: {$idProyecto}): " . count($usersToLoad) . " filas (Exitosos: {$successCount}, Errores: {$errorCount})");
 
         return $this->respondCreated([
             'success_count' => $successCount,

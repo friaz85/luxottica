@@ -64,14 +64,14 @@ import Swal from 'sweetalert2';
                 <td>{{ p.Fecha_Inicio | date:'dd/MM/yyyy' }}</td>
                 <td>{{ p.Fecha_Fin | date:'dd/MM/yyyy' }}</td>
                 <td>
-                  <span class="status-pill" [class.expired]="isExpired(p.Fecha_Fin)">
-                    {{ isExpired(p.Fecha_Fin) ? '⌛ Finalizado' : '✅ Activo' }}
+                  <span class="status-pill" [class.expired]="isExpired(p.Fecha_Fin) || p.activo == 0" [class.desactivado]="p.activo == 0">
+                    {{ p.activo == 0 ? '❌ Desactivado' : (isExpired(p.Fecha_Fin) ? '⌛ Finalizado' : '✅ Activo') }}
                   </span>
                 </td>
                 <td class="text-right">
                   <div class="btn-group">
                     <button class="action-btn edit" (click)="openProjectModal(p)">Editar</button>
-                    <button class="action-btn delete" (click)="deleteProject(p)">Eliminar</button>
+                    <button class="action-btn delete" (click)="deleteProject(p)">Desactivar</button>
                   </div>
                 </td>
               </tr>
@@ -157,6 +157,7 @@ import Swal from 'sweetalert2';
 
     .status-pill { padding: 0.4rem 0.8rem; border-radius: 2rem; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; white-space: nowrap; width: fit-content; }
     .status-pill.expired { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+    .status-pill.desactivado { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 
     .btn-group { display: flex; gap: 0.5rem; justify-content: flex-end; }
     .action-btn { padding: 0.6rem 1rem; border-radius: 0.6rem; border: none; cursor: pointer; font-weight: 800; font-size: 0.8rem; transition: 0.2s; white-space: nowrap; }
@@ -261,24 +262,24 @@ export class AdminProjectsComponent implements OnInit {
 
   deleteProject(p: any) {
     Swal.fire({
-      title: '¿Eliminar Proyecto?',
-      text: `Se eliminará "${p.Proyecto}". Ten en cuenta que esto puede afectar a usuarios vinculados.`,
+      title: '¿Desactivar Proyecto?',
+      text: `Se desactivará "${p.Proyecto}". Ten en cuenta que esto afectará el acceso de los usuarios vinculados.`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ff3333',
-      confirmButtonText: 'Sí, eliminar',
+      confirmButtonText: 'Sí, desactivar',
       cancelButtonText: 'Cancelar'
     }).then(result => {
       if (result.isConfirmed) {
         this.loader.show();
         this.http.delete(`${environment.apiUrl}/admin/projects/${p.idProyecto}`).subscribe({
           next: () => {
-            this.toast.show('PROYECTO ELIMINADO', 'success');
+            this.toast.show('PROYECTO DESACTIVADO', 'success');
             this.loadProjects();
             this.loader.hide();
           },
           error: () => {
-            this.toast.show('ERROR AL ELIMINAR', 'error');
+            this.toast.show('ERROR AL DESACTIVAR', 'error');
             this.loader.hide();
           }
         });

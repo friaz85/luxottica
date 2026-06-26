@@ -8,6 +8,18 @@ use CodeIgniter\RESTful\ResourceController;
 
 class RewardAdminController extends ResourceController
 {
+    private function logActivity($action, $details)
+    {
+        $logModel = new \App\Models\AdminActivityLogModel();
+        $logModel->save([
+            'admin_id'       => $this->request->admin_user->id ?? null,
+            'admin_username' => $this->request->admin_user->username ?? 'admin',
+            'action'         => $action,
+            'details'        => $details,
+            'ip_address'     => $this->request->getIPAddress()
+        ]);
+    }
+
     public function index()
     {
         $rewardModel = new RewardModel();
@@ -206,6 +218,8 @@ class RewardAdminController extends ResourceController
                     ]);
                 }
 
+                $this->logActivity('create_reward', "Creada recompensa: '{$saveData['title']}' (ID: {$rewardId}). Stock inicial: " . ($addedCount ?? 0));
+
                 return $this->respondCreated(['message' => 'Recompensa creada', 'id' => $rewardId]);
             }
         } catch (\Exception $e) {
@@ -309,6 +323,9 @@ class RewardAdminController extends ResourceController
                     }
                 }
 
+                $rewardName = $updateData['title'] ?? ($currentReward['title'] ?? 'ID ' . $id);
+                $this->logActivity('update_reward', "Actualizada recompensa: '{$rewardName}' (ID: {$id})");
+
                 return $this->respond(['message' => 'Recompensa actualizada']);
             }
         } catch (\Exception $e) {
@@ -321,8 +338,11 @@ class RewardAdminController extends ResourceController
     {
         $rewardModel = new RewardModel();
         $rewardCodeModel = new RewardCodeModel();
+        $reward = $rewardModel->find($id);
         $rewardCodeModel->where('reward_id', $id)->delete();
         if ($rewardModel->delete($id)) {
+            $name = $reward ? $reward['title'] : 'ID ' . $id;
+            $this->logActivity('delete_reward', "Eliminada recompensa: '{$name}' (ID: {$id})");
             return $this->respondDeleted(['message' => 'Recompensa eliminada']);
         }
         return $this->fail('Error al eliminar');
@@ -475,6 +495,10 @@ class RewardAdminController extends ResourceController
         $rewardModel = new RewardModel();
         $rewardModel->update($rewardId, ['stock' => $newStock]);
 
+        $reward = $rewardModel->find($rewardId);
+        $name = $reward ? $reward['title'] : 'ID ' . $rewardId;
+        $this->logActivity('add_reward_codes', "Cargados {$successCount} códigos a recompensa '{$name}' (ID: {$rewardId}). Nuevo stock: {$newStock}");
+
         return $this->respondCreated([
             'message' => 'Proceso de carga finalizado.',
             'success_count' => $successCount,
@@ -490,6 +514,14 @@ class RewardAdminController extends ResourceController
         $db = \Config\Database::connect();
         try {
             $db->table('reward_exclusions')->insert(['id_reward' => $id, 'id_proyecto' => $id_proyecto]);
+            
+            $reward = $db->table('rewards')->where('id', $id)->get()->getRowArray();
+            $project = $db->table('tblProyecto')->where('idProyecto', $id_proyecto)->get()->getRowArray();
+            $rewardName = $reward ? $reward['title'] : 'ID ' . $id;
+            $projectName = $project ? $project['Proyecto'] : 'ID ' . $id_proyecto;
+            
+            $this->logActivity('add_reward_exclusion', "Excluido proyecto '{$projectName}' de la recompensa '{$rewardName}'");
+            
             return $this->respondCreated(['status' => 'Exclusion added']);
         } catch (\Exception $e) {
             return $this->fail($e->getMessage());
@@ -500,6 +532,14 @@ class RewardAdminController extends ResourceController
     {
         $db = \Config\Database::connect();
         $db->table('reward_exclusions')->where('id_reward', $id)->where('id_proyecto', $id_proyecto)->delete();
+        
+        $reward = $db->table('rewards')->where('id', $id)->get()->getRowArray();
+        $project = $db->table('tblProyecto')->where('idProyecto', $id_proyecto)->get()->getRowArray();
+        $rewardName = $reward ? $reward['title'] : 'ID ' . $id;
+        $projectName = $project ? $project['Proyecto'] : 'ID ' . $id_proyecto;
+        
+        $this->logActivity('remove_reward_exclusion', "Eliminada exclusión de proyecto '{$projectName}' de la recompensa '{$rewardName}'");
+        
         return $this->respond(['status' => 'Exclusion removed']);
     }
 }
