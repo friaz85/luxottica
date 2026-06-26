@@ -225,20 +225,21 @@ import Swal from 'sweetalert2';
     .welcome-card-header {
       background: #000000;
       color: #ffffff;
-      padding: 0.8rem;
+      padding: 1.5rem; /* Matches catalog-header padding */
       text-align: center;
     }
     .welcome-card-header h3 {
-      font-size: 1rem;
+      font-size: 1.1rem;
       font-weight: 600;
       margin: 0;
+      line-height: 1.25rem; /* same line height to align accurately */
     }
     .welcome-card-body {
       flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1rem;
+      padding: 0.2rem 1rem; /* Removed vertical padding, reduced space */
     }
     .user-name { font-size: 1.3rem; font-weight: 700; margin: 0; text-transform: capitalize; color: #000000; line-height: 1.2; }
     
