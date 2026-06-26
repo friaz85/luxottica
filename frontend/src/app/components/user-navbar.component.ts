@@ -17,6 +17,8 @@ import Swal from 'sweetalert2';
           <div class="left-links">
             <a (click)="logout()" class="nav-link cursor-pointer">Salir</a>
             <span class="separator">|</span>
+            <a routerLink="/rewards" class="nav-link">Inicio</a>
+            <span class="separator">|</span>
             <a routerLink="/history" class="nav-link">Historial</a>
           </div>
           <div class="right-info">
