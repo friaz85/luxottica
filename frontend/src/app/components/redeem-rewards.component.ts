@@ -465,8 +465,10 @@ export class RedeemRewardsComponent implements OnInit {
     this.rewardsLoading.set(true);
     this.http.get(`${environment.apiUrl}/rewards`).subscribe({
       next: (res: any) => {
-        // Only show rewards with stock > 0
-        const list = (Array.isArray(res) ? res : []).filter((r: any) => r.stock > 0);
+        // Normal rewards require stock > 0. Monedero/tiempo_aire are always shown (no code inventory needed).
+        const list = (Array.isArray(res) ? res : []).filter((r: any) =>
+          r.stock > 0 || r.tipo_recompensa === 'monedero' || r.tipo_recompensa === 'tiempo_aire'
+        );
         this.rewards.set(list);
         this.rewardsLoading.set(false);
         this.loading.set(false);
