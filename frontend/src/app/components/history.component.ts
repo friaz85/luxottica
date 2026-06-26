@@ -248,6 +248,8 @@ import { AuthService } from '../services/auth.service';
       font-weight: 700;
       background: #f0f0f0;
       color: #555;
+      white-space: nowrap;
+      display: inline-block;
     }
     .type-pill.monedero { background: #fff3e0; color: #e65100; }
     .type-pill.ta       { background: #e8f5e9; color: #2e7d32; }
