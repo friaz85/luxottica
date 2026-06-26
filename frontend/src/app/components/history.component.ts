@@ -25,9 +25,6 @@ import { AuthService } from '../services/auth.service';
 
           <h1 class="history-title">MI HISTORIAL DE CANJES</h1>
 
-          <div style="text-align:right;margin-bottom:1.2rem;">
-            <a routerLink="/rewards" class="home-btn">&#8592; Ir a Inicio</a>
-          </div>
 
           <div class="table-container custom-scroll">
             <table class="glass-table">
