@@ -53,10 +53,8 @@ import { LoaderComponent } from './loader.component';
         <a routerLink="/admin/pending-rewards" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">⏳</span> Pendientes
         </a>
-        <a routerLink="/admin/entry-codes-report" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
-          <span class="icon">📈</span> Reporte de Códigos
-        </a>
       </nav>
+
 
       <div class="user-footer">
         <button (click)="logout()" class="action-btn logout-btn">

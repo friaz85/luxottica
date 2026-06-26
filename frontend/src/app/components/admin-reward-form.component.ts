@@ -1044,10 +1044,9 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
         this.recalculatePixels();
       }, 150);
     } catch (err: any) {
-      console.warn('loadExistingPDF error:', err);
-      // PDF is stored in DB — coordinates are preserved. Only the preview fails.
-      // Mark as loaded so the sections still show for the user.
-      this.toastService.show('Vista previa del PDF no disponible (el archivo sí está guardado). Puedes guardar sin re-seleccionarlo.', 'info');
+      console.warn('loadExistingPDF error (PDF is stored in DB, coordinates are safe):', err?.message || err);
+      // PDF preview failed — coordinates are preserved in DB. User can save without re-selecting.
+      // No toast shown here to avoid interrupting normal edit workflow.
     }
   }
 

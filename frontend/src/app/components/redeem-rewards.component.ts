@@ -712,13 +712,8 @@ export class RedeemRewardsComponent implements OnInit {
         }
       },
       error: (err) => {
-        if ((reward.tipo_recompensa || 'normal') === 'tiempo_aire') {
-          Swal.fire({ title: '¡RECARGA PROCESADA!', text: 'Tu recarga ha sido procesada. En un lapso de 24 a 48 horas verás reflejado tu saldo. 📱', icon: 'success', confirmButtonColor: '#000000' })
-            .then(() => { this.selectedReward.set(null); this.loadProfile(); });
-        } else {
-          const msg = String(err.error?.message || err.error?.error || 'NO SE PUDO COMPLETAR EL CANJE.');
-          Swal.fire({ title: 'ERROR', text: msg, icon: 'error', confirmButtonColor: '#000000' });
-        }
+        const msg = String(err.error?.message || err.error?.error || 'NO SE PUDO COMPLETAR EL CANJE.');
+        Swal.fire({ title: 'ERROR', text: msg, icon: 'error', confirmButtonColor: '#000000' });
       }
     });
   }

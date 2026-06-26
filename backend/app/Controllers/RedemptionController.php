@@ -65,8 +65,15 @@ class RedemptionController extends ResourceController
         }
 
         $reward = $rewardModel->find($rewardId);
+        $tipoCheck = $reward['tipo_recompensa'] ?? 'normal';
+        $isManual  = in_array($tipoCheck, ['monedero', 'tiempo_aire']);
 
-        if (!$reward || $reward['stock'] <= 0) {
+        if (!$reward) {
+            return $this->respond(['message' => 'Recompensa no encontrada.'], 400);
+        }
+
+        // Only check stock for non-manual reward types
+        if (!$isManual && $reward['stock'] <= 0) {
             return $this->respond(['message' => 'Recompensa no disponible (Stock agotado).'], 400);
         }
 
@@ -153,7 +160,7 @@ class RedemptionController extends ResourceController
                 $fechaValidezFin = $startDate->format('Y-m-d');
             }
 
-            // Deduct Points and Stock
+            // Deduct Points
             $newPoints = $user['points'] - $reward['cost'];
             $newUsed = ($user['points_used'] ?? 0) + $reward['cost'];
             if (!$userModel->update($userId, [
@@ -164,9 +171,13 @@ class RedemptionController extends ResourceController
                 throw new \Exception("Error updating user points fields: " . json_encode($userModel->errors()));
             }
 
-            $newStock = (int)$reward['stock'] - 1;
-            if (!$rewardModel->update($rewardId, ['stock' => $newStock])) {
-                throw new \Exception("Error updating reward stock: " . json_encode($rewardModel->errors()));
+            // Only decrement stock for normal rewards (not monedero/tiempo_aire which have no inventory)
+            $tipoRecompensa = $reward['tipo_recompensa'] ?? 'normal';
+            if (!in_array($tipoRecompensa, ['monedero', 'tiempo_aire'])) {
+                $newStock = (int)$reward['stock'] - 1;
+                if (!$rewardModel->update($rewardId, ['stock' => $newStock])) {
+                    throw new \Exception("Error updating reward stock: " . json_encode($rewardModel->errors()));
+                }
             }
 
             $finalCodeString = implode(',', $codesList);
