@@ -168,6 +168,8 @@ class RewardAdminController extends ResourceController
         if ($pdf && $pdf->isValid() && !$pdf->hasMoved()) {
             $newName = $pdf->getRandomName();
             $pdf->move(FCPATH . 'uploads/templates', $newName);
+            // Normalize PDF to 1.4 (FPDI-compatible) via GhostScript
+            $this->normalizePdfForFpdi(FCPATH . 'uploads/templates/' . $newName);
             $saveData['pdf_template'] = $newName;
         }
 
@@ -268,6 +270,8 @@ class RewardAdminController extends ResourceController
         if ($pdf && $pdf->isValid() && !$pdf->hasMoved()) {
             $newName = $pdf->getRandomName();
             $pdf->move(FCPATH . 'uploads/templates', $newName);
+            // Normalize PDF to 1.4 (FPDI-compatible) via GhostScript
+            $this->normalizePdfForFpdi(FCPATH . 'uploads/templates/' . $newName);
             $updateData['pdf_template'] = $newName;
         }
 
@@ -348,6 +352,45 @@ class RewardAdminController extends ResourceController
             return $this->respondDeleted(['message' => 'Recompensa eliminada']);
         }
         return $this->fail('Error al eliminar');
+    }
+
+    /**
+     * Normalizes a PDF to version 1.4 using GhostScript so that FPDI (free version)
+     * can parse it. Handles modern PDFs with cross-reference streams, object streams,
+     * or other compression techniques not supported by FPDI's free parser.
+     *
+     * Converts in-place: replaces the original file with the compatible version.
+     */
+    private function normalizePdfForFpdi(string $filePath): void
+    {
+        try {
+            if (!file_exists($filePath)) return;
+
+            $tmpPath = $filePath . '.tmp.pdf';
+
+            // Use GhostScript to re-render to PDF 1.4 (FPDI-compatible)
+            $gsCmd = escapeshellcmd('gs') .
+                ' -dBATCH -dNOPAUSE -sDEVICE=pdfwrite' .
+                ' -dCompatibilityLevel=1.4' .
+                ' -dPDFSETTINGS=/prepress' .
+                ' -sOutputFile=' . escapeshellarg($tmpPath) .
+                ' ' . escapeshellarg($filePath) .
+                ' 2>&1';
+
+            $output = shell_exec($gsCmd);
+
+            if (file_exists($tmpPath) && filesize($tmpPath) > 0) {
+                // Replace original with normalized version
+                rename($tmpPath, $filePath);
+                log_message('info', "PDF normalized for FPDI: " . basename($filePath));
+            } else {
+                // GhostScript failed — keep original, log warning
+                if (file_exists($tmpPath)) unlink($tmpPath);
+                log_message('warning', "GhostScript normalization failed for: " . basename($filePath) . " Output: " . $output);
+            }
+        } catch (\Exception $e) {
+            log_message('error', "normalizePdfForFpdi error: " . $e->getMessage());
+        }
     }
 
     private function processExitCodes($rewardId, $codesText, $clearOld = false, $idVigencia = null)
