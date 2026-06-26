@@ -15,11 +15,11 @@ import Swal from 'sweetalert2';
       <nav class="top-nav">
         <div class="top-nav-content">
           <div class="left-links">
-            <a (click)="logout()" class="nav-link cursor-pointer">Salir</a>
-            <span class="separator">|</span>
             <a routerLink="/rewards" class="nav-link">Inicio</a>
             <span class="separator">|</span>
             <a routerLink="/history" class="nav-link">Historial</a>
+            <span class="separator">|</span>
+            <a (click)="logout()" class="nav-link cursor-pointer">Salir</a>
           </div>
           <div class="right-info">
             <span class="info-item">
