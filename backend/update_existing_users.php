@@ -1,6 +1,6 @@
 <?php
 /**
- * Migration script to update existing users and prepend the project prefix.
+ * Migration script to update existing users and prepend the project prefix with a hyphen (e.g. pr3-).
  */
 
 if (!defined('ENVIRONMENT')) {
@@ -33,10 +33,10 @@ try {
             continue;
         }
         
-        $prefix = 'pr' . $idProyecto;
+        $prefix = 'pr' . $idProyecto . '-';
         
-        // Clean up any existing prefix and prepend the current project prefix
-        $emailClean = preg_replace('/^pr\d+/', '', $email);
+        // Clean up only the specific project prefix (with or without hyphen)
+        $emailClean = preg_replace('/^pr' . $idProyecto . '-?/', '', $email);
         $newEmail = $prefix . $emailClean;
         
         if ($email !== $newEmail) {
