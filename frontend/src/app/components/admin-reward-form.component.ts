@@ -546,18 +546,21 @@ interface VigenciaArea {
       border-color: var(--admin-primary);
     }
     .reward-card-img {
-      height: 160px;
+      height: 130px;
       background: #f8fafc;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
       border-bottom: 1px solid #f1f5f9;
+      padding: 1rem;
     }
     .reward-img-el {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
       transition: transform 0.3s;
     }
     .reward-card:hover .reward-img-el {
