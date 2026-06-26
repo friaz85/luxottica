@@ -605,7 +605,7 @@ export class RedeemRewardsComponent implements OnInit {
             </div>
           </div>
           <p style="font-size:0.75rem;color:#888;margin-top:1rem;text-align:left;">
-            <strong>AVISO IMPORTANTE:</strong> En un lapso de 3 a 5 días hábiles se entregará el monedero al correo registrado. Si no lo ves en tu bandeja de entrada, <strong>revisa tu bandeja de correos no deseados.</strong>
+            <strong>AVISO IMPORTANTE:</strong> Al dar clic en CONTINUAR se registrará tu solicitud y en un lapso de 3 a 5 días hábiles podrás descargar tu monedero en el apartado de <strong>HISTORIAL</strong>.
           </p>`,
         confirmButtonText: 'Continuar',
         confirmButtonColor: '#000000',
