@@ -792,7 +792,6 @@ export class AdminUsersComponent implements OnInit {
     if (!this.bulkIdProyecto || this.bulkRows().length === 0) return;
     this.uploading.set(true);
     this.uploadProgress.set(0);
-    this.loader.show();
 
     // Send as multipart/form-data so the backend can save the original file
     const formData = new FormData();
@@ -829,7 +828,6 @@ export class AdminUsersComponent implements OnInit {
             this.bulkResult.set(event.body);
             this.bulkStep.set(3);
             this.uploading.set(false);
-            this.loader.hide();
           }, 450);
         }
       },
@@ -837,7 +835,6 @@ export class AdminUsersComponent implements OnInit {
         if (intervalId) clearInterval(intervalId);
         this.toast.show(err.error?.message || 'Error al procesar la carga', 'error');
         this.uploading.set(false);
-        this.loader.hide();
       }
     });
   }

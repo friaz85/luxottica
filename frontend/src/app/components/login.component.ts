@@ -54,10 +54,6 @@ import Swal from 'sweetalert2';
               </button>
             </div>
           </form>
-
-          <div class="new-user-link">
-            <a (click)="registerNewUser()">Da click aquí si eres usuario nuevo</a>
-          </div>
         </div>
       </div>
 
@@ -407,7 +403,7 @@ export class LoginComponent implements OnInit {
   forgotPassword() {
     Swal.fire({
       title: '¿Olvidaste tu contraseña?',
-      text: 'Por favor contacta a soporte técnico vía WhatsApp al número 55 5249.3752 o por correo a atencionaclientes@quantummx.com para restablecer tu contraseña.',
+      text: 'Por favor ingresa a tu plataforma CECADE para poder visualizar nuevamente y recuperar tus credenciales de acceso.',
       icon: 'info',
       confirmButtonColor: '#000000'
     });
