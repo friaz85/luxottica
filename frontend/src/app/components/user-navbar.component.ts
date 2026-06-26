@@ -162,7 +162,7 @@ import Swal from 'sweetalert2';
         flex-direction: column;
         padding: 0.5rem;
         height: auto;
-        gap: 0.5rem;
+        gap: 0.4rem;
         text-align: center;
       }
       .top-nav {
@@ -171,7 +171,12 @@ import Swal from 'sweetalert2';
       }
       .right-info {
         flex-direction: column;
-        gap: 0.25rem;
+        gap: 0.2rem;
+        order: 1;
+      }
+      .left-links {
+        order: 2;
+        justify-content: center;
       }
     }
   `]
