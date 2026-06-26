@@ -64,7 +64,7 @@ import * as XLSX from 'xlsx';
                    type="text" 
                    [ngModel]="searchTerm()" 
                    (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
-                   placeholder="Buscar por nombre o correo..."
+                   placeholder="Buscar por nombre o usuario..."
                  >
                </div>
              </div>
