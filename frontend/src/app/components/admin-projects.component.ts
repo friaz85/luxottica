@@ -68,7 +68,7 @@ import Swal from 'sweetalert2';
                         [class.expired]="isExpired(p.Fecha_Fin) || p.activo == 0" 
                         [class.desactivado]="p.activo == 0"
                         [class.pending]="isFuture(p.Fecha_Inicio) && p.activo != 0">
-                    {{ p.activo == 0 ? '❌ Desactivado' : (isExpired(p.Fecha_Fin) ? '⌛ Finalizado' : (isFuture(p.Fecha_Inicio) ? '⏳ Por iniciar' : '✅ Activo')) }}
+                    {{ p.activo == 0 ? '❌ Desactivado' : (isExpired(p.Fecha_Fin) ? '🔴 Finalizado' : (isFuture(p.Fecha_Inicio) ? '⏳ Por iniciar' : '✅ Activo')) }}
                   </span>
                 </td>
                 <td class="text-right">

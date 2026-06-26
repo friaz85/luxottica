@@ -313,7 +313,7 @@ export class AdminVigenciasComponent implements OnInit {
     const now = new Date();
     const start = new Date(v.fecha_inicio);
     const end = new Date(v.fecha_fin);
-    if (now > end) return '⌛ Finalizado';
+    if (now > end) return '🔴 Finalizado';
     if (now < start) return '📅 Programado';
     return '✅ Activo';
   }
