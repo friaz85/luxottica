@@ -53,6 +53,20 @@ class AdminAuthController extends ResourceController
             'role'     => $admin['role'] ?? 'quantum'
         ];
 
+        // Log admin login success in admin_activity_logs
+        try {
+            $logModel = new \App\Models\AdminActivityLogModel();
+            $logModel->save([
+                'admin_id'       => $admin['id'],
+                'admin_username' => $admin['username'],
+                'action'         => 'login_success',
+                'details'        => 'Inicio de sesión exitoso del administrador.',
+                'ip_address'     => $this->request->getIPAddress()
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Failed to log admin login: ' . $e->getMessage());
+        }
+
         $token = JWT::encode($payload, $this->key, 'HS256');
 
         return $this->respond([
