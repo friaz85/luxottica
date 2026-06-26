@@ -49,19 +49,25 @@ import Swal from 'sweetalert2';
           <!-- Left Column -->
           <div class="left-col">
             <div class="white-card welcome-card">
-              <h3 class="card-label">Bienvenido</h3>
-              <h2 class="user-name">{{ userName() }}</h2>
+              <div class="welcome-card-header">
+                <h3>Bienvenido</h3>
+              </div>
+              <div class="welcome-card-body">
+                <h2 class="user-name">{{ userName() }}</h2>
+              </div>
             </div>
 
             <div class="white-card points-card">
-              <h3 class="card-label">Cuentas con</h3>
-              <div class="points-circle">
-                <span class="points-val">{{ userPoints() | number:'1.0-0' }}</span>
+              <div class="points-card-header">
+                <h3>Cuentas con</h3>
               </div>
-              <span class="card-sublabel">Puntos disponibles</span>
+              <div class="points-card-body">
+                <div class="points-circle">
+                  <span class="points-val">{{ userPoints() | number:'1.0-0' }}</span>
+                </div>
+                <span class="card-sublabel">Puntos disponibles</span>
+              </div>
             </div>
-
-
           </div>
 
           <!-- Right Column: Catalog -->
@@ -214,15 +220,54 @@ import Swal from 'sweetalert2';
 
     .white-card {
       background: #ffffff; border: 1px solid #000000; border-radius: 4px;
-      padding: 1.5rem; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #000000;
+      padding: 0; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #000000;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 250px; /* Same height for both cards in left column */
     }
-    .welcome-card { padding: 1rem 1.5rem; }
-    .card-label { font-size: 0.95rem; font-weight: 500; color: #666; margin: 0 0 0.2rem 0; }
-    .user-name { font-size: 1.6rem; font-weight: 700; margin: 0; text-transform: capitalize; }
-    .points-card { display: flex; flex-direction: column; align-items: center; padding: 1.5rem 1rem; }
-    .points-circle { margin: 1rem 0; display: flex; align-items: center; justify-content: center; }
-    .points-val { font-size: 3.5rem; font-weight: 900; color: #000000; line-height: 1; }
-    .card-sublabel { font-size: 0.9rem; font-weight: 600; color: #666; }
+    .welcome-card-header {
+      background: #000000;
+      color: #ffffff;
+      padding: 1.2rem;
+      text-align: center;
+    }
+    .welcome-card-header h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0;
+    }
+    .welcome-card-body {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .user-name { font-size: 1.6rem; font-weight: 700; margin: 0; text-transform: capitalize; color: #000000; line-height: 1.3; }
+    
+    .points-card-header {
+      background: #000000;
+      color: #ffffff;
+      padding: 1.2rem;
+      text-align: center;
+    }
+    .points-card-header h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0;
+    }
+    .points-card-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.2rem;
+    }
+    .points-circle { margin: 0.5rem 0; display: flex; align-items: center; justify-content: center; }
+    .points-val { font-size: 3rem; font-weight: 900; color: #000000; line-height: 1; }
+    .card-sublabel { font-size: 0.85rem; font-weight: 600; color: #666; }
     .code-card { text-align: left; }
     .code-title { font-size: 1rem; font-weight: 700; margin: 0 0 1rem 0; text-align: center; }
     .code-form { display: flex; flex-direction: column; gap: 0.75rem; }
