@@ -19,7 +19,10 @@ import Swal from 'sweetalert2';
           </div>
           <div class="right-info">
             <span class="info-item">
-              <i class="phone-icon">📞</i> Ayuda: 01 (55) 5249.3752
+              <a href="https://wa.me/525574479668" target="_blank" style="color: #ffffff; text-decoration: none; display: flex; align-items: center; gap: 0.4rem;">
+                <img src="assets/img/icon_wa.png" alt="WA" style="width: 16px; height: 16px;" (error)="$event.target.style.display='none'"> 
+                Ayuda: 5574479668
+              </a>
             </span>
             <span class="info-item">
               <i class="mail-icon">✉️</i> atencionaclientes@quantummx.com
@@ -185,7 +188,7 @@ export class UserNavbarComponent {
   changePassword() {
     Swal.fire({
       title: 'Cambiar Contraseña',
-      text: 'Por motivos de seguridad, para cambiar tu contraseña por favor ponte en contacto con soporte técnico vía WhatsApp al 55 5249.3752 o escribe a atencionaclientes@quantummx.com.',
+      text: 'Por motivos de seguridad, para cambiar tu contraseña por favor ponte en contacto con soporte técnico vía WhatsApp al 5574479668 o escribe a atencionaclientes@quantummx.com.',
       icon: 'info',
       confirmButtonText: 'Aceptar',
       confirmButtonColor: '#000000'
