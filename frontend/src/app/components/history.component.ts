@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { UserNavbarComponent } from './user-navbar.component';
 import { environment } from '../../environments/environment';
@@ -8,7 +9,7 @@ import { AuthService } from '../services/auth.service';
 @Component({
   selector: 'app-history',
   standalone: true,
-  imports: [CommonModule, UserNavbarComponent],
+  imports: [CommonModule, RouterLink, UserNavbarComponent],
   template: `
     <user-navbar></user-navbar>
 
@@ -23,6 +24,10 @@ import { AuthService } from '../services/auth.service';
           </div>
 
           <h1 class="history-title">MI HISTORIAL DE CANJES</h1>
+
+          <div style="text-align:right;margin-bottom:1.2rem;">
+            <a routerLink="/rewards" class="home-btn">&#8592; Ir a Inicio</a>
+          </div>
 
           <div class="table-container custom-scroll">
             <table class="glass-table">
@@ -74,9 +79,9 @@ import { AuthService } from '../services/auth.service';
                       </span>
                     </td>
                     <td>
-                      <!-- Cupón descargable -->
+                      <!-- Cupón descargable (no monedero, no tiempo_aire) -->
                       <button
-                        *ngIf="r.pdf_path && r.status === 'completed' && r.tipo_recompensa !== 'monedero'"
+                        *ngIf="r.pdf_path && r.status === 'completed' && r.tipo_recompensa !== 'monedero' && r.tipo_recompensa !== 'tiempo_aire'"
                         (click)="reprintCoupon(r)"
                         class="reprint-btn">
                         ⬇ DESCARGAR
@@ -85,7 +90,7 @@ import { AuthService } from '../services/auth.service';
                       <button
                         *ngIf="r.tipo_recompensa === 'monedero' && r.status === 'completed' && r.pdf_path"
                         (click)="reprintCoupon(r)"
-                        class="reprint-btn monedero-btn">
+                        class="reprint-btn">
                         ⬇ DESCARGAR MONEDERO
                       </button>
                       <!-- Monedero pendiente -->
@@ -96,7 +101,7 @@ import { AuthService } from '../services/auth.service';
                       <span *ngIf="r.tipo_recompensa === 'tiempo_aire'" class="no-action">
                         {{ r.status_recarga === 'success' ? '✅ Recargado' : r.status_recarga === 'failed' ? '❌ Fallida' : '📱 Procesado' }}
                       </span>
-                      <!-- Sin acción disponible -->
+                      <!-- Sin acción -->
                       <span *ngIf="!r.pdf_path && r.tipo_recompensa !== 'monedero' && r.tipo_recompensa !== 'tiempo_aire'" class="no-action">—</span>
                     </td>
                   </tr>
@@ -118,15 +123,22 @@ import { AuthService } from '../services/auth.service';
     .landing {
       min-height: 100vh;
       width: 100vw;
-      background: url('../../assets/img/Background.png');
+      background: url('../../assets/img/fondo web.jpg');
       background-size: cover;
       background-position: center;
+      background-repeat: no-repeat;
       display: flex;
       align-items: flex-start;
       justify-content: center;
       overflow-x: hidden;
       padding-top: 160px;
       padding-bottom: 3rem;
+    }
+
+    @media (max-width: 768px) {
+      .landing {
+        background-image: url('../../assets/img/fondo mobile.jpg');
+      }
     }
 
     .hero {
@@ -267,8 +279,19 @@ import { AuthService } from '../services/auth.service';
       white-space: nowrap;
     }
     .reprint-btn:hover { background: #333; transform: translateY(-2px); }
-    .reprint-btn.monedero-btn { background: #e65100; }
-    .reprint-btn.monedero-btn:hover { background: #bf360c; }
+
+    .home-btn {
+      display: inline-block;
+      background: #000;
+      color: #fff;
+      padding: 0.5rem 1.2rem;
+      border-radius: 0.5rem;
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-decoration: none;
+      transition: 0.2s;
+    }
+    .home-btn:hover { background: #333; transform: translateY(-1px); }
 
     .pending-label { color: #f59e0b; font-weight: 700; font-size: 0.82rem; }
     .no-action     { color: #999; font-size: 0.82rem; }
