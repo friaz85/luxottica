@@ -35,21 +35,6 @@ class RewardAdminController extends ResourceController
                                      ->groupBy('vigencias.id')
                                      ->get()
                                      ->getResultArray();
-
-            // Enrich vigencias with vigencia_area from reward_vigencias
-            $rvRows = $db->table('reward_vigencias')
-                         ->select('id_vigencia, vigencia_area')
-                         ->where('id_reward', $reward['id'])
-                         ->get()
-                         ->getResultArray();
-            $areaMap = [];
-            foreach ($rvRows as $rv) {
-                $areaMap[(string)$rv['id_vigencia']] = $rv['vigencia_area'];
-            }
-            foreach ($reward['vigencias'] as &$v) {
-                $v['vigencia_area'] = $areaMap[(string)$v['id']] ?? null;
-            }
-            unset($v);
         }
         return $this->respond($rewards);
     }
@@ -152,22 +137,23 @@ class RewardAdminController extends ResourceController
         $data        = $this->request->getPost();
         
         $saveData = [
-            'id_proyecto'  => !empty($data['id_proyecto']) ? $data['id_proyecto'] : null,
-            'title'        => $data['title'] ?? null,
-            'description'  => $data['description'] ?? null,
-            'type'         => $data['type'] ?? 'digital',
-            'cost'         => $data['cost'] ?? 0,
-            'stock'        => 0, // Will be updated by processExitCodes
-            'active'       => $data['active'] ?? 1,
-            'image_url'    => !empty($data['image_url']) ? $data['image_url'] : null,
-            'pdf_template' => !empty($data['pdf_template']) ? $data['pdf_template'] : null,
-            'codes_count'  => (int)($data['codes_count'] ?? 1),
-            'coordinates'  => !empty($data['coordinates']) ? $data['coordinates'] : null,
-            'code_areas'   => !empty($data['code_areas']) ? $data['code_areas'] : null,
-            'font_size'       => $data['font_size'] ?? 12,
-            'idVigencia'      => !empty($data['idVigencia']) ? $data['idVigencia'] : null,
-            'tipo_recompensa' => !empty($data['tipo_recompensa']) ? $data['tipo_recompensa'] : 'normal',
-            'monto_recarga'   => !empty($data['monto_recarga']) ? (int)$data['monto_recarga'] : 0,
+            'id_proyecto'    => !empty($data['id_proyecto']) ? $data['id_proyecto'] : null,
+            'title'          => $data['title'] ?? null,
+            'description'    => $data['description'] ?? null,
+            'type'           => $data['type'] ?? 'digital',
+            'cost'           => $data['cost'] ?? 0,
+            'stock'          => 0,
+            'active'         => $data['active'] ?? 1,
+            'image_url'      => !empty($data['image_url']) ? $data['image_url'] : null,
+            'pdf_template'   => !empty($data['pdf_template']) ? $data['pdf_template'] : null,
+            'codes_count'    => (int)($data['codes_count'] ?? 1),
+            'coordinates'    => !empty($data['coordinates']) ? $data['coordinates'] : null,
+            'code_areas'     => !empty($data['code_areas']) ? $data['code_areas'] : null,
+            'font_size'      => $data['font_size'] ?? 12,
+            'idVigencia'     => !empty($data['idVigencia']) ? $data['idVigencia'] : null,
+            'tipo_recompensa'=> !empty($data['tipo_recompensa']) ? $data['tipo_recompensa'] : 'normal',
+            'monto_recarga'  => !empty($data['monto_recarga']) ? (int)$data['monto_recarga'] : 0,
+            'vigencia_area'  => !empty($data['vigencia_area']) ? $data['vigencia_area'] : null,
         ];
 
         // Handle File Uploads
@@ -189,7 +175,7 @@ class RewardAdminController extends ResourceController
             if ($rewardModel->insert($saveData)) {
                 $rewardId = $rewardModel->insertID();
                 
-                // Save reward_vigencias
+                // Save reward_vigencias (only links codes to vigencia, no area here)
                 $idVigencias = $data['id_vigencias'] ?? [];
                 if (is_string($idVigencias)) {
                     $decoded = json_decode($idVigencias, true);
@@ -199,19 +185,12 @@ class RewardAdminController extends ResourceController
                         $idVigencias = array_filter(explode(',', $idVigencias));
                     }
                 }
-                // Parse vigencia_area map: JSON {"id_vigencia": "area_string"}
-                $vigenciaAreaMap = [];
-                if (!empty($data['vigencia_area_map'])) {
-                    $decodedMap = json_decode($data['vigencia_area_map'], true);
-                    if (is_array($decodedMap)) $vigenciaAreaMap = $decodedMap;
-                }
                 if (!empty($idVigencias)) {
                     $db = \Config\Database::connect();
                     foreach ($idVigencias as $idVigencia) {
                         $db->table('reward_vigencias')->insert([
-                            'id_reward'    => $rewardId,
-                            'id_vigencia'  => $idVigencia,
-                            'vigencia_area'=> $vigenciaAreaMap[(string)$idVigencia] ?? null
+                            'id_reward'   => $rewardId,
+                            'id_vigencia' => $idVigencia
                         ]);
                     }
                 }
@@ -275,6 +254,7 @@ class RewardAdminController extends ResourceController
         if (key_exists('idVigencia', $data)) $updateData['idVigencia'] = !empty($data['idVigencia']) ? $data['idVigencia'] : null;
         if (isset($data['tipo_recompensa'])) $updateData['tipo_recompensa'] = $data['tipo_recompensa'];
         if (isset($data['monto_recarga'])) $updateData['monto_recarga'] = (int)$data['monto_recarga'];
+        if (key_exists('vigencia_area', $data)) $updateData['vigencia_area'] = !empty($data['vigencia_area']) ? $data['vigencia_area'] : null;
 
         // Handle File Uploads
         $img = $this->request->getFile('image');
@@ -294,7 +274,7 @@ class RewardAdminController extends ResourceController
         try {
             $currentReward = $rewardModel->find($id);
             if ($rewardModel->update($id, $updateData)) {
-                // Sync reward_vigencias
+                // Sync reward_vigencias (only links, vigencia_area lives on rewards table)
                 if (isset($data['id_vigencias'])) {
                     $idVigencias = $data['id_vigencias'];
                     if (is_string($idVigencias)) {
@@ -305,19 +285,12 @@ class RewardAdminController extends ResourceController
                             $idVigencias = array_filter(explode(',', $idVigencias));
                         }
                     }
-                    // Parse vigencia_area map
-                    $vigenciaAreaMap = [];
-                    if (!empty($data['vigencia_area_map'])) {
-                        $decodedMap = json_decode($data['vigencia_area_map'], true);
-                        if (is_array($decodedMap)) $vigenciaAreaMap = $decodedMap;
-                    }
                     $db = \Config\Database::connect();
                     $db->table('reward_vigencias')->where('id_reward', $id)->delete();
                     foreach ($idVigencias as $idVigencia) {
                         $db->table('reward_vigencias')->insert([
-                            'id_reward'    => $id,
-                            'id_vigencia'  => $idVigencia,
-                            'vigencia_area'=> $vigenciaAreaMap[(string)$idVigencia] ?? null
+                            'id_reward'   => $id,
+                            'id_vigencia' => $idVigencia
                         ]);
                     }
                 }

@@ -339,12 +339,12 @@ interface VigenciaArea {
                     <span class="icon-plus">＋</span> Agregar Nueva Área
                   </button>
 
-                  <!-- VIGENCIA AREA -->
-                  <div class="vigencia-area-section" *ngIf="editingReward.id_vigencias && editingReward.id_vigencias.length > 0">
+                  <!-- VIGENCIA AREA: mostrar siempre que hay PDF (la posición es propiedad de la recompensa) -->
+                  <div class="vigencia-area-section">
                     <div class="areas-header" style="margin-top:1.5rem">
                       <div class="header-titles">
                         <label>📅 Área de Vigencia</label>
-                        <small>Define donde se imprimirá la fecha de vigencia en el PDF</small>
+                        <small>Define dónde imprimir la fecha de vigencia en el PDF (cuando aplique)</small>
                       </div>
                     </div>
                     <div *ngIf="!vigenciaArea()" style="text-align:center; padding: 1rem 0;">
@@ -965,15 +965,9 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     this.loadMethod.set('manual');
     this.vigenciaArea.set(null);
 
-    // Pre-load vigencia_area if any vigencia has it (use first vigencia with area)
-    if (reward.vigencias && reward.vigencias.length > 0) {
-      const vWithArea = reward.vigencias.find((v: any) => v.vigencia_area);
-      if (vWithArea && vWithArea.vigencia_area) {
-        const parts = vWithArea.vigencia_area.split(',').map(Number);
-        if (parts.length >= 4) {
-          this.editingReward._vigencia_area_raw = vWithArea.vigencia_area;
-        }
-      }
+    // Pre-load vigencia_area from reward directly (it's a reward property, not per-vigencia)
+    if (reward.vigencia_area) {
+      this.editingReward._vigencia_area_raw = reward.vigencia_area;
     }
     
     if (reward.coordinates) {
@@ -1274,17 +1268,14 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
         formData.append('code_areas', JSON.stringify(this.codeAreas()));
         if (this.codeAreas().length > 0) formData.append('font_size', this.codeAreas()[0].fontSize.toString());
 
-        // Append vigencia_area_map: same area for all selected vigencias
+        // Append vigencia_area as a single reward-level field
         const va = this.vigenciaArea();
-        if (va && this.editingReward.id_vigencias && this.editingReward.id_vigencias.length > 0) {
+        if (va) {
           const vaPx = (va.x / w) * 100; const vaPy = (va.y / h) * 100;
           const vaPw = (va.width / w) * 100; const vaPh = (va.height / h) * 100;
-          const vaStr = `${vaPx},${vaPy},${vaPw},${vaPh},${va.fontSize}`;
-          const vigenciaAreaMap: Record<string, string> = {};
-          for (const vId of this.editingReward.id_vigencias) {
-            vigenciaAreaMap[String(vId)] = vaStr;
-          }
-          formData.append('vigencia_area_map', JSON.stringify(vigenciaAreaMap));
+          formData.append('vigencia_area', `${vaPx},${vaPy},${vaPw},${vaPh},${va.fontSize}`);
+        } else {
+          formData.append('vigencia_area', '');
         }
       }
     }

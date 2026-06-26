@@ -24,7 +24,8 @@ class RewardModel extends Model
         'code_areas',
         'font_size',
         'idVigencia',
-        'monto_recarga'
+        'monto_recarga',
+        'vigencia_area'
     ];
     protected $useTimestamps = true;
     protected $createdField  = 'created_at';
