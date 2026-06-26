@@ -64,7 +64,7 @@ import Swal from 'sweetalert2';
 
       <!-- Footer Text -->
       <footer class="app-footer">
-        <p class="contact-info">Informes en la República Mexicana: 55 5249.3752 <a href="mailto:atencionaclientes@quantummx.com">atencionaclientes@quantummx.com</a></p>
+        <p class="contact-info">Informes en la República Mexicana vía <a href="https://wa.me/525574479668" target="_blank" style="color: inherit; text-decoration: underline;">WhatsApp al número 5574479668</a></p>
       </footer>
     </div>
   `,
