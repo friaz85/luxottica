@@ -982,8 +982,11 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
       this.codeAreas.set([]);
     }
 
-    if (reward.pdf_template) this.loadExistingPDF(reward.pdf_template);
     this.showCreateModal = true;
+    if (reward.pdf_template) {
+      // Wait for the modal DOM to render before accessing pdfCanvas
+      setTimeout(() => this.loadExistingPDF(reward.pdf_template), 300);
+    }
   }
 
   closeModal(event: Event) {
@@ -1030,6 +1033,13 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
       this.toastService.show('PDF.js no disponible. Recarga la página.', 'error');
       return;
     }
+
+    // Guard: if canvas is not in DOM yet, retry once after extra delay
+    if (!this.pdfCanvas?.nativeElement) {
+      setTimeout(() => this.loadExistingPDF(filename), 400);
+      return;
+    }
+
     try {
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
       const pdf = await pdfjsLib.getDocument({ url, withCredentials: false }).promise;
@@ -1044,9 +1054,8 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
         this.recalculatePixels();
       }, 150);
     } catch (err: any) {
-      console.warn('loadExistingPDF error (PDF is stored in DB, coordinates are safe):', err?.message || err);
-      // PDF preview failed — coordinates are preserved in DB. User can save without re-selecting.
-      // No toast shown here to avoid interrupting normal edit workflow.
+      console.warn('loadExistingPDF error:', err?.message || err);
+      // Silent fail — coordinates are preserved in DB, user can save without re-selecting.
     }
   }
 
