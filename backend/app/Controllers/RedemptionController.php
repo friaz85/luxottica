@@ -198,7 +198,7 @@ class RedemptionController extends ResourceController
             $redemptionData = [
                 'user_id'              => $userId,
                 'reward_id'            => $rewardId,
-                'status'               => ($reward['type'] === 'digital') ? 'completed' : 'pending',
+                'status'               => ($tipoRecompensa === 'monedero') ? 'pending' : (($reward['type'] === 'digital') ? 'completed' : 'pending'),
                 'digital_code'         => $finalCodeString,
                 'extra_data'           => null, // deprecated, kept for compatibility
                 'nombre_monedero'      => ($tipoRecompensa === 'monedero')   ? $nombreMonedero  : null,
