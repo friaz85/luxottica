@@ -42,7 +42,7 @@ class RedemptionController extends ResourceController
         $logModel        = new SecurityLogModel();
 
         $userId          = $this->request->user->id ?? $this->request->user->uid ?? null;
-        $rewardId        = $this->request->getVar('reward_id');
+        $rewardId        = (int)($this->request->getVar('reward_id') ?? 0);
         // Separate fields (replaces JSON extra_data)
         $nombreMonedero  = trim($this->request->getVar('nombre_monedero')  ?? '');
         $apellidoPaterno = trim($this->request->getVar('apellido_paterno') ?? '');
@@ -50,7 +50,7 @@ class RedemptionController extends ResourceController
         $telefonoRecarga = trim($this->request->getVar('telefono_recarga') ?? '');
         $idTelefonia     = (int)($this->request->getVar('id_telefonia') ?? 0);
 
-        log_message('error', "Redemption attempt: User ID {$userId}, Reward ID: " . json_encode($rewardId));
+        log_message('error', "Redemption attempt: User ID {$userId}, Reward ID (int): {$rewardId}");
 
         $user = $userModel->find($userId);
 
@@ -70,17 +70,20 @@ class RedemptionController extends ResourceController
         if (isset($user['id_proyecto'])) {
             $proyectoModel = new \App\Models\ProyectoModel();
             if (!$proyectoModel->isProjectActive($user['id_proyecto'])) {
-                return $this->fail('La vigencia de su participación ha finalizado. Ya no es posible realizar canjes.', 403);
+                return $this->fail('La vigencia de su participaci\u00f3n ha finalizado. Ya no es posible realizar canjes.', 403);
             }
         }
 
         $reward = $rewardModel->find($rewardId);
-        $tipoCheck = $reward['tipo_recompensa'] ?? 'normal';
-        $isManual  = in_array($tipoCheck, ['monedero', 'tiempo_aire']);
 
         if (!$reward) {
+            log_message('error', "Reward not found for id={$rewardId}");
             return $this->respond(['message' => 'Recompensa no encontrada.'], 400);
         }
+
+        $tipoCheck = $reward['tipo_recompensa'] ?? 'normal';
+        $isManual  = in_array($tipoCheck, ['monedero', 'tiempo_aire']);
+        log_message('error', "Reward found: id={$rewardId} tipo={$tipoCheck} stock={$reward['stock']} isManual=" . ($isManual ? 'YES' : 'NO'));
 
         // Only check stock for non-manual reward types
         if (!$isManual && $reward['stock'] <= 0) {
