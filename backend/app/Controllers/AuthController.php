@@ -39,8 +39,18 @@ class AuthController extends ResourceController
         // Check Project Validity
         if (isset($user['id_proyecto'])) {
             $proyectoModel = new ProyectoModel();
-            if (!$proyectoModel->isProjectActive($user['id_proyecto'])) {
-                return $this->fail("La vigencia de su usuario ha finalizado.", 403);
+            $project = $proyectoModel->find($user['id_proyecto']);
+            if ($project) {
+                $today = date('Y-m-d');
+                if (isset($project['activo']) && (int)$project['activo'] === 0) {
+                    return $this->fail("La vigencia de su usuario ha finalizado.", 403);
+                }
+                if ($today < $project['Fecha_Inicio']) {
+                    return $this->fail("La vigencia de su usuario aún no inicia.", 403);
+                }
+                if ($today > $project['Fecha_Fin']) {
+                    return $this->fail("La vigencia de su usuario ha finalizado.", 403);
+                }
             }
         }
 
