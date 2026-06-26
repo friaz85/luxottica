@@ -28,22 +28,21 @@ class RewardAdminController extends ResourceController
         $db = \Config\Database::connect();
         $now = date('Y-m-d H:i:s');
         foreach ($rewards as &$reward) {
-            $reward['vigencias'] = $db->table('reward_codes')
-                                     ->select('vigencias.*')
-                                     ->join('vigencias', 'vigencias.id = reward_codes.id_vigencia')
-                                     ->where('reward_codes.reward_id', $reward['id'])
-                                     ->where('reward_codes.is_used', 0)
-                                     ->groupBy('vigencias.id')
-                                     ->get()
-                                     ->getResultArray();
+            $vigencias = $db->table('reward_codes')
+                            ->select('vigencias.*, COUNT(reward_codes.id) as codes_available')
+                            ->join('vigencias', 'vigencias.id = reward_codes.id_vigencia')
+                            ->where('reward_codes.reward_id', $reward['id'])
+                            ->where('reward_codes.is_used', 0)
+                            ->groupBy('vigencias.id')
+                            ->orderBy('vigencias.fecha_inicio', 'ASC')
+                            ->get()
+                            ->getResultArray();
 
-            // Stock activo: solo códigos de vigencias no expiradas
-            $reward['active_stock'] = (int) $db->table('reward_codes')
-                                               ->join('vigencias', 'vigencias.id = reward_codes.id_vigencia')
-                                               ->where('reward_codes.reward_id', $reward['id'])
-                                               ->where('reward_codes.is_used', 0)
-                                               ->where('vigencias.fecha_fin >=', $now)
-                                               ->countAllResults();
+            $reward['vigencias']     = $vigencias;
+            $reward['active_stock']  = array_sum(array_column(
+                array_filter($vigencias, fn($v) => $v['fecha_fin'] >= $now),
+                'codes_available'
+            ));
         }
         return $this->respond($rewards);
     }

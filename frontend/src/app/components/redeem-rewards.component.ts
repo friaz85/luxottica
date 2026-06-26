@@ -84,14 +84,18 @@ import Swal from 'sweetalert2';
                 </div>
 
                 <div class="rewards-grid" *ngIf="!rewardsLoading() && rewards().length > 0">
-                  <div class="reward-item" 
-                       *ngFor="let item of rewards()" 
+                  <div class="reward-item"
+                       *ngFor="let item of rewards()"
                        [class.selected]="selectedReward()?.id === item.id"
-                       (click)="selectReward(item)">
+                       [class.insufficient]="item.cost > userPoints()"
+                       (click)="item.cost <= userPoints() ? selectReward(item) : null">
                     <div class="reward-img-container">
-                      <img [src]="item.image_url ? environment.uploadsUrl + '/rewards/' + item.image_url : 'assets/img/Logo_Tec.png'" 
+                      <img [src]="item.image_url ? environment.uploadsUrl + '/rewards/' + item.image_url : 'assets/img/Logo_Tec.png'"
                            (error)="handleImageError($event, item.image_url)"
                            [alt]="item.title">
+                      <div class="insufficient-overlay" *ngIf="item.cost > userPoints()">
+                        <span>PUNTOS INSUFICIENTES</span>
+                      </div>
                     </div>
                     <h3 class="reward-title">{{ item.title }}</h3>
                     <div class="reward-pts">{{ item.cost }} puntos</div>
@@ -293,10 +297,25 @@ import Swal from 'sweetalert2';
     }
     .reward-item:hover { box-shadow: 0 5px 15px rgba(0,0,0,0.1); transform: translateY(-2px); }
     .reward-item.selected { border: 2px solid #000000; box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
-    .reward-img-container { width: 100%; height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; }
+    .reward-img-container { width: 100%; height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; position: relative; }
     .reward-img-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
     .reward-title { font-size: 0.9rem; font-weight: 700; text-align: center; color: #333333; margin: 0 0 0.5rem 0; min-height: 2.4em; line-height: 1.2; }
     .reward-pts { font-size: 0.95rem; font-weight: 900; color: #000000; text-transform: uppercase; }
+
+    /* Insufficient points */
+    .reward-item.insufficient { opacity: 0.45; filter: grayscale(80%); cursor: not-allowed; pointer-events: none; }
+    .reward-item.insufficient:hover { transform: none; box-shadow: none; }
+    .insufficient-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 6px;
+    }
+    .insufficient-overlay span {
+      color: #fff; font-size: 0.65rem; font-weight: 900;
+      letter-spacing: 1px; text-align: center; padding: 0 6px;
+      text-transform: uppercase; line-height: 1.3;
+    }
 
     .catalog-actions { display: flex; justify-content: center; gap: 1.5rem; border-top: 1px solid #eeeeee; padding-top: 2rem; }
     .large-btn { padding: 0.8rem 3rem; font-size: 0.95rem; width: auto; }
@@ -530,7 +549,7 @@ export class RedeemRewardsComponent implements OnInit {
     const reward = this.selectedReward();
     if (!reward) return;
     if (reward.cost > this.userPoints()) {
-      Swal.fire({ title: 'PUNTOS INSUFICIENTES', text: `TE FALTAN ${reward.cost - this.userPoints()} PUNTOS.`, icon: 'warning', confirmButtonColor: '#000000' });
+      Swal.fire({ title: 'PUNTOS INSUFICIENTES', text: 'TUS PUNTOS NO ALCANZAN PARA CANJEAR ESTA RECOMPENSA.', icon: 'warning', confirmButtonColor: '#000000' });
       return;
     }
 

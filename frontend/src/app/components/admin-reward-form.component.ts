@@ -111,7 +111,7 @@ interface VigenciaArea {
                 </div>
                 <div class="reward-card-meta">
                   <span class="reward-cost font-bold text-blue">{{ (reward.cost || 0) | number }} pts</span>
-                  <span class="reward-stock" [class.low]="(reward.active_stock ?? reward.stock) <= 5">Stock: {{ reward.active_stock ?? reward.stock }}</span>
+                  <span class="reward-stock" [class.low]="(reward.active_stock ?? 0) <= 5">Stock activo: {{ reward.active_stock ?? 0 }}</span>
                 </div>
                 <div class="reward-card-extra">
                   <span class="type-badge" [ngClass]="{
@@ -123,8 +123,14 @@ interface VigenciaArea {
                   </span>
                 </div>
                 <div class="reward-card-dates" *ngIf="reward.vigencias && reward.vigencias.length > 0">
-                  <div *ngFor="let v of reward.vigencias" class="date-pill">
+                  <div *ngFor="let v of reward.vigencias"
+                       class="date-pill"
+                       [class.expired]="isExpired(v.fecha_fin)"
+                       [class.active-vig]="!isExpired(v.fecha_fin)">
                     📅 {{ formatShortDate(v.fecha_inicio) }} al {{ formatShortDate(v.fecha_fin) }}
+                    &nbsp;—&nbsp;
+                    <strong>{{ v.codes_available }} cód.</strong>
+                    <span *ngIf="isExpired(v.fecha_fin)" style="font-size:0.7rem;color:#cc0000;margin-left:4px;">(expirada)</span>
                   </div>
                 </div>
               </div>
@@ -869,6 +875,11 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     const d = new Date(dateStr.replace(' ', 'T'));
     const pad = (n: number) => n.toString().padStart(2, '0');
     return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear().toString().substring(2)}`;
+  }
+
+  isExpired(fechaFin: string): boolean {
+    if (!fechaFin) return true;
+    return new Date(fechaFin.replace(' ', 'T')) < new Date();
   }
 
   isVigenciaSelected(id: number): boolean {
