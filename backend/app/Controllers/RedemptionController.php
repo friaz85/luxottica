@@ -296,17 +296,39 @@ class RedemptionController extends ResourceController
                 }
             }
 
-            // Print Coupon Validity Date (dd-mmm-yy format) if available
+            // Print Coupon Validity Date using vigencia_area position (configured in admin)
             if ($fechaValidezInicio && $fechaValidezFin) {
-                $pdf->SetFont('Arial', 'B', 12);
-                $pdf->SetTextColor(0, 0, 0);
-                
                 $formattedInicio = $this->formatCouponDate($fechaValidezInicio);
-                $formattedFin = $this->formatCouponDate($fechaValidezFin);
-                
-                $text = "Vigencia del cupon: del {$formattedInicio} al {$formattedFin}";
-                // Centered slightly at the bottom (FPDI measurement is in millimeters by default, but let's draw it near the bottom)
-                $pdf->Text(($size['width'] / 2) - 45, $size['height'] - 12, $text);
+                $formattedFin    = $this->formatCouponDate($fechaValidezFin);
+                $text = "Vigencia: {$formattedInicio} al {$formattedFin}";
+
+                $vigenciaAreaRaw = $reward['vigencia_area'] ?? '';
+                $dpiScale = 96 / 72;
+
+                if (!empty($vigenciaAreaRaw) && strpos($vigenciaAreaRaw, ',') !== false) {
+                    // Use configured area position (percentage-based)
+                    $vParts = explode(',', trim($vigenciaAreaRaw));
+                    if (count($vParts) >= 4) {
+                        $vx = (floatval($vParts[0]) / 100) * $size['width'];
+                        $vy = (floatval($vParts[1]) / 100) * $size['height'];
+                        $vw = (floatval($vParts[2]) / 100) * $size['width'];
+                        $vh = (floatval($vParts[3]) / 100) * $size['height'];
+                        $vfs = isset($vParts[4]) ? round(intval($vParts[4]) * $dpiScale) : 12;
+                        $pdf->SetFont('Arial', 'B', $vfs);
+                        $pdf->SetTextColor(0, 0, 0);
+                        $pdf->SetXY($vx, $vy);
+                        if ($vw > 0 && $vh > 0) {
+                            $pdf->Cell($vw, $vh, $text, 0, 0, 'C');
+                        } else {
+                            $pdf->Text($vx, $vy, $text);
+                        }
+                    }
+                } else {
+                    // Fallback: centered near the bottom
+                    $pdf->SetFont('Arial', 'B', 12);
+                    $pdf->SetTextColor(0, 0, 0);
+                    $pdf->Text(($size['width'] / 2) - 45, $size['height'] - 12, $text);
+                }
             }
 
             $pdf->Output($outputPath, 'F');
