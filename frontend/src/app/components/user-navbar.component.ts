@@ -58,7 +58,7 @@ import Swal from 'sweetalert2';
 
     .top-nav {
       background: #000000;
-      height: 40px;
+      height: 52px;
       display: flex;
       align-items: center;
       width: 100%;
@@ -72,25 +72,46 @@ import Swal from 'sweetalert2';
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.8rem;
+      font-size: 0.9rem;
       color: #ffffff;
     }
 
     .left-links {
       display: flex;
       align-items: center;
-      gap: 0.8rem;
+      gap: 0.4rem;
     }
 
     .nav-link {
       color: #ffffff;
       text-decoration: none;
-      font-weight: 500;
-      transition: opacity 0.2s;
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 0.4rem 0.8rem;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 2px;
+      background: #c5a880;
+      transition: width 0.25s ease;
     }
 
     .nav-link:hover {
-      opacity: 0.8;
+      color: #c5a880;
+    }
+    .nav-link:hover::after {
+      width: 80%;
     }
 
     .cursor-pointer {
