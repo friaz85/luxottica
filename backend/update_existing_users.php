@@ -24,7 +24,7 @@ try {
     
     foreach ($users as $user) {
         $id = $user['id'];
-        $email = strtolower(trim($user['email']));
+        $email = trim($user['email']);
         $idProyecto = $user['id_proyecto'];
         
         if (empty($idProyecto)) {
@@ -33,10 +33,10 @@ try {
             continue;
         }
         
-        $prefix = 'pr' . $idProyecto . '-';
+        $prefix = 'PR' . $idProyecto . '-';
         
-        // Clean up only the specific project prefix (with or without hyphen)
-        $emailClean = preg_replace('/^pr' . $idProyecto . '-?/', '', $email);
+        // Clean up only the specific project prefix (with or without hyphen, case insensitive)
+        $emailClean = preg_replace('/^(pr|PR)' . $idProyecto . '-?/i', '', $email);
         $newEmail = $prefix . $emailClean;
         
         if ($email !== $newEmail) {

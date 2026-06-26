@@ -85,8 +85,8 @@ class AdminUserController extends ResourceController
         $idProyecto = $data['id_proyecto'] ?? null;
         $email = strtolower(trim($data['email'] ?? ''));
         if ($idProyecto) {
-            $prefix = 'pr' . $idProyecto . '-';
-            $emailClean = preg_replace('/^pr' . $idProyecto . '-?/', '', $email);
+            $prefix = 'PR' . $idProyecto . '-';
+            $emailClean = preg_replace('/^(pr|PR)' . $idProyecto . '-?/', '', $email);
             $email = $prefix . $emailClean;
         }
 
@@ -184,12 +184,12 @@ class AdminUserController extends ResourceController
         $email = isset($data['email']) ? strtolower(trim($data['email'])) : strtolower(trim($currentUser['email']));
         $targetProject = isset($updateData['id_proyecto']) ? $updateData['id_proyecto'] : $currentUser['id_proyecto'];
         if ($targetProject) {
-            $prefix = 'pr' . $targetProject . '-';
-            $emailClean = preg_replace('/^pr' . $targetProject . '-?/', '', $email);
+            $prefix = 'PR' . $targetProject . '-';
+            $emailClean = preg_replace('/^(pr|PR)' . $targetProject . '-?/', '', $email);
             // Also clean any previous project prefix if project changed
             $currentProject = $currentUser['id_proyecto'];
             if ($currentProject && $currentProject != $targetProject) {
-                $emailClean = preg_replace('/^pr' . $currentProject . '-?/', '', $emailClean);
+                $emailClean = preg_replace('/^(pr|PR)' . $currentProject . '-?/', '', $emailClean);
             }
             $email = $prefix . $emailClean;
         }
@@ -379,8 +379,8 @@ class AdminUserController extends ResourceController
             // Use userLogin as the email/identifier with PR + project_id prefix
             $emailRaw = strtolower($userLogin);
             if ($idProyecto) {
-                $prefix = 'pr' . $idProyecto . '-';
-                $emailClean = preg_replace('/^pr' . $idProyecto . '-?/', '', $emailRaw);
+                $prefix = 'PR' . $idProyecto . '-';
+                $emailClean = preg_replace('/^(pr|PR)' . $idProyecto . '-?/', '', $emailRaw);
                 $email = $prefix . $emailClean;
             } else {
                 $email = $emailRaw;
