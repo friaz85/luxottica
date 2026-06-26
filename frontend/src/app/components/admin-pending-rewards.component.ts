@@ -81,6 +81,11 @@ import Swal from 'sweetalert2';
     .modal-body { padding: 22px; }
     .modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 22px; border-top: 1px solid #e2e8f0; }
     .success-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 14px; font-size: 13px; color: #166534; margin-top: 16px; line-height: 1.5; }
+    .file-upload-area { margin-top: 6px; }
+    .file-input { display: none; }
+    .file-label { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: 2px dashed #cbd5e1; border-radius: 8px; cursor: pointer; font-size: 0.85rem; color: #475569; background: #f8fafc; transition: 0.2s; }
+    .file-label:hover { border-color: var(--admin-primary); background: #f0f4ff; color: var(--admin-primary); }
+    .file-selected { color: #166534; font-weight: 700; }
 
     @media (max-width: 900px) {
       .admin-page { margin-left: 0; padding: 5.5rem 1rem 2rem 1rem; }
@@ -225,6 +230,18 @@ import Swal from 'sweetalert2';
             <span class="detail-lbl">🔑 PRODUCTO A RECARGAR</span>
             <span class="detail-val" style="font-family:monospace;font-size:1.3rem;font-weight:900;color:#1e40af;letter-spacing:2px;background:#dbeafe;padding:6px 12px;border-radius:8px;display:inline-block;margin-top:4px;">{{ currentRow()?.producto || '—' }}</span>
           </div>
+          <!-- Adjuntar cupón del monedero -->
+          <div class="detail-block" style="margin-bottom:12px;">
+            <span class="detail-lbl">📎 Adjuntar cupón del monedero (PDF o imagen)</span>
+            <div class="file-upload-area">
+              <input type="file" id="monedero-file" accept=".pdf,.jpg,.jpeg,.png" (change)="onFileSelected($event)" class="file-input">
+              <label for="monedero-file" class="file-label">
+                <span *ngIf="!selectedFile()">🗂 Seleccionar archivo (PDF o imagen)</span>
+                <span *ngIf="selectedFile()" class="file-selected">✅ {{ selectedFile()!.name }}</span>
+              </label>
+            </div>
+            <small style="color:#888;font-size:0.75rem;">Opcional — el usuario podrá descargarlo desde su Historial</small>
+          </div>
           <div class="success-box">
             <strong>¿Qué sucederá?</strong><br>
             El canje pasará a estatus <strong>Completado</strong> y quedará registrado como enviado en el sistema.
@@ -254,8 +271,9 @@ export class AdminPendingRewardsComponent implements OnInit {
   search   = '';
   private searchTimer: any;
 
-  showModal  = signal(false);
-  currentRow = signal<any>(null);
+  showModal    = signal(false);
+  currentRow   = signal<any>(null);
+  selectedFile = signal<File | null>(null);
 
   ngOnInit() { this.load(); }
 
@@ -291,7 +309,12 @@ export class AdminPendingRewardsComponent implements OnInit {
     return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   }
 
-  openConfirmModal(row: any) { this.currentRow.set(row); this.showModal.set(true); }
+  openConfirmModal(row: any) { this.currentRow.set(row); this.selectedFile.set(null); this.showModal.set(true); }
+
+  onFileSelected(event: any) {
+    const file: File = event.target.files?.[0];
+    if (file) this.selectedFile.set(file);
+  }
 
   confirmSend() {
     const row = this.currentRow();
@@ -299,9 +322,14 @@ export class AdminPendingRewardsComponent implements OnInit {
     this.saving.set(true);
     this.showModal.set(false);
 
-    this.http.post<any>(`${environment.apiUrl}/admin/redemptions/${row.id}/mark-sent`, {}).subscribe({
+    const formData = new FormData();
+    if (this.selectedFile()) {
+      formData.append('coupon_file', this.selectedFile()!);
+    }
+    this.http.post<any>(`${environment.apiUrl}/admin/redemptions/${row.id}/mark-sent`, formData).subscribe({
       next: () => {
         this.saving.set(false);
+        this.selectedFile.set(null);
         this.toast.show('Marcado como enviado correctamente.', 'success');
         this.load();
       },

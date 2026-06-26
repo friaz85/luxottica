@@ -359,7 +359,7 @@ class AdminRedemptionsController extends ResourceController
     }
 
     /**
-     * markSent($id) — Admin marca un canje pendiente como completado.
+     * markSent($id) — Admin marca un canje pendiente como completado y puede adjuntar el cupón.
      */
     public function markSent($id = null)
     {
@@ -371,11 +371,25 @@ class AdminRedemptionsController extends ResourceController
                 return $this->failNotFound('Canje no encontrado.');
             }
 
-            $db->table('redemptions')->where('id', $id)->update([
+            $updateData = [
                 'status'         => 'completed',
                 'status_recarga' => 'success',
                 'updated_at'     => date('Y-m-d H:i:s'),
-            ]);
+            ];
+
+            // Handle coupon file upload
+            $file = $this->request->getFile('coupon_file');
+            if ($file && $file->isValid() && !$file->hasMoved()) {
+                $uploadsDir = WRITEPATH . '../public/uploads/redeemed/';
+                if (!is_dir($uploadsDir)) {
+                    mkdir($uploadsDir, 0755, true);
+                }
+                $newName = time() . '_' . bin2hex(random_bytes(8)) . '.' . $file->getClientExtension();
+                $file->move($uploadsDir, $newName);
+                $updateData['pdf_path'] = $newName;
+            }
+
+            $db->table('redemptions')->where('id', $id)->update($updateData);
 
             return $this->respond(['success' => true, 'message' => 'Marcado como enviado correctamente.']);
         } catch (\Exception $e) {
