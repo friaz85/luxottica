@@ -139,7 +139,7 @@ import Swal from 'sweetalert2';
               </tr>
 
               <tr *ngFor="let r of items()">
-                <td style="font-weight:700;color:#1e40af;">#{{ r.id }}</td>
+                <td style="font-weight:700;color:#111;">#{{ r.id }}</td>
                 <td>
                   <div class="detail-block">
                     <span class="detail-val">{{ r.user_name || '—' }}</span>

@@ -524,7 +524,7 @@ class RedemptionController extends ResourceController
         $userId          = $this->request->user->id ?? $this->request->user->uid ?? null;
         $redemptionModel = new RedemptionModel();
 
-        $history = $redemptionModel->select('redemptions.*, rewards.title as reward_title, rewards.image_url')
+        $history = $redemptionModel->select('redemptions.*, rewards.title as reward_title, rewards.image_url, rewards.cost, rewards.tipo_recompensa')
             ->join('rewards', 'rewards.id = redemptions.reward_id')
             ->where('user_id', $userId)
             ->orderBy('created_at', 'DESC')
