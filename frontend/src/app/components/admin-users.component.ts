@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import Swal from 'sweetalert2';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpEventType } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../services/toast.service';
 import { LoaderService } from '../services/loader.service';
@@ -273,40 +273,54 @@ import * as XLSX from 'xlsx';
               <div class="step"><span>3</span><label>Resultado</label></div>
             </div>
 
-            <div class="preview-header">
-              <div>
-                <h4 style="margin:0; color:#1e293b;">Vista previa — {{ bulkRows().length }} usuarios a procesar</h4>
-                <p style="margin:0.2rem 0 0; font-size:0.83rem; color:#64748b;">Proyecto: <strong>{{ getProjectName(bulkIdProyecto) }}</strong></p>
+            <div *ngIf="uploading()" style="margin: 2rem 0; padding: 2.5rem; background: #f8fafc; border-radius: 1rem; border: 1px solid #e2e8f0; text-align: center;">
+              <div style="font-size: 2.5rem; margin-bottom: 1rem; display: inline-block; animation: spin 2s linear infinite;">⏳</div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 0.8rem; font-size: 0.95rem; font-weight: 800; color: #334155;">
+                <span>Procesando y registrando usuarios...</span>
+                <span>{{ uploadProgress() }}%</span>
               </div>
-              <span class="rows-badge">{{ bulkRows().length }} filas</span>
+              <div style="width: 100%; height: 12px; background: #e2e8f0; border-radius: 6px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
+                <div [style.width.%]="uploadProgress()" style="height: 100%; background: linear-gradient(90deg, var(--admin-primary), #3b82f6); transition: width 0.15s ease-out; border-radius: 6px;"></div>
+              </div>
+              <p style="margin: 1rem 0 0; font-size: 0.8rem; color: #64748b;">Por favor no cierres esta ventana ni recargues la página.</p>
             </div>
 
-            <div class="preview-table-wrapper">
-              <table class="admin-table preview-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Usuario (ID)</th>
-                    <th>Nombre</th>
-                    <th>Depto ID</th>
-                    <th class="text-right">Puntos</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let row of bulkRows().slice(0, 50); let i = index">
-                    <td style="color:#94a3b8; font-size:0.8rem;">{{ i + 1 }}</td>
-                    <td style="font-family:monospace; font-size:0.85rem; font-weight:700;">{{ row.user }}</td>
-                    <td>{{ row.full_name }}</td>
-                    <td style="font-size:0.8rem; color:#64748b;">{{ row.depto_id || '—' }}</td>
-                    <td class="text-right font-bold text-blue">{{ row.points | number }}</td>
-                  </tr>
-                  <tr *ngIf="bulkRows().length > 50">
-                    <td colspan="5" class="text-center" style="color:#64748b; font-style:italic; font-size:0.85rem;">
-                      ... y {{ bulkRows().length - 50 }} filas más
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            <div *ngIf="!uploading()">
+              <div class="preview-header">
+                <div>
+                  <h4 style="margin:0; color:#1e293b;">Vista previa — {{ bulkRows().length }} usuarios a procesar</h4>
+                  <p style="margin:0.2rem 0 0; font-size:0.83rem; color:#64748b;">Proyecto: <strong>{{ getProjectName(bulkIdProyecto) }}</strong></p>
+                </div>
+                <span class="rows-badge">{{ bulkRows().length }} filas</span>
+              </div>
+
+              <div class="preview-table-wrapper">
+                <table class="admin-table preview-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Usuario (ID)</th>
+                      <th>Nombre</th>
+                      <th>Depto ID</th>
+                      <th class="text-right">Puntos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let row of bulkRows().slice(0, 50); let i = index">
+                      <td style="color:#94a3b8; font-size:0.8rem;">{{ i + 1 }}</td>
+                      <td style="font-family:monospace; font-size:0.85rem; font-weight:700;">{{ row.user }}</td>
+                      <td>{{ row.full_name }}</td>
+                      <td style="font-size:0.8rem; color:#64748b;">{{ row.depto_id || '—' }}</td>
+                      <td class="text-right font-bold text-blue">{{ row.points | number }}</td>
+                    </tr>
+                    <tr *ngIf="bulkRows().length > 50">
+                      <td colspan="5" class="text-center" style="color:#64748b; font-style:italic; font-size:0.85rem;">
+                        ... y {{ bulkRows().length - 50 }} filas más
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
@@ -643,6 +657,7 @@ export class AdminUsersComponent implements OnInit {
   bulkIdProyecto: number | null = null;
   bulkResult = signal<any>(null);
   uploading = signal(false);
+  uploadProgress = signal<number>(0);
   isDragging = false;
 
   private http = inject(HttpClient);
@@ -776,6 +791,7 @@ export class AdminUsersComponent implements OnInit {
   processBulkUpload() {
     if (!this.bulkIdProyecto || this.bulkRows().length === 0) return;
     this.uploading.set(true);
+    this.uploadProgress.set(0);
     this.loader.show();
 
     // Send as multipart/form-data so the backend can save the original file
@@ -786,14 +802,39 @@ export class AdminUsersComponent implements OnInit {
       formData.append('file', this.bulkFile, this.bulkFile.name);
     }
 
-    this.http.post(`${environment.apiUrl}/admin/users/bulk-upload`, formData).subscribe({
-      next: (res: any) => {
-        this.bulkResult.set(res);
-        this.bulkStep.set(3);
-        this.uploading.set(false);
-        this.loader.hide();
+    let intervalId: any = null;
+
+    this.http.post(`${environment.apiUrl}/admin/users/bulk-upload`, formData, {
+      reportProgress: true,
+      observe: 'events'
+    }).subscribe({
+      next: (event: any) => {
+        if (event.type === HttpEventType.UploadProgress) {
+          const percentDone = Math.round((90 * event.loaded) / event.total);
+          this.uploadProgress.set(percentDone);
+          
+          if (percentDone >= 90 && !intervalId) {
+            intervalId = setInterval(() => {
+              const current = this.uploadProgress();
+              if (current < 99) {
+                this.uploadProgress.set(current + 1);
+              }
+            }, 300);
+          }
+        } else if (event.type === HttpEventType.Response) {
+          if (intervalId) clearInterval(intervalId);
+          this.uploadProgress.set(100);
+          
+          setTimeout(() => {
+            this.bulkResult.set(event.body);
+            this.bulkStep.set(3);
+            this.uploading.set(false);
+            this.loader.hide();
+          }, 450);
+        }
       },
       error: (err) => {
+        if (intervalId) clearInterval(intervalId);
         this.toast.show(err.error?.message || 'Error al procesar la carga', 'error');
         this.uploading.set(false);
         this.loader.hide();
@@ -849,7 +890,7 @@ export class AdminUsersComponent implements OnInit {
   }
 
   generateAndDownloadCSV(users: any[], filename: string) {
-    const headers = ['Nombre', 'Email', 'Puntos', 'Contraseña', 'Estado', 'Mensaje'];
+    const headers = ['Nombre', 'Usuario', 'Puntos', 'Contraseña', 'Estado', 'Mensaje'];
     const rows = users.map((u: any) => [
       `"${(u.full_name || '').replace(/"/g, '""')}"`,
       u.email,

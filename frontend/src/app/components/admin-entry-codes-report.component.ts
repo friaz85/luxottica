@@ -166,7 +166,7 @@ export class AdminEntryCodesReportComponent implements OnInit {
   }
 
   exportToCSV() {
-    const headers = ['Usuario', 'Email', 'Proyecto', 'Código', 'Puntos', 'Fecha'];
+    const headers = ['Nombre', 'Usuario', 'Proyecto', 'Código', 'Puntos', 'Fecha'];
     const rows = this.filteredData().map(r => [
       `"${r.user_name}"`, r.user_email, `"${r.project_name}"`, `"${r.codigo}"`, r.puntos, r.used_at
     ]);

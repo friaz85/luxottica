@@ -230,7 +230,7 @@ export class AdminRedemptionsComponent implements OnInit {
   }
 
   exportToCSV() {
-    const headers = ['ID', 'Usuario', 'Email', 'Recompensa', 'Tipo', 'Puntos', 'Estado', 'Fecha'];
+    const headers = ['ID', 'Nombre', 'Usuario', 'Recompensa', 'Tipo', 'Puntos', 'Estado', 'Fecha'];
     const rows = this.filteredRedemptions().map((r: any) => [
       r.id,
       `"${r.user_name}"`,

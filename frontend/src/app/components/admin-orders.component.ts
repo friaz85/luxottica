@@ -65,7 +65,7 @@ import { environment } from '../../environments/environment';
           <table class="admin-table">
             <thead>
               <tr>
-                <th>Email</th>
+                <th>Usuario</th>
                 <th>Recompensa</th>
                 <th>Estado</th>
                 <th class="text-right">Fecha</th>
@@ -312,7 +312,7 @@ export class AdminOrdersComponent implements OnInit {
   }
 
   exportToCSV() {
-    const headers = ['ID', 'Email', 'Recompensa', 'Estado', 'Fecha'];
+    const headers = ['ID', 'Usuario', 'Recompensa', 'Estado', 'Fecha'];
     const rows = this.filteredOrders().map(o => [o.id, o.user_email, `"${o.reward_title}"`, o.status, o.created_at]);
     const csvContent = "\ufeff" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
