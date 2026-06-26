@@ -58,15 +58,11 @@ import Swal from 'sweetalert2';
             </div>
 
             <div class="white-card points-card">
-              <div class="points-card-header">
-                <h3>Cuentas con</h3>
+              <h3 class="card-label">Cuentas con</h3>
+              <div class="points-circle">
+                <span class="points-val">{{ userPoints() | number:'1.0-0' }}</span>
               </div>
-              <div class="points-card-body">
-                <div class="points-circle">
-                  <span class="points-val">{{ userPoints() | number:'1.0-0' }}</span>
-                </div>
-                <span class="card-sublabel">Puntos disponibles</span>
-              </div>
+              <span class="card-sublabel">Puntos disponibles</span>
             </div>
           </div>
 
@@ -224,16 +220,16 @@ import Swal from 'sweetalert2';
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      height: 250px; /* Same height for both cards in left column */
+      height: 180px; /* Reduced height to remove extra space */
     }
     .welcome-card-header {
       background: #000000;
       color: #ffffff;
-      padding: 1.2rem;
+      padding: 0.8rem;
       text-align: center;
     }
     .welcome-card-header h3 {
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 600;
       margin: 0;
     }
@@ -242,32 +238,18 @@ import Swal from 'sweetalert2';
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1.5rem;
+      padding: 1rem;
     }
-    .user-name { font-size: 1.6rem; font-weight: 700; margin: 0; text-transform: capitalize; color: #000000; line-height: 1.3; }
+    .user-name { font-size: 1.3rem; font-weight: 700; margin: 0; text-transform: capitalize; color: #000000; line-height: 1.2; }
     
-    .points-card-header {
-      background: #000000;
-      color: #ffffff;
+    .points-card {
       padding: 1.2rem;
-      text-align: center;
-    }
-    .points-card-header h3 {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin: 0;
-    }
-    .points-card-body {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
       justify-content: center;
-      padding: 1.2rem;
     }
-    .points-circle { margin: 0.5rem 0; display: flex; align-items: center; justify-content: center; }
+    .card-label { font-size: 1rem; font-weight: 600; color: #666; margin: 0 0 0.4rem 0; }
+    .points-circle { margin: 0.2rem 0; display: flex; align-items: center; justify-content: center; }
     .points-val { font-size: 3rem; font-weight: 900; color: #000000; line-height: 1; }
-    .card-sublabel { font-size: 0.85rem; font-weight: 600; color: #666; }
+    .card-sublabel { font-size: 0.8rem; font-weight: 600; color: #666; }
     .code-card { text-align: left; }
     .code-title { font-size: 1rem; font-weight: 700; margin: 0 0 1rem 0; text-align: center; }
     .code-form { display: flex; flex-direction: column; gap: 0.75rem; }
