@@ -1245,6 +1245,8 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     const formData = new FormData();
     Object.keys(this.editingReward).forEach(key => {
        const val = this.editingReward[key];
+       // vigencia_area is handled explicitly below in the PDF canvas block
+       if (key === 'vigencia_area' || key === '_vigencia_area_raw') return;
        if (key === 'id_vigencias' || Array.isArray(val)) {
          formData.append(key, JSON.stringify(val));
        } else if (key === 'apply_code_vigencia') {
@@ -1279,6 +1281,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
         }
       }
     }
+    // If no PDF canvas, don't send vigencia_area (backend won't update it, preserving existing value)
 
     const url = this.editingReward.id ? `${environment.apiUrl}/admin/rewards/${this.editingReward.id}/update` : `${environment.apiUrl}/admin/rewards`;
     this.loader.show();
