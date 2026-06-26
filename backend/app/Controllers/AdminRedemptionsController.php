@@ -300,7 +300,7 @@ class AdminRedemptionsController extends ResourceController
     }
 
     /**
-     * pendingRewards() — Lista canjes pendientes de monedero y tiempo aire.
+     * pendingRewards() — Lista canjes pendientes de monedero (solo proceso manual).
      */
     public function pendingRewards()
     {
@@ -327,7 +327,6 @@ class AdminRedemptionsController extends ResourceController
                 ->where('r.status', 'pending')
                 ->groupStart()
                     ->where('rw.tipo_recompensa', 'monedero')
-                    ->orWhere('rw.tipo_recompensa', 'tiempo_aire')
                 ->groupEnd();
 
             if ($search) {

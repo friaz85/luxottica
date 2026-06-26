@@ -99,7 +99,7 @@ import Swal from 'sweetalert2';
             RECOMPENSAS PENDIENTES
             <span class="counter-pill">{{ total() }}</span>
           </h2>
-          <p class="subtitle">Monederos y recargas de tiempo aire pendientes de proceso manual</p>
+          <p class="subtitle">Monederos pendientes de proceso manual</p>
         </div>
       </div>
 
@@ -108,7 +108,7 @@ import Swal from 'sweetalert2';
         <span style="font-size:22px;flex-shrink:0;">⏳</span>
         <div>
           <strong>Solicitudes pendientes de proceso manual</strong><br>
-          <span>Estos usuarios ya canjearon una recompensa tipo <strong>Monedero</strong> o <strong>Tiempo Aire</strong>. Una vez procesado el envío, usa el botón "Marcar como enviado" para actualizar su estatus.</span>
+          <span>Estos usuarios ya canjearon una recompensa tipo <strong>Monedero</strong>. Una vez procesado el envío, usa el botón "Marcar como enviado" para actualizar su estatus.</span>
         </div>
       </div>
 
@@ -151,7 +151,7 @@ import Swal from 'sweetalert2';
                   <span class="type-pill"
                     [class.monedero]="r.tipo_recompensa==='monedero'"
                     [class.tiempo-aire]="r.tipo_recompensa==='tiempo_aire'">
-                    {{ r.tipo_recompensa === 'monedero' ? '💳 Monedero' : '📱 Tiempo Aire' }}
+                    {{ '💳 Monedero' }}
                   </span>
                 </td>
                 <td>
