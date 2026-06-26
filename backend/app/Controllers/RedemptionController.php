@@ -463,7 +463,7 @@ class RedemptionController extends ResourceController
             if ($fechaValidezInicio && $fechaValidezFin) {
                 $formattedInicio = $this->formatCouponDate($fechaValidezInicio);
                 $formattedFin    = $this->formatCouponDate($fechaValidezFin);
-                $text = "Vigencia: {$formattedInicio} al {$formattedFin}";
+                $text = "Vig.{$formattedInicio} al {$formattedFin}";
 
                 $vigenciaAreaRaw = $reward['vigencia_area'] ?? '';
                 $dpiScale = 96 / 72;
@@ -507,16 +507,7 @@ class RedemptionController extends ResourceController
     private function formatCouponDate($dateStr)
     {
         $timestamp = strtotime($dateStr);
-        $day = date('d', $timestamp);
-        $engMonth = strtolower(date('M', $timestamp));
-        $monthsMap = [
-            'jan' => 'ene', 'feb' => 'feb', 'mar' => 'mar', 'apr' => 'abr',
-            'may' => 'may', 'jun' => 'jun', 'jul' => 'jul', 'aug' => 'ago',
-            'sep' => 'sep', 'oct' => 'oct', 'nov' => 'nov', 'dec' => 'dic'
-        ];
-        $month = $monthsMap[$engMonth] ?? $engMonth;
-        $year = date('y', $timestamp);
-        return "$day-$month-$year";
+        return date('d/m/Y', $timestamp);
     }
 
     public function history()
