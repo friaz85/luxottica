@@ -186,20 +186,20 @@ export class AdminRedemptionsComponent implements OnInit {
     this.loader.show();
     this.http.get(`${environment.apiUrl}/admin/redemptions`).subscribe({
       next: (res: any) => {
-        if (Array.isArray(res) && res.length > 0) {
-          this.redemptions.set(res);
-        } else {
-          this.redemptions.set([]);
-        }
+        // Endpoint returns array directly when no page param is given
+        const data = Array.isArray(res) ? res : (res.data ?? []);
+        this.redemptions.set(data);
+        this.dataVersion.update(v => v + 1);
         this.loader.hide();
       },
       error: (e: any) => {
-        console.error('API redemptions error:', e);
+        console.error('API redemptions error:', e.status, e.error);
         this.redemptions.set([]);
         this.loader.hide();
       }
     });
   }
+
 
   filteredRedemptions = computed(() => {
     this.dataVersion(); // Register dependency
