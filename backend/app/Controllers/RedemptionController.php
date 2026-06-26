@@ -13,6 +13,16 @@ use App\Libraries\EmailSender;
 
 class RedemptionController extends ResourceController
 {
+    // Taecel API credentials (from .env)
+    private string $taecelKey;
+    private string $taecelNip;
+
+    public function __construct()
+    {
+        $this->taecelKey = env('TAECEL_KEY', '');
+        $this->taecelNip = env('TAECEL_NIP', '');
+    }
+
     /**
      * Reemplaza la funcionalidad de registro de códigos de Takis.
      * En Luxottica no se registran códigos.
@@ -237,6 +247,14 @@ class RedemptionController extends ResourceController
                 throw new \Exception("Database transaction failed: " . ($error['message'] ?? 'Unknown error'));
             }
 
+            // --- Tiempo Aire: call Taecel after transaction committed ---
+            if ($tipoRecompensa === 'tiempo_aire') {
+                $telefoniaRow = $db->table('tblTelefonia')
+                    ->where('idTelefonia', $idTelefonia)
+                    ->get()->getRowArray();
+                return $this->processAirtime($db, $redemptionId, $reward, $telefonoRecarga, $idTelefonia, $telefoniaRow, $logModel, $userId);
+            }
+
             return $this->respond([
                 'status'  => 'success',
                 'message' => '¡Canje exitoso!',
@@ -250,6 +268,124 @@ class RedemptionController extends ResourceController
             return $this->respond(['message' => 'Error al procesar el canje: ' . $e->getMessage()], 400);
         }
     }
+
+    /**
+     * processAirtime — Calls Taecel API to process tiempo_aire recharge.
+     * Called AFTER the redemption record and points deduction are committed.
+     * The user always sees success; real result is stored internally.
+     */
+    private function processAirtime($db, int $redemptionId, array $reward, string $telefono, int $idTelefonia, ?array $telefoniaRow, $logModel, int $userId): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $redemptionModel = new RedemptionModel();
+
+        if (!$telefoniaRow) {
+            log_message('error', "processAirtime: telefonia id={$idTelefonia} not found");
+            $redemptionModel->update($redemptionId, ['status_recarga' => 'error', 'status' => 'completed']);
+            return $this->respond([
+                'status'  => 'success',
+                'message' => '¡Tu recarga ha sido procesada! En un lapso de 24 a 48 horas verás reflejado tu saldo. 📱',
+            ]);
+        }
+
+        // Producto: SKU + monto con 3 dígitos (ej: TEL010, MOV100)
+        $monto   = str_pad((string)(int)($reward['monto_recarga'] ?? 0), 3, '0', STR_PAD_LEFT);
+        $producto = $telefoniaRow['SKU'] . $monto;
+
+        log_message('info', "Taecel: producto={$producto} referencia={$telefono} redemptionId={$redemptionId}");
+
+        // --- Step 1: RequestTXN ---
+        $txnResponse = $this->taecelRequest('RequestTXN', [
+            'key'        => $this->taecelKey,
+            'nip'        => $this->taecelNip,
+            'producto'   => $producto,
+            'referencia' => $telefono,
+        ]);
+        log_message('info', 'Taecel RequestTXN resp: ' . json_encode($txnResponse));
+
+        $transID         = $txnResponse['data']['transID'] ?? ($txnResponse['transID'] ?? '');
+        $recargarExitosa = false;
+        $logMensaje      = '';
+        $folioRecarga    = '';
+
+        if (!empty($txnResponse['success']) && $txnResponse['success']) {
+            // --- Step 2: StatusTXN ---
+            $statusResponse = $this->taecelRequest('StatusTXN', [
+                'key'     => $this->taecelKey,
+                'nip'     => $this->taecelNip,
+                'transID' => $transID,
+            ]);
+            log_message('info', 'Taecel StatusTXN resp: ' . json_encode($statusResponse));
+
+            if (!empty($statusResponse['success']) && $statusResponse['success']) {
+                $data          = $statusResponse['data'] ?? $statusResponse;
+                $saldoRaw      = $data['Saldo Final'] ?? $data['Saldo'] ?? $data['saldo'] ?? '0';
+                $saldo         = preg_replace('/[^0-9.]/', '', str_replace(',', '', $saldoRaw));
+                $folioRecarga  = $data['Folio'] ?? $data['folio'] ?? '';
+                $logMensaje    = "Recarga exitosa. Folio: {$folioRecarga}. Saldo: {$saldoRaw}";
+                $recargarExitosa = true;
+            } else {
+                $logMensaje = $statusResponse['message'] ?? 'Error al verificar StatusTXN';
+            }
+        } else {
+            $logMensaje = $txnResponse['message'] ?? 'Error en RequestTXN';
+        }
+
+        // --- Update redemption with result ---
+        $redemptionModel->update($redemptionId, [
+            'status'         => 'completed',
+            'status_recarga' => $recargarExitosa ? 'success' : 'failed',
+            'digital_code'   => $transID ? "TXN:{$transID}" : '',
+        ]);
+
+        // --- Log ---
+        $logModel->save([
+            'ip_address' => $this->request->getIPAddress(),
+            'user_id'    => $userId,
+            'action'     => $recargarExitosa ? 'taecel_recarga_exitosa' : 'taecel_recarga_fallida',
+            'details'    => "Producto: {$producto} | Tel: {$telefono} | {$logMensaje}",
+        ]);
+
+        // Always return success to user (they should not see Taecel internal errors)
+        return $this->respond([
+            'status'  => 'success',
+            'message' => '¡Tu recarga ha sido procesada! En un lapso de 24 a 48 horas verás reflejado tu saldo. 📱',
+        ]);
+    }
+
+    /**
+     * taecelRequest — HTTP POST to Taecel API endpoint.
+     */
+    private function taecelRequest(string $endpoint, array $params): array
+    {
+        $url  = 'https://taecel.com/app/api/' . $endpoint;
+        $body = http_build_query($params);
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => $body,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
+        ]);
+        $response = curl_exec($ch);
+        $error    = curl_error($ch);
+        curl_close($ch);
+
+        if ($error) {
+            log_message('error', "Taecel cURL error ({$endpoint}): {$error}");
+            return ['success' => false, 'message' => $error];
+        }
+
+        $decoded = json_decode($response, true);
+        if (!is_array($decoded)) {
+            log_message('error', "Taecel invalid JSON ({$endpoint}): {$response}");
+            return ['success' => false, 'message' => 'Respuesta inválida de Taecel'];
+        }
+
+        return $decoded;
+    }
+
 
     private function generateAndSavePdf($user, $reward, $redemptionId, $codes, $fechaValidezInicio = null, $fechaValidezFin = null)
     {
