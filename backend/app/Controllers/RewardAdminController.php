@@ -605,4 +605,156 @@ class RewardAdminController extends ResourceController
         
         return $this->respond(['status' => 'Exclusion removed']);
     }
+
+    public function listCodes()
+    {
+        $db = \Config\Database::connect();
+        $builder = $db->table('reward_codes')
+                      ->select('reward_codes.*, rewards.title as reward_title, vigencias.fecha_inicio, vigencias.fecha_fin')
+                      ->join('rewards', 'rewards.id = reward_codes.reward_id', 'left')
+                      ->join('vigencias', 'vigencias.id = reward_codes.id_vigencia', 'left');
+
+        $search = $this->request->getVar('search');
+        if (!empty($search)) {
+            $builder->groupStart()
+                    ->like('reward_codes.code', $search)
+                    ->orLike('reward_codes.code1', $search)
+                    ->orLike('reward_codes.code2', $search)
+                    ->orLike('reward_codes.code3', $search)
+                    ->orLike('reward_codes.code4', $search)
+                    ->orLike('reward_codes.code5', $search)
+                    ->orLike('reward_codes.code6', $search)
+                    ->orLike('reward_codes.code7', $search)
+                    ->orLike('reward_codes.code8', $search)
+                    ->groupEnd();
+        }
+
+        $rewardId = $this->request->getVar('reward_id');
+        if (!empty($rewardId)) {
+            $builder->where('reward_codes.reward_id', $rewardId);
+        }
+
+        $idVigencia = $this->request->getVar('id_vigencia');
+        if (!empty($idVigencia)) {
+            $builder->where('reward_codes.id_vigencia', $idVigencia);
+        }
+
+        $isUsed = $this->request->getVar('is_used');
+        if (isset($isUsed) && $isUsed !== '') {
+            $builder->where('reward_codes.is_used', (int)$isUsed);
+        }
+
+        // Pagination
+        $page = (int)($this->request->getVar('page') ?? 1);
+        $limit = (int)($this->request->getVar('limit') ?? 20);
+        $offset = ($page - 1) * $limit;
+
+        $countBuilder = clone $builder;
+        $total = $countBuilder->countAllResults(false);
+
+        $rows = $builder->orderBy('reward_codes.id', 'DESC')
+                        ->limit($limit, $offset)
+                        ->get()
+                        ->getResultArray();
+
+        foreach ($rows as &$row) {
+            for ($i = 1; $i <= 8; $i++) {
+                if (isset($row["code$i"])) {
+                    $row["code$i"] = $this->maskCode($row["code$i"]);
+                }
+            }
+            if (isset($row["code"])) {
+                $row["code"] = $this->maskCode($row["code"]);
+            }
+        }
+
+        return $this->respond([
+            'data' => $rows,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit
+        ]);
+    }
+
+    private function maskCode($code) {
+        if (empty($code)) return '';
+        $len = strlen($code);
+        if ($len <= 5) return $code;
+        return str_repeat('*', $len - 5) . substr($code, -5);
+    }
+
+    public function updateCode($id = null)
+    {
+        $db = \Config\Database::connect();
+        $codeRow = $db->table('reward_codes')->where('id', $id)->get()->getRowArray();
+        if (!$codeRow) {
+            return $this->failNotFound('Código no encontrado');
+        }
+
+        if ((int)$codeRow['is_used'] === 1) {
+            return $this->fail('No se puede editar un código que ya ha sido canjeado.', 400);
+        }
+
+        $data = $this->request->getPost();
+        $updateData = [];
+
+        if (array_key_exists('id_vigencia', $data)) {
+            $updateData['id_vigencia'] = !empty($data['id_vigencia']) ? (int)$data['id_vigencia'] : null;
+        }
+
+        for ($i = 1; $i <= 8; $i++) {
+            if (isset($data["code$i"])) {
+                $val = trim($data["code$i"]);
+                if (!empty($val)) {
+                    $existsInEntry = $db->table('tblCodigoEntrada')->where('codigo', $val)->countAllResults() > 0;
+                    $existsInReward = $db->table('reward_codes')
+                                         ->where('id !=', $id)
+                                         ->groupStart()
+                                             ->where('code', $val)->orWhere('code1', $val)->orWhere('code2', $val)
+                                             ->orWhere('code3', $val)->orWhere('code4', $val)->orWhere('code5', $val)
+                                             ->orWhere('code6', $val)->orWhere('code7', $val)->orWhere('code8', $val)
+                                         ->groupEnd()
+                                         ->countAllResults() > 0;
+
+                    if ($existsInEntry || $existsInReward) {
+                        return $this->fail("El código '{$val}' ya existe en el sistema.", 400);
+                    }
+                    $updateData["code$i"] = $val;
+                    if ($i === 1) {
+                        $updateData['code'] = $val;
+                    }
+                }
+            }
+        }
+
+        if (!empty($updateData)) {
+            $db->table('reward_codes')->where('id', $id)->update($updateData);
+            $this->logActivity('update_reward_code', "Código ID {$id} actualizado.");
+        }
+
+        return $this->respond(['message' => 'Código actualizado con éxito']);
+    }
+
+    public function deleteCode($id = null)
+    {
+        $db = \Config\Database::connect();
+        $codeRow = $db->table('reward_codes')->where('id', $id)->get()->getRowArray();
+        if (!$codeRow) {
+            return $this->failNotFound('Código no encontrado');
+        }
+
+        if ((int)$codeRow['is_used'] === 1) {
+            return $this->fail('No se puede eliminar un código que ya ha sido canjeado.', 400);
+        }
+
+        $db->table('reward_codes')->where('id', $id)->delete();
+        
+        $rewardId = $codeRow['reward_id'];
+        $newStock = $db->table('reward_codes')->where('reward_id', $rewardId)->where('is_used', 0)->countAllResults();
+        $db->table('rewards')->where('id', $rewardId)->update(['stock' => $newStock]);
+
+        $this->logActivity('delete_reward_code', "Código ID {$id} (Recompensa ID {$rewardId}) eliminado.");
+
+        return $this->respond(['message' => 'Código eliminado con éxito']);
+    }
 }

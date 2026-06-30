@@ -13,8 +13,9 @@ import { AdminPendingRewardsComponent } from './components/admin-pending-rewards
 import { AdminProjectsComponent } from './components/admin-projects.component';
 import { AdminEntryCodesComponent } from './components/admin-entry-codes.component';
 import { AdminOrdersComponent } from './components/admin-orders.component';
-import { AdminEntryCodesReportComponent } from './components/admin-entry-codes-report.component';
 import { AdminVigenciasComponent } from './components/admin-vigencias.component';
+import { AdminCodesComponent } from './components/admin-codes.component';
+import { AdminEntryCodesReportComponent } from './components/admin-entry-codes-report.component';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from './services/auth.service';
@@ -80,6 +81,11 @@ export const routes: Routes = [
     {
         path: 'admin/vigencias',
         component: AdminVigenciasComponent,
+        canActivate: [adminGuard]
+    },
+    {
+        path: 'admin/codes',
+        component: AdminCodesComponent,
         canActivate: [adminGuard]
     },
     {

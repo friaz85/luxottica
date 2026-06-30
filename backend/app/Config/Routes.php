@@ -44,6 +44,10 @@ $routes->group('admin', ['filter' => 'admin_auth'], function ($routes) {
     $routes->post('rewards/(:num)/update', 'RewardAdminController::updateReward/$1');
     $routes->post('rewards/(:num)/add-codes', 'RewardAdminController::addCodes/$1');
     $routes->delete('rewards/(:num)', 'RewardAdminController::deleteReward/$1');
+
+    $routes->get('codes', 'RewardAdminController::listCodes');
+    $routes->post('codes/(:num)', 'RewardAdminController::updateCode/$1');
+    $routes->delete('codes/(:num)', 'RewardAdminController::deleteCode/$1');
     
     $routes->get('rewards/(:num)/exclusions', 'RewardAdminController::getExclusions/$1');
     $routes->post('rewards/(:num)/exclusions', 'RewardAdminController::addExclusion/$1');

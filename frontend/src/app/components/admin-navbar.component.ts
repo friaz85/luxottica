@@ -47,6 +47,9 @@ import { LoaderComponent } from './loader.component';
         <a routerLink="/admin/vigencias" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">📅</span> Vigencias
         </a>
+        <a routerLink="/admin/codes" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
+          <span class="icon">🔑</span> Inventario de Códigos
+        </a>
         <a routerLink="/admin/redemptions" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">📋</span> Canjes
         </a>
