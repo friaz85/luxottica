@@ -75,7 +75,7 @@ import Swal from 'sweetalert2';
 
               <div class="catalog-body">
                 <p class="catalog-subheading">
-                  {{ userPoints() > 0 ? 'Selecciona una recompensa y haz clic en canjear.' : 'Aún no cuentas con los puntos suficientes. Sigue acumulando para canjear.' }}
+                  {{ userPoints() > 0 ? 'Selecciona una recompensa para realizar tu canje.' : 'Aún no cuentas con los puntos suficientes. Sigue acumulando para canjear.' }}
                 </p>
 
                 <div *ngIf="rewardsLoading()" class="loading-state">
@@ -88,7 +88,7 @@ import Swal from 'sweetalert2';
                        *ngFor="let item of rewards()"
                        [class.selected]="selectedReward()?.id === item.id"
                        [class.insufficient]="item.cost > userPoints()"
-                       (click)="item.cost <= userPoints() ? selectReward(item) : null">
+                       (click)="item.cost <= userPoints() ? selectRewardAndRedeem(item) : null">
                     <div class="reward-img-container">
                       <img [src]="item.image_url ? environment.uploadsUrl + '/rewards/' + item.image_url : 'assets/img/Logo_Tec.png'"
                            (error)="handleImageError($event, item.image_url)"
@@ -106,12 +106,6 @@ import Swal from 'sweetalert2';
                   <div style="font-size:2.5rem; margin-bottom:0.5rem;">🎁</div>
                   <h2>SIN RECOMPENSAS</h2>
                   <p>No hay recompensas disponibles en este momento.</p>
-                </div>
-
-                <div class="catalog-actions" *ngIf="!rewardsLoading() && rewards().length > 0">
-                  <button (click)="redeemSelected()" [disabled]="!selectedReward()" class="btn-black-rect large-btn">
-                    Canjear
-                  </button>
                 </div>
               </div>
             </div>
@@ -514,6 +508,11 @@ export class RedeemRewardsComponent implements OnInit {
   }
 
   selectReward(reward: any) { this.selectedReward.set(reward); }
+
+  selectRewardAndRedeem(reward: any) {
+    this.selectedReward.set(reward);
+    this.redeemSelected();
+  }
 
   focusCodeField() {
     if (this.codeField) {
