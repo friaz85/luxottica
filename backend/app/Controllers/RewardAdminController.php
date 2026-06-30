@@ -34,6 +34,7 @@ class RewardAdminController extends ResourceController
                             ->join('vigencias', 'vigencias.id = reward_codes.id_vigencia')
                             ->where('reward_codes.reward_id', $reward['id'])
                             ->where('reward_codes.is_used', 0)
+                            ->where('reward_codes.is_deleted', 0)
                             ->groupBy('vigencias.id')
                             ->orderBy('vigencias.fecha_inicio', 'ASC')
                             ->get()
@@ -43,6 +44,7 @@ class RewardAdminController extends ResourceController
             $codesNoVigencia = (int) $db->table('reward_codes')
                                         ->where('reward_id', $reward['id'])
                                         ->where('is_used', 0)
+                                        ->where('is_deleted', 0)
                                         ->where('id_vigencia IS NULL', null, false)
                                         ->countAllResults();
 
@@ -113,6 +115,7 @@ class RewardAdminController extends ResourceController
             $hasVigenciaCodes = $db->table('reward_codes')
                                    ->where('reward_id', $reward['id'])
                                    ->where('is_used', 0)
+                                   ->where('is_deleted', 0)
                                    ->where('id_vigencia IS NOT NULL')
                                    ->countAllResults() > 0;
             
@@ -123,6 +126,7 @@ class RewardAdminController extends ResourceController
                                 ->join('vigencias', 'vigencias.id = reward_codes.id_vigencia')
                                 ->where('reward_codes.reward_id', $reward['id'])
                                 ->where('reward_codes.is_used', 0)
+                                ->where('reward_codes.is_deleted', 0)
                                 ->groupBy('vigencias.id')
                                 ->get()
                                 ->getResultArray();
@@ -617,7 +621,8 @@ class RewardAdminController extends ResourceController
         $builder = $db->table('reward_codes')
                       ->select('reward_codes.*, rewards.title as reward_title, vigencias.fecha_inicio, vigencias.fecha_fin')
                       ->join('rewards', 'rewards.id = reward_codes.reward_id', 'left')
-                      ->join('vigencias', 'vigencias.id = reward_codes.id_vigencia', 'left');
+                      ->join('vigencias', 'vigencias.id = reward_codes.id_vigencia', 'left')
+                      ->where('reward_codes.is_deleted', 0);
 
         $search = $this->request->getVar('search');
         if (!empty($search)) {
@@ -784,14 +789,66 @@ class RewardAdminController extends ResourceController
             return $this->fail('No se puede eliminar un código que ya ha sido canjeado.', 400);
         }
 
-        $db->table('reward_codes')->where('id', $id)->delete();
+        $db->table('reward_codes')->where('id', $id)->update(['is_deleted' => 1]);
         
         $rewardId = $codeRow['reward_id'];
-        $newStock = $db->table('reward_codes')->where('reward_id', $rewardId)->where('is_used', 0)->countAllResults();
+        $newStock = $db->table('reward_codes')->where('reward_id', $rewardId)->where('is_used', 0)->where('is_deleted', 0)->countAllResults();
         $db->table('rewards')->where('id', $rewardId)->update(['stock' => $newStock]);
 
-        $this->logActivity('delete_reward_code', "Código ID {$id} (Recompensa ID {$rewardId}) eliminado.");
+        $this->logActivity('delete_reward_code', "Código ID {$id} (Recompensa ID {$rewardId}) eliminado lógicamente.");
 
         return $this->respond(['message' => 'Código eliminado con éxito']);
+    }
+
+    public function bulkDeleteCodes()
+    {
+        $role = $this->request->admin_user->role ?? null;
+        if ($role !== 'system_admin') {
+            return $this->failForbidden('Acceso denegado: Se requiere rol system_admin');
+        }
+
+        $db = \Config\Database::connect();
+        $ids = $this->request->getVar('ids');
+        if (empty($ids) || !is_array($ids)) {
+            return $this->fail('Se requiere una lista de IDs válida.', 400);
+        }
+
+        // Verify none of the selected codes are already used
+        $usedCount = $db->table('reward_codes')
+                        ->whereIn('id', $ids)
+                        ->where('is_used', 1)
+                        ->countAllResults();
+        if ($usedCount > 0) {
+            return $this->fail('No se pueden eliminar códigos que ya han sido canjeados.', 400);
+        }
+
+        // Get reward IDs involved to recalculate stock later
+        $rewardIds = $db->table('reward_codes')
+                        ->select('reward_id')
+                        ->whereIn('id', $ids)
+                        ->groupBy('reward_id')
+                        ->get()
+                        ->getResultArray();
+
+        // Perform logical delete
+        $db->table('reward_codes')
+           ->whereIn('id', $ids)
+           ->update(['is_deleted' => 1]);
+
+        // Recalculate stock for all affected rewards
+        foreach ($rewardIds as $r) {
+            $rewardId = $r['reward_id'];
+            $newStock = $db->table('reward_codes')
+                            ->where('reward_id', $rewardId)
+                            ->where('is_used', 0)
+                            ->where('is_deleted', 0)
+                            ->countAllResults();
+            $db->table('rewards')->where('id', $rewardId)->update(['stock' => $newStock]);
+        }
+
+        $idsStr = implode(', ', $ids);
+        $this->logActivity('bulk_delete_reward_codes', "Eliminación lógica masiva de códigos IDs: [{$idsStr}].");
+
+        return $this->respond(['message' => 'Códigos eliminados con éxito']);
     }
 }

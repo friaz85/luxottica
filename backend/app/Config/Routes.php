@@ -46,6 +46,7 @@ $routes->group('admin', ['filter' => 'admin_auth'], function ($routes) {
     $routes->delete('rewards/(:num)', 'RewardAdminController::deleteReward/$1');
 
     $routes->get('codes', 'RewardAdminController::listCodes');
+    $routes->post('codes/bulk-delete', 'RewardAdminController::bulkDeleteCodes');
     $routes->post('codes/(:num)', 'RewardAdminController::updateCode/$1');
     $routes->delete('codes/(:num)', 'RewardAdminController::deleteCode/$1');
     

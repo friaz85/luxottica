@@ -21,6 +21,11 @@ import Swal from 'sweetalert2';
            <h2 class="title">INVENTARIO DE CÓDIGOS</h2>
            <p class="subtitle">Visualiza, edita y administra los códigos de salida de las recompensas</p>
         </div>
+        <div class="actions" *ngIf="selectedIds.size > 0">
+          <button class="action-btn delete" (click)="bulkDelete()" style="background: #dc2626; color: white; padding: 0.8rem 1.5rem; font-weight: 800; font-size: 0.9rem; border-radius: 0.6rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; border: none; transition: 0.2s;">
+             🗑️ Eliminar Seleccionados ({{ selectedIds.size }})
+          </button>
+        </div>
       </div>
 
       <div class="table-container">
@@ -86,6 +91,9 @@ import Swal from 'sweetalert2';
           <table class="admin-table">
             <thead>
               <tr>
+                <th style="width: 40px; user-select: none;">
+                  <input type="checkbox" (change)="toggleAll($event)" [checked]="isAllSelected()">
+                </th>
                 <th style="cursor: pointer; user-select: none;" (click)="toggleSort('reward_title')">
                   Recompensa <span style="font-size:0.75rem; margin-left:3px;">{{ getSortIcon('reward_title') }}</span>
                 </th>
@@ -101,6 +109,9 @@ import Swal from 'sweetalert2';
             </thead>
             <tbody>
               <tr *ngFor="let row of codes()">
+                <td>
+                  <input type="checkbox" (change)="toggleSelection(row.id, $event)" [checked]="selectedIds.has(row.id)" [disabled]="row.is_used == 1">
+                </td>
                 <td>
                   <span class="font-bold">{{ row.reward_title || 'N/A' }}</span>
                 </td>
@@ -277,6 +288,7 @@ export class AdminCodesComponent implements OnInit {
     return Math.ceil(this.totalCodes() / this.pageSize) || 1;
   });
   loading = signal(false);
+  selectedIds = new Set<number>();
 
   // Filters
   searchQuery = '';
@@ -304,6 +316,7 @@ export class AdminCodesComponent implements OnInit {
   }
 
   loadCodes() {
+    this.selectedIds.clear();
     this.loading.set(true);
     let url = `${environment.apiUrl}/admin/codes?page=${this.currentPage}&limit=${this.pageSize}&sort_by=${this.sortBy}&sort_order=${this.sortOrder}`;
     
@@ -347,6 +360,72 @@ export class AdminCodesComponent implements OnInit {
   setPage(page: number) {
     this.currentPage = page;
     this.loadCodes();
+  }
+
+  toggleAll(event: any) {
+    const checked = event.target.checked;
+    if (checked) {
+      this.codes().forEach(row => {
+        if (row.is_used != 1) {
+          this.selectedIds.add(row.id);
+        }
+      });
+    } else {
+      this.codes().forEach(row => {
+        this.selectedIds.delete(row.id);
+      });
+    }
+  }
+
+  isAllSelected(): boolean {
+    const availableCodes = this.codes().filter(row => row.is_used != 1);
+    if (availableCodes.length === 0) return false;
+    return availableCodes.every(row => this.selectedIds.has(row.id));
+  }
+
+  toggleSelection(id: number, event: any) {
+    if (event.target.checked) {
+      this.selectedIds.add(id);
+    } else {
+      this.selectedIds.delete(id);
+    }
+  }
+
+  bulkDelete() {
+    if (this.selectedIds.size === 0) return;
+
+    Swal.fire({
+      title: '¿Eliminar Códigos Seleccionados?',
+      text: `¿Estás seguro de que deseas eliminar lógicamente ${this.selectedIds.size} códigos? Esta acción actualizará los inventarios de las recompensas.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6C1DDA'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.loading.set(true);
+        this.http.post(`${environment.apiUrl}/admin/codes/bulk-delete`, {
+          ids: Array.from(this.selectedIds)
+        }).subscribe({
+          next: () => {
+            this.toast.show('Códigos eliminados con éxito', 'success');
+            this.selectedIds.clear();
+            this.loadCodes();
+          },
+          error: (err: any) => {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error al eliminar',
+              text: err.error?.message || 'Ocurrió un error al procesar la eliminación masiva.',
+              confirmButtonColor: '#6C1DDA'
+            });
+            this.loading.set(false);
+          }
+        });
+      }
+    });
   }
 
   toggleSort(column: string) {

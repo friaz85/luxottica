@@ -130,6 +130,7 @@ class RedemptionController extends ResourceController
                     ->join('vigencias', 'vigencias.id = reward_codes.id_vigencia', 'left')
                     ->where('reward_codes.reward_id', $rewardId)
                     ->where('reward_codes.is_used', 0)
+                    ->where('reward_codes.is_deleted', 0)
                     ->groupStart()
                         ->where('reward_codes.id_vigencia IS NULL')
                         ->orGroupStart()
