@@ -141,7 +141,15 @@ import Swal from 'sweetalert2';
             </span>
             <div class="pagination-controls">
               <button class="pag-btn" [disabled]="currentPage === 1" (click)="setPage(currentPage - 1)">« Anterior</button>
-              <button class="pag-btn" [disabled]="currentPage * pageSize >= totalCodes()" (click)="setPage(currentPage + 1)">Siguiente »</button>
+              <div class="page-numbers">
+                <button *ngFor="let p of [].constructor(totalPages()); let i = index" 
+                        class="page-num-btn" 
+                        [class.active]="currentPage === (i + 1)"
+                        (click)="setPage(i + 1)">
+                  {{ i + 1 }}
+                </button>
+              </div>
+              <button class="pag-btn" [disabled]="currentPage >= totalPages()" (click)="setPage(currentPage + 1)">Siguiente »</button>
             </div>
           </div>
         </div>
@@ -235,6 +243,9 @@ import Swal from 'sweetalert2';
     .pagination-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; }
     .pagination-controls { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
     .pag-btn { background: #fff; border: 1px solid #d1d5db; color: #374151; padding: 0.4rem 0.8rem; border-radius: 0.4rem; font-weight: 600; cursor: pointer; }
+    .page-numbers { display: flex; gap: 0.3rem; }
+    .page-num-btn { width: 32px; height: 32px; border-radius: 0.4rem; border: 1px solid #d1d5db; background: #fff; cursor: pointer; font-weight: 700; }
+    .page-num-btn.active { background: var(--admin-accent); color: var(--admin-primary); border-color: var(--admin-accent); }
 
     @media (max-width: 900px) {
       .admin-page { margin-left: 0; padding: 5.5rem 1rem 2rem 1rem; }
@@ -255,6 +266,9 @@ export class AdminCodesComponent implements OnInit {
   rewards = signal<any[]>([]);
   vigencias = signal<any[]>([]);
   totalCodes = signal(0);
+  totalPages = computed(() => {
+    return Math.ceil(this.totalCodes() / this.pageSize) || 1;
+  });
 
   // Filters
   searchQuery = '';
