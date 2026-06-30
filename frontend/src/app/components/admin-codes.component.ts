@@ -23,7 +23,10 @@ import Swal from 'sweetalert2';
         </div>
         <div class="actions" *ngIf="selectedIds.size > 0">
           <button class="action-btn delete" (click)="bulkDelete()" style="background: #dc2626; color: white; padding: 0.8rem 1.5rem; font-weight: 800; font-size: 0.9rem; border-radius: 0.6rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; border: none; transition: 0.2s;">
-             🗑️ Eliminar Seleccionados ({{ selectedIds.size }})
+             <svg viewBox="0 0 24 24" width="16" height="16" fill="white" style="vertical-align: middle;">
+               <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+             </svg>
+             Eliminar Seleccionados ({{ selectedIds.size }})
           </button>
         </div>
       </div>
@@ -242,6 +245,7 @@ import Swal from 'sweetalert2';
     .admin-table td { padding: 1.2rem; border-bottom: 1px solid #eee; font-size: 0.95rem; vertical-align: middle; }
     .admin-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
     .admin-table tbody tr:hover { background-color: #f1f5f9; }
+    .admin-table input[type="checkbox"] { accent-color: #000000; cursor: pointer; scale: 1.15; }
 
     .codes-list-cell { display: flex; gap: 0.4rem; flex-wrap: wrap; }
     .code-badge { background: #f1f5f9; border: 1px solid #e2e8f0; color: #1e293b; padding: 0.25rem 0.5rem; border-radius: 0.4rem; font-family: monospace; font-size: 0.85rem; font-weight: 700; }
@@ -402,7 +406,7 @@ export class AdminCodesComponent implements OnInit {
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#d33',
-      cancelButtonColor: '#6C1DDA'
+      cancelButtonColor: '#000000'
     }).then((result) => {
       if (result.isConfirmed) {
         this.loading.set(true);
@@ -419,7 +423,7 @@ export class AdminCodesComponent implements OnInit {
               icon: 'error',
               title: 'Error al eliminar',
               text: err.error?.message || 'Ocurrió un error al procesar la eliminación masiva.',
-              confirmButtonColor: '#6C1DDA'
+              confirmButtonColor: '#000000'
             });
             this.loading.set(false);
           }
@@ -526,7 +530,7 @@ export class AdminCodesComponent implements OnInit {
           icon: 'error',
           title: 'Error al Guardar',
           text: err.error?.message || 'Ocurrió un error al actualizar el código.',
-          confirmButtonColor: '#6C1DDA'
+          confirmButtonColor: '#000000'
         });
         this.loader.hide();
       }
@@ -542,7 +546,7 @@ export class AdminCodesComponent implements OnInit {
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#d33',
-      cancelButtonColor: '#6C1DDA'
+      cancelButtonColor: '#000000'
     }).then((result) => {
       if (result.isConfirmed) {
         this.loader.show();
