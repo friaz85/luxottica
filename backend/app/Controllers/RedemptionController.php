@@ -463,7 +463,7 @@ class RedemptionController extends ResourceController
             if ($fechaValidezInicio && $fechaValidezFin) {
                 $formattedInicio = $this->formatCouponDate($fechaValidezInicio);
                 $formattedFin    = $this->formatCouponDate($fechaValidezFin);
-                $text = "Vig.{$formattedInicio} al {$formattedFin}";
+                $text = "{$formattedInicio} al {$formattedFin}";
 
                 $vigenciaAreaRaw = $reward['vigencia_area'] ?? '';
                 $dpiScale = 96 / 72;
