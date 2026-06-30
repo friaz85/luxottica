@@ -32,6 +32,12 @@ const adminGuard = () => {
   return auth.isAdmin() || router.createUrlTree(['/admin/login']);
 };
 
+const systemAdminGuard = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  return (auth.isAdmin() && auth.getRole() === 'system_admin') || router.createUrlTree(['/admin/dashboard']);
+};
+
 export const routes: Routes = [
     { path: '', redirectTo: 'rewards', pathMatch: 'full' },
     { path: 'auth/login', component: LoginComponent },
@@ -86,7 +92,7 @@ export const routes: Routes = [
     {
         path: 'admin/codes',
         component: AdminCodesComponent,
-        canActivate: [adminGuard]
+        canActivate: [systemAdminGuard]
     },
     {
         path: 'admin/redemptions',

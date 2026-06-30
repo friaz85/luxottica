@@ -608,6 +608,11 @@ class RewardAdminController extends ResourceController
 
     public function listCodes()
     {
+        $role = $this->request->admin_user->role ?? null;
+        if ($role !== 'system_admin') {
+            return $this->failForbidden('Acceso denegado: Se requiere rol system_admin');
+        }
+
         $db = \Config\Database::connect();
         $builder = $db->table('reward_codes')
                       ->select('reward_codes.*, rewards.title as reward_title, vigencias.fecha_inicio, vigencias.fecha_fin')
@@ -685,6 +690,11 @@ class RewardAdminController extends ResourceController
 
     public function updateCode($id = null)
     {
+        $role = $this->request->admin_user->role ?? null;
+        if ($role !== 'system_admin') {
+            return $this->failForbidden('Acceso denegado: Se requiere rol system_admin');
+        }
+
         $db = \Config\Database::connect();
         $codeRow = $db->table('reward_codes')->where('id', $id)->get()->getRowArray();
         if (!$codeRow) {
@@ -737,6 +747,11 @@ class RewardAdminController extends ResourceController
 
     public function deleteCode($id = null)
     {
+        $role = $this->request->admin_user->role ?? null;
+        if ($role !== 'system_admin') {
+            return $this->failForbidden('Acceso denegado: Se requiere rol system_admin');
+        }
+
         $db = \Config\Database::connect();
         $codeRow = $db->table('reward_codes')->where('id', $id)->get()->getRowArray();
         if (!$codeRow) {
