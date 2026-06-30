@@ -657,7 +657,8 @@ class RewardAdminController extends ResourceController
         $countBuilder = clone $builder;
         $total = $countBuilder->countAllResults(false);
 
-        $rows = $builder->orderBy('reward_codes.id', 'DESC')
+        $rows = $builder->orderBy('reward_codes.is_used', 'ASC')
+                        ->orderBy('reward_codes.id', 'DESC')
                         ->limit($limit, $offset)
                         ->get()
                         ->getResultArray();
