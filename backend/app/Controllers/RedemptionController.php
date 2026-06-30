@@ -469,21 +469,24 @@ class RedemptionController extends ResourceController
                 $dpiScale = 96 / 72;
 
                 if (!empty($vigenciaAreaRaw) && strpos($vigenciaAreaRaw, ',') !== false) {
-                    // Use configured area position (percentage-based)
-                    $vParts = explode(',', trim($vigenciaAreaRaw));
-                    if (count($vParts) >= 4) {
-                        $vx = (floatval($vParts[0]) / 100) * $size['width'];
-                        $vy = (floatval($vParts[1]) / 100) * $size['height'];
-                        $vw = (floatval($vParts[2]) / 100) * $size['width'];
-                        $vh = (floatval($vParts[3]) / 100) * $size['height'];
-                        $vfs = isset($vParts[4]) ? round(intval($vParts[4]) * $dpiScale) : 12;
-                        $pdf->SetFont('Arial', 'B', $vfs);
-                        $pdf->SetTextColor(0, 0, 0);
-                        $pdf->SetXY($vx, $vy);
-                        if ($vw > 0 && $vh > 0) {
-                            $pdf->Cell($vw, $vh, $text, 0, 0, 'C');
-                        } else {
-                            $pdf->Text($vx, $vy, $text);
+                    // Use configured area position (percentage-based, support multiple areas separated by semicolon)
+                    $vAreas = explode(';', $vigenciaAreaRaw);
+                    foreach ($vAreas as $vAreaStr) {
+                        $vParts = explode(',', trim($vAreaStr));
+                        if (count($vParts) >= 4) {
+                            $vx = (floatval($vParts[0]) / 100) * $size['width'];
+                            $vy = (floatval($vParts[1]) / 100) * $size['height'];
+                            $vw = (floatval($vParts[2]) / 100) * $size['width'];
+                            $vh = (floatval($vParts[3]) / 100) * $size['height'];
+                            $vfs = isset($vParts[4]) ? round(intval($vParts[4]) * $dpiScale) : 12;
+                            $pdf->SetFont('Arial', 'B', $vfs);
+                            $pdf->SetTextColor(0, 0, 0);
+                            $pdf->SetXY($vx, $vy);
+                            if ($vw > 0 && $vh > 0) {
+                                $pdf->Cell($vw, $vh, $text, 0, 0, 'C');
+                            } else {
+                                $pdf->Text($vx, $vy, $text);
+                            }
                         }
                     }
                 } else {
