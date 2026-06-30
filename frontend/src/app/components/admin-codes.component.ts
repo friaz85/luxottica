@@ -82,7 +82,7 @@ import Swal from 'sweetalert2';
            </div>
         </div>
 
-        <div class="table-wrapper">
+        <div class="table-wrapper" [class.loading-fade]="loading()">
           <table class="admin-table">
             <thead>
               <tr>
@@ -224,7 +224,8 @@ import Swal from 'sweetalert2';
     .filter-select { background: #f9f9f9; border: 1px solid #ddd; padding: 0.6rem 1rem; border-radius: 0.5rem; outline: none; font-weight: 700; color: #334155; min-width: 160px; transition: border-color 0.2s; font-size: 0.85rem; }
     .filter-select:focus { border-color: var(--admin-primary); }
 
-    .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; transition: opacity 0.2s ease-in-out; }
+    .table-wrapper.loading-fade { opacity: 0.4; pointer-events: none; }
     .admin-table { width: 100%; border-collapse: collapse; min-width: 800px; }
     .admin-table th { background: #f8f9fa; color: var(--admin-primary); padding: 1.2rem; text-align: left; font-size: 0.85rem; text-transform: uppercase; font-weight: 900; border-bottom: 2px solid #eee; }
     .admin-table td { padding: 1.2rem; border-bottom: 1px solid #eee; font-size: 0.95rem; vertical-align: middle; }
@@ -275,6 +276,7 @@ export class AdminCodesComponent implements OnInit {
   totalPages = computed(() => {
     return Math.ceil(this.totalCodes() / this.pageSize) || 1;
   });
+  loading = signal(false);
 
   // Filters
   searchQuery = '';
@@ -302,7 +304,7 @@ export class AdminCodesComponent implements OnInit {
   }
 
   loadCodes() {
-    this.loader.show();
+    this.loading.set(true);
     let url = `${environment.apiUrl}/admin/codes?page=${this.currentPage}&limit=${this.pageSize}&sort_by=${this.sortBy}&sort_order=${this.sortOrder}`;
     
     if (this.searchQuery) url += `&search=${encodeURIComponent(this.searchQuery)}`;
@@ -314,11 +316,11 @@ export class AdminCodesComponent implements OnInit {
       next: (res) => {
         this.codes.set(res.data || []);
         this.totalCodes.set(res.total || 0);
-        this.loader.hide();
+        this.loading.set(false);
       },
       error: (err) => {
         this.toast.show('Error al cargar códigos de salida', 'error');
-        this.loader.hide();
+        this.loading.set(false);
       }
     });
   }
