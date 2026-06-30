@@ -684,8 +684,14 @@ class RewardAdminController extends ResourceController
     private function maskCode($code) {
         if (empty($code)) return '';
         $len = strlen($code);
-        if ($len <= 5) return $code;
-        return str_repeat('*', $len - 5) . substr($code, -5);
+        if ($len >= 5) {
+            return str_repeat('*', $len - 5) . substr($code, -5);
+        } else {
+            if ($len <= 2) {
+                return $code;
+            }
+            return str_repeat('*', $len - 2) . substr($code, -2);
+        }
     }
 
     public function updateCode($id = null)
