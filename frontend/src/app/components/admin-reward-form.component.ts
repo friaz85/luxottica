@@ -1286,6 +1286,32 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   }
 
   saveReward() {
+    if (this.vigenciaAreas().length > 0) {
+      this.editingReward.apply_code_vigencia = true;
+    }
+
+    if (this.vigenciaAreas().length > 0 || this.editingReward.apply_code_vigencia) {
+      if (!this.editingReward.upload_vigencia_id) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Vigencia Requerida',
+          text: 'Esta recompensa tiene configurada un área de vigencia. Por favor, selecciona una vigencia en el apartado de Inventario de Códigos antes de guardar.',
+          confirmButtonColor: '#6C1DDA'
+        });
+        this.saving.set(false);
+        return;
+      }
+    }
+
+    if (this.editingReward.upload_vigencia_id) {
+      if (!this.editingReward.id_vigencias) {
+        this.editingReward.id_vigencias = [];
+      }
+      if (!this.editingReward.id_vigencias.includes(this.editingReward.upload_vigencia_id)) {
+        this.editingReward.id_vigencias.push(this.editingReward.upload_vigencia_id);
+      }
+    }
+
     this.saving.set(true);
     const formData = new FormData();
     Object.keys(this.editingReward).forEach(key => {
