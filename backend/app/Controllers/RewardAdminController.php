@@ -657,9 +657,24 @@ class RewardAdminController extends ResourceController
         $countBuilder = clone $builder;
         $total = $countBuilder->countAllResults(false);
 
-        $rows = $builder->orderBy('reward_codes.is_used', 'ASC')
-                        ->orderBy('reward_codes.id', 'DESC')
-                        ->limit($limit, $offset)
+        $sortBy = $this->request->getVar('sort_by') ?? 'is_used';
+        $sortOrder = $this->request->getVar('sort_order') ?? 'asc';
+
+        $allowedSort = [
+            'reward_title' => 'rewards.title',
+            'fecha_fin' => 'vigencias.fecha_fin',
+            'is_used' => 'reward_codes.is_used',
+            'id' => 'reward_codes.id'
+        ];
+
+        $sortCol = $allowedSort[$sortBy] ?? 'reward_codes.is_used';
+        $builder->orderBy($sortCol, $sortOrder === 'desc' ? 'DESC' : 'ASC');
+
+        if ($sortCol !== 'reward_codes.id') {
+            $builder->orderBy('reward_codes.id', 'DESC');
+        }
+
+        $rows = $builder->limit($limit, $offset)
                         ->get()
                         ->getResultArray();
 

@@ -86,10 +86,16 @@ import Swal from 'sweetalert2';
           <table class="admin-table">
             <thead>
               <tr>
-                <th>Recompensa</th>
-                <th>Vigencia de Códigos</th>
+                <th style="cursor: pointer; user-select: none;" (click)="toggleSort('reward_title')">
+                  Recompensa <span style="font-size:0.75rem; margin-left:3px;">{{ getSortIcon('reward_title') }}</span>
+                </th>
+                <th style="cursor: pointer; user-select: none;" (click)="toggleSort('fecha_fin')">
+                  Vigencia de Códigos <span style="font-size:0.75rem; margin-left:3px;">{{ getSortIcon('fecha_fin') }}</span>
+                </th>
                 <th>Código(s) (Enmascarados)</th>
-                <th>Estado</th>
+                <th style="cursor: pointer; user-select: none;" (click)="toggleSort('is_used')">
+                  Estado <span style="font-size:0.75rem; margin-left:3px;">{{ getSortIcon('is_used') }}</span>
+                </th>
                 <th class="text-right">Acciones</th>
               </tr>
             </thead>
@@ -280,6 +286,10 @@ export class AdminCodesComponent implements OnInit {
   pageSize = 20;
   Math = Math;
 
+  // Sorting
+  sortBy = 'is_used';
+  sortOrder = 'asc';
+
   // Modal
   showModal = false;
   editingRow: any = null;
@@ -293,7 +303,7 @@ export class AdminCodesComponent implements OnInit {
 
   loadCodes() {
     this.loader.show();
-    let url = `${environment.apiUrl}/admin/codes?page=${this.currentPage}&limit=${this.pageSize}`;
+    let url = `${environment.apiUrl}/admin/codes?page=${this.currentPage}&limit=${this.pageSize}&sort_by=${this.sortBy}&sort_order=${this.sortOrder}`;
     
     if (this.searchQuery) url += `&search=${encodeURIComponent(this.searchQuery)}`;
     if (this.selectedRewardId) url += `&reward_id=${this.selectedRewardId}`;
@@ -335,6 +345,24 @@ export class AdminCodesComponent implements OnInit {
   setPage(page: number) {
     this.currentPage = page;
     this.loadCodes();
+  }
+
+  toggleSort(column: string) {
+    if (this.sortBy === column) {
+      this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortBy = column;
+      this.sortOrder = 'asc';
+    }
+    this.currentPage = 1;
+    this.loadCodes();
+  }
+
+  getSortIcon(column: string): string {
+    if (this.sortBy !== column) {
+      return '↕';
+    }
+    return this.sortOrder === 'asc' ? '▲' : '▼';
   }
 
   getRowCodes(row: any): string[] {
