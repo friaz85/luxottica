@@ -23,7 +23,7 @@ class RewardAdminController extends ResourceController
     public function index()
     {
         $rewardModel = new RewardModel();
-        $rewards = $rewardModel->orderBy('cost', 'ASC')->findAll();
+        $rewards = $rewardModel->where('is_deleted', 0)->orderBy('cost', 'ASC')->findAll();
         
         $db = \Config\Database::connect();
         $now = date('Y-m-d H:i:s');
@@ -66,6 +66,7 @@ class RewardAdminController extends ResourceController
         
         $now = date('Y-m-d H:i:s');
         $query = $rewardModel->where('active', 1)
+                             ->where('is_deleted', 0)
                              ->groupStart()
                                  ->where('stock >', 0)
                                  ->orWhere('tipo_recompensa', 'monedero')
@@ -375,8 +376,8 @@ class RewardAdminController extends ResourceController
         try {
             $db->transStart();
             
-            // Delete related codes
-            $rewardCodeModel->where('reward_id', $id)->delete();
+            // Logically delete related codes
+            $rewardCodeModel->where('reward_id', $id)->update(['is_deleted' => 1]);
             
             // Delete related vigencias links
             $db->table('reward_vigencias')->where('id_reward', $id)->delete();
@@ -384,8 +385,8 @@ class RewardAdminController extends ResourceController
             // Delete related exclusions
             $db->table('reward_exclusions')->where('id_reward', $id)->delete();
             
-            // Delete the reward itself
-            $rewardModel->delete($id);
+            // Logically delete the reward itself
+            $rewardModel->update($id, ['is_deleted' => 1]);
             
             $db->transComplete();
 
@@ -394,11 +395,11 @@ class RewardAdminController extends ResourceController
             }
 
             $name = $reward['title'] ?? 'ID ' . $id;
-            $this->logActivity('delete_reward', "Eliminada recompensa: '{$name}' (ID: {$id})");
+            $this->logActivity('delete_reward', "Eliminada lógicamente recompensa: '{$name}' (ID: {$id})");
             return $this->respondDeleted(['message' => 'Recompensa eliminada']);
         } catch (\Exception $e) {
             log_message('error', 'deleteReward error: ' . $e->getMessage());
-            return $this->fail('No se puede eliminar la recompensa. Es posible que ya tenga canjes asociados en el sistema.');
+            return $this->fail('Error al eliminar la recompensa.');
         }
     }
 

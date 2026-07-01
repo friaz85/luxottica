@@ -94,6 +94,8 @@ ssh -p 18765 -o StrictHostKeyChecking=no -i "$SSH_KEY" $REMOTE_USER "
     mysql -h localhost -u ughgtdncr7ro5 -p'mrL*1*P7ke&f' db4ccgnbnclgjg -e \"ALTER TABLE users ADD COLUMN password_encrypted TEXT NULL AFTER password_hash;\" 2>/dev/null || true
     # Add vigencia_area column to rewards table if not exists
     mysql -h localhost -u ughgtdncr7ro5 -p'mrL*1*P7ke&f' db4ccgnbnclgjg -e \"ALTER TABLE rewards ADD COLUMN vigencia_area VARCHAR(500) NULL DEFAULT NULL;\" 2>/dev/null || true
+    # Add is_deleted column to rewards table if not exists
+    mysql -h localhost -u ughgtdncr7ro5 -p'mrL*1*P7ke&f' db4ccgnbnclgjg -e \"ALTER TABLE rewards ADD COLUMN is_deleted TINYINT(1) NOT NULL DEFAULT 0 AFTER active;\" 2>/dev/null || true
     # Add is_deleted column to reward_codes table if not exists
     mysql -h localhost -u ughgtdncr7ro5 -p'mrL*1*P7ke&f' db4ccgnbnclgjg -e \"ALTER TABLE reward_codes ADD COLUMN is_deleted TINYINT(1) NOT NULL DEFAULT 0 AFTER is_used;\" 2>/dev/null || true
     # Create CORS .htaccess for uploads folder (needed for PDF.js preview)
