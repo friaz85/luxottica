@@ -1298,7 +1298,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
           icon: 'error',
           title: 'Vigencia Requerida',
           text: 'Esta recompensa tiene configurada un área de vigencia. Por favor, selecciona una vigencia en el apartado de Inventario de Códigos antes de guardar.',
-          confirmButtonColor: '#6C1DDA'
+          confirmButtonColor: '#000000'
         });
         this.saving.set(false);
         return;
