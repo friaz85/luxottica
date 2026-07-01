@@ -18,7 +18,7 @@ import Swal from 'sweetalert2';
     <div class="admin-page" [class.sidebar-closed]="!layoutService.isSidebarOpen()">
       <div class="header-row">
         <div>
-           <h2 class="title">GESTIÓN DE VIGENCIAS</h2>
+           <h2 class="title">GESTIÓN DE VIGENCIAS (CINE)</h2>
            <p class="subtitle">Administra los rangos de fechas válidos para las recompensas</p>
         </div>
         <div class="actions">

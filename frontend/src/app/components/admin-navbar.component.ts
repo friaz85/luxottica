@@ -36,7 +36,7 @@ import { LoaderComponent } from './loader.component';
         </a>
         
         <a routerLink="/admin/projects" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
-          <span class="icon">📁</span> Proyectos
+          <span class="icon">📁</span> Proyectos (Rally)
         </a>
         <a routerLink="/admin/users" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">👥</span> Usuarios
@@ -45,7 +45,7 @@ import { LoaderComponent } from './loader.component';
           <span class="icon">🎁</span> Recompensas
         </a>
         <a routerLink="/admin/vigencias" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
-          <span class="icon">📅</span> Vigencias
+          <span class="icon">📅</span> Vigencias (Cine)
         </a>
         <a *ngIf="getRole() === 'system_admin'" routerLink="/admin/codes" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">🔑</span> Inventario de Códigos

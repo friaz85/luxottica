@@ -18,7 +18,7 @@ import Swal from 'sweetalert2';
     <div class="admin-page" [class.sidebar-closed]="!layoutService.isSidebarOpen()">
       <div class="header-row">
         <div>
-           <h2 class="title">GESTIÓN DE PROYECTOS</h2>
+           <h2 class="title">GESTIÓN DE PROYECTOS (RALLY)</h2>
            <p class="subtitle">Administra los grupos y vigencias de participación</p>
         </div>
         <div class="actions">
