@@ -472,19 +472,21 @@ class RewardAdminController extends ResourceController
                 $val = trim($val);
                 if (empty($val)) continue;
                 
-                // Global uniqueness check
-                $db = \Config\Database::connect();
-                $existsInEntry = $db->table('tblCodigoEntrada')->where('codigo', $val)->countAllResults() > 0;
-                $existsInReward = $db->table('reward_codes')
-                                     ->groupStart()
-                                         ->where('code', $val)->orWhere('code1', $val)->orWhere('code2', $val)
-                                         ->orWhere('code3', $val)->orWhere('code4', $val)->orWhere('code5', $val)
-                                         ->orWhere('code6', $val)->orWhere('code7', $val)->orWhere('code8', $val)
-                                     ->groupEnd()
-                                     ->countAllResults() > 0;
+                // Global uniqueness check (Only for the primary card number/code)
+                if ($i === 0) {
+                    $db = \Config\Database::connect();
+                    $existsInEntry = $db->table('tblCodigoEntrada')->where('codigo', $val)->countAllResults() > 0;
+                    $existsInReward = $db->table('reward_codes')
+                                         ->groupStart()
+                                             ->where('code', $val)->orWhere('code1', $val)->orWhere('code2', $val)
+                                             ->orWhere('code3', $val)->orWhere('code4', $val)->orWhere('code5', $val)
+                                             ->orWhere('code6', $val)->orWhere('code7', $val)->orWhere('code8', $val)
+                                         ->groupEnd()
+                                         ->countAllResults() > 0;
 
-                if ($existsInEntry || $existsInReward) {
-                    continue 2; // Skip this line/set of codes if any part is duplicate
+                    if ($existsInEntry || $existsInReward) {
+                        continue 2; // Skip this line/set of codes if the main code is duplicate
+                    }
                 }
 
                 $saveData["code$idx"] = $val;
@@ -544,21 +546,23 @@ class RewardAdminController extends ResourceController
                         $val = trim($val);
                         if (empty($val)) continue;
 
-                        // Global uniqueness check
-                        $db = \Config\Database::connect();
-                        $existsInEntry = $db->table('tblCodigoEntrada')->where('codigo', $val)->countAllResults() > 0;
-                        $existsInReward = $db->table('reward_codes')
-                                             ->groupStart()
-                                                ->where('code', $val)->orWhere('code1', $val)->orWhere('code2', $val)
-                                                ->orWhere('code3', $val)->orWhere('code4', $val)->orWhere('code5', $val)
-                                                ->orWhere('code6', $val)->orWhere('code7', $val)->orWhere('code8', $val)
-                                             ->groupEnd()
-                                             ->countAllResults() > 0;
-                        
-                        if ($existsInEntry || $existsInReward) {
-                            $isDuplicate = true;
-                            $duplicates[] = $val;
-                            break; 
+                        // Global uniqueness check (Only for the primary card number/code)
+                        if ($i === 0) {
+                            $db = \Config\Database::connect();
+                            $existsInEntry = $db->table('tblCodigoEntrada')->where('codigo', $val)->countAllResults() > 0;
+                            $existsInReward = $db->table('reward_codes')
+                                                 ->groupStart()
+                                                    ->where('code', $val)->orWhere('code1', $val)->orWhere('code2', $val)
+                                                    ->orWhere('code3', $val)->orWhere('code4', $val)->orWhere('code5', $val)
+                                                    ->orWhere('code6', $val)->orWhere('code7', $val)->orWhere('code8', $val)
+                                                 ->groupEnd()
+                                                 ->countAllResults() > 0;
+                            
+                            if ($existsInEntry || $existsInReward) {
+                                $isDuplicate = true;
+                                $duplicates[] = $val;
+                                break; 
+                            }
                         }
 
                         $rowCodesToSave["code$idx"] = $val;
