@@ -222,12 +222,15 @@ Chart.register(...registerables);
         </div>
         <div class="table-wrapper">
           <table class="simple-table" *ngIf="!reportLoading()">
-            <thead><tr>
-              <th>Usuario</th><th>Nombre</th><th>Contraseña</th><th>Depto</th>
-              <th class="text-right">Asignados</th>
-              <th class="text-right">Utilizados</th>
-              <th class="text-right">Restantes</th>
-              <th>Proyecto</th>
+             <thead><tr>
+               <th style="cursor: pointer; user-select: none;" (click)="sortReport('user_login')">Usuario {{ getSortIconReport('user_login') }}</th>
+               <th style="cursor: pointer; user-select: none;" (click)="sortReport('full_name')">Nombre {{ getSortIconReport('full_name') }}</th>
+               <th style="cursor: pointer; user-select: none;" (click)="sortReport('password_display')">Contraseña {{ getSortIconReport('password_display') }}</th>
+               <th style="cursor: pointer; user-select: none;" (click)="sortReport('depto_id')">Depto {{ getSortIconReport('depto_id') }}</th>
+               <th class="text-right" style="cursor: pointer; user-select: none;" (click)="sortReport('points')">Asignados {{ getSortIconReport('points') }}</th>
+               <th class="text-right" style="cursor: pointer; user-select: none;" (click)="sortReport('points_used')">Utilizados {{ getSortIconReport('points_used') }}</th>
+               <th class="text-right" style="cursor: pointer; user-select: none;" (click)="sortReport('points_remaining')">Restantes {{ getSortIconReport('points_remaining') }}</th>
+               <th style="cursor: pointer; user-select: none;" (click)="sortReport('project_name')">Proyecto {{ getSortIconReport('project_name') }}</th>
              </tr></thead>
             <tbody>
               <tr *ngFor="let u of paginatedReport()">
@@ -414,15 +417,45 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
 
   currentPageReport = signal(1);
   pageSizeReport = 15;
+  sortColumnReport = signal<string>('full_name');
+  sortDirectionReport = signal<'asc' | 'desc'>('asc');
+
+  sortedReport = computed(() => {
+    const data = [...this.filteredReport()];
+    const col = this.sortColumnReport();
+    const dir = this.sortDirectionReport();
+
+    if (!col) return data;
+
+    return data.sort((a, b) => {
+      let valA = a[col];
+      let valB = b[col];
+
+      if (col === 'password_display') {
+        valA = a['password_display'] || '';
+        valB = b['password_display'] || '';
+      }
+
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return dir === 'asc' 
+          ? valA.localeCompare(valB) 
+          : valB.localeCompare(valA);
+      }
+
+      const numA = Number(valA) || 0;
+      const numB = Number(valB) || 0;
+      return dir === 'asc' ? numA - numB : numB - numA;
+    });
+  });
 
   paginatedReport = computed(() => {
-    const data = this.filteredReport();
+    const data = this.sortedReport();
     const start = (this.currentPageReport() - 1) * this.pageSizeReport;
     return data.slice(start, start + this.pageSizeReport);
   });
 
   totalPagesReport = computed(() => {
-    const data = this.filteredReport();
+    const data = this.sortedReport();
     return Math.ceil(data.length / this.pageSizeReport);
   });
 
@@ -432,6 +465,21 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     if (page >= 1 && page <= this.totalPagesReport()) {
       this.currentPageReport.set(page);
     }
+  }
+
+  sortReport(column: string) {
+    if (this.sortColumnReport() === column) {
+      this.sortDirectionReport.set(this.sortDirectionReport() === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.sortColumnReport.set(column);
+      this.sortDirectionReport.set('asc');
+    }
+    this.currentPageReport.set(1);
+  }
+
+  getSortIconReport(column: string): string {
+    if (this.sortColumnReport() !== column) return '↕️';
+    return this.sortDirectionReport() === 'asc' ? '⬆️' : '⬇️';
   }
 
   showRedemptions = true;
