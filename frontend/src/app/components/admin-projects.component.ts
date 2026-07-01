@@ -292,11 +292,17 @@ export class AdminProjectsComponent implements OnInit {
   }
 
   isExpired(date: string) {
-    return new Date(date) < new Date(new Date().setHours(0,0,0,0));
+    const end = new Date(date.replace(/-/g, '/'));
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    return today > end;
   }
 
   isFuture(date: string) {
-    return new Date(date) > new Date();
+    const start = new Date(date.replace(/-/g, '/'));
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    return start > today;
   }
 
   filteredProjects = computed(() => {

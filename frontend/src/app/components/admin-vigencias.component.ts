@@ -302,19 +302,28 @@ export class AdminVigenciasComponent implements OnInit {
   }
 
   isExpired(dateStr: string): boolean {
-    return new Date(dateStr) < new Date();
+    const end = new Date(dateStr.replace(/-/g, '/'));
+    end.setHours(23, 59, 59, 999);
+    return new Date() > end;
   }
 
   isFuture(dateStr: string): boolean {
-    return new Date(dateStr) > new Date();
+    const start = new Date(dateStr.replace(/-/g, '/'));
+    start.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return start > today;
   }
 
   getStatusText(v: any): string {
-    const now = new Date();
-    const start = new Date(v.fecha_inicio);
-    const end = new Date(v.fecha_fin);
-    if (now > end) return '🔴 Finalizado';
-    if (now < start) return '📅 Programado';
+    const today = new Date();
+    const start = new Date(v.fecha_inicio.replace(/-/g, '/'));
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(v.fecha_fin.replace(/-/g, '/'));
+    end.setHours(23, 59, 59, 999);
+    
+    if (today > end) return '🔴 Finalizado';
+    if (today < start) return '📅 Programado';
     return '✅ Activo';
   }
 
