@@ -225,7 +225,10 @@ Chart.register(...registerables);
             <thead><tr>
               <th>Usuario</th><th>Nombre</th><th>Contraseña</th><th>Depto</th>
               <th class="text-right">Asignados</th>
-              <th class="text-right">Utilizados</th>             </tr></thead>
+              <th class="text-right">Utilizados</th>
+              <th class="text-right">Restantes</th>
+              <th>Proyecto</th>
+             </tr></thead>
             <tbody>
               <tr *ngFor="let u of paginatedReport()">
                 <td style="font-family:monospace;font-size:0.85rem;">{{ u.user_login }}</td>
