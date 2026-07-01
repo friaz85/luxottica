@@ -1366,8 +1366,38 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
       next: (res: any) => {
         const rewardId = this.editingReward.id || res.id;
         
+        const uploadedManualCodes = this.editingReward.exit_codes && this.editingReward.exit_codes.trim() !== '';
+        
         if (this.pendingCSVFile) {
           this.processCSVAndUpload(rewardId);
+        } else if (uploadedManualCodes && res.success_count !== undefined) {
+          const title = res.success_count > 0 ? 'Códigos Procesados' : 'Proceso Finalizado';
+          const html = `
+            <div style="text-align: left; font-size: 0.9rem;">
+              <p>✅ <b>Nuevos cupones:</b> ${res.success_count}</p>
+              <p>⚠️ <b>Duplicados (omitidos):</b> ${res.duplicate_count}</p>
+              ${res.duplicate_count > 0 && res.duplicates && res.duplicates.length > 0 ? `
+                <div style="margin-top: 10px;">
+                  <b>Códigos repetidos detectados:</b>
+                  <div style="max-height: 100px; overflow-y: auto; background: #f5f5f5; padding: 5px; border-radius: 5px; font-family: monospace; font-size: 0.8rem;">
+                    ${res.duplicates.join('<br>')}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          `;
+
+          Swal.fire({
+            title,
+            html,
+            icon: res.success_count > 0 ? 'success' : 'info',
+            confirmButtonColor: '#000000'
+          });
+
+          this.loadRewards(); 
+          this.closeModal(new Event('click')); 
+          this.saving.set(false);
+          this.loader.hide();
         } else {
           this.toastService.show('RECOMPENSA GUARDADA', 'success');
           this.loadRewards(); 

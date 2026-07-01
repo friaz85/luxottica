@@ -220,10 +220,17 @@ class RewardAdminController extends ResourceController
                     }
                 }
 
+                $addedCount = 0;
+                $duplicateCount = 0;
+                $duplicatesList = [];
+
                 // Handle Exit Codes and Update Stock
                 if (!empty($data['exit_codes'])) {
                     $uploadVigenciaId = !empty($data['upload_vigencia_id']) ? $data['upload_vigencia_id'] : null;
-                    $addedCount = $this->processExitCodes($rewardId, $data['exit_codes'], false, $uploadVigenciaId);
+                    $result = $this->processExitCodes($rewardId, $data['exit_codes'], false, $uploadVigenciaId);
+                    $addedCount = $result['success_count'];
+                    $duplicateCount = $result['duplicate_count'];
+                    $duplicatesList = $result['duplicates'];
                     $rewardModel->update($rewardId, ['stock' => $addedCount]);
                 }
 
@@ -244,9 +251,15 @@ class RewardAdminController extends ResourceController
                     ]);
                 }
 
-                $this->logActivity('create_reward', "Creada recompensa: '{$saveData['title']}' (ID: {$rewardId}). Stock inicial: " . ($addedCount ?? 0));
+                $this->logActivity('create_reward', "Creada recompensa: '{$saveData['title']}' (ID: {$rewardId}). Stock inicial: " . $addedCount);
 
-                return $this->respondCreated(['message' => 'Recompensa creada', 'id' => $rewardId]);
+                return $this->respondCreated([
+                    'message' => 'Recompensa creada',
+                    'id' => $rewardId,
+                    'success_count' => $addedCount,
+                    'duplicate_count' => $duplicateCount,
+                    'duplicates' => $duplicatesList
+                ]);
             }
         } catch (\Exception $e) {
             return $this->fail($e->getMessage());
@@ -322,9 +335,16 @@ class RewardAdminController extends ResourceController
                     }
                 }
 
+                $addedCount = 0;
+                $duplicateCount = 0;
+                $duplicatesList = [];
+
                 if (!empty($data['exit_codes'])) {
                     $uploadVigenciaId = !empty($data['upload_vigencia_id']) ? $data['upload_vigencia_id'] : null;
-                    $this->processExitCodes($id, $data['exit_codes'], false, $uploadVigenciaId);
+                    $result = $this->processExitCodes($id, $data['exit_codes'], false, $uploadVigenciaId);
+                    $addedCount = $result['success_count'];
+                    $duplicateCount = $result['duplicate_count'];
+                    $duplicatesList = $result['duplicates'];
                     // Recalculate stock after codes update
                     $rewardCodeModel = new RewardCodeModel();
                     $newStock = $rewardCodeModel->where('reward_id', $id)->where('is_used', 0)->countAllResults();
@@ -355,7 +375,12 @@ class RewardAdminController extends ResourceController
                 $rewardName = $updateData['title'] ?? ($currentReward['title'] ?? 'ID ' . $id);
                 $this->logActivity('update_reward', "Actualizada recompensa: '{$rewardName}' (ID: {$id})");
 
-                return $this->respond(['message' => 'Recompensa actualizada']);
+                return $this->respond([
+                    'message' => 'Recompensa actualizada',
+                    'success_count' => $addedCount,
+                    'duplicate_count' => $duplicateCount,
+                    'duplicates' => $duplicatesList
+                ]);
             }
         } catch (\Exception $e) {
             return $this->fail($e->getMessage());
@@ -457,6 +482,9 @@ class RewardAdminController extends ResourceController
 
         $lines = explode("\n", $codesText);
         $added = 0;
+        $duplicates = 0;
+        $duplicatesList = [];
+
         foreach ($lines as $line) {
             $line = trim($line);
             if (empty($line)) continue;
@@ -468,6 +496,8 @@ class RewardAdminController extends ResourceController
                 'is_used'     => 0
             ];
 
+            $isDuplicateLine = false;
+            $primaryVal = '';
             foreach (array_slice($codes, 0, $codesCount) as $i => $val) {
                 $idx = $i + 1;
                 $val = trim($val);
@@ -475,6 +505,7 @@ class RewardAdminController extends ResourceController
                 
                 // Global uniqueness check (Only for the primary card number/code)
                 if ($i === 0) {
+                    $primaryVal = $val;
                     $db = \Config\Database::connect();
                     $existsInEntry = $db->table('tblCodigoEntrada')->where('codigo', $val)->countAllResults() > 0;
                     $existsInReward = $db->table('reward_codes')
@@ -486,7 +517,8 @@ class RewardAdminController extends ResourceController
                                          ->countAllResults() > 0;
 
                     if ($existsInEntry || $existsInReward) {
-                        continue 2; // Skip this line/set of codes if the main code is duplicate
+                        $isDuplicateLine = true;
+                        break;
                     }
                 }
 
@@ -494,11 +526,23 @@ class RewardAdminController extends ResourceController
                 if ($idx === 1) $saveData['code'] = $val;
             }
 
+            if ($isDuplicateLine) {
+                $duplicates++;
+                if (!empty($primaryVal)) {
+                    $duplicatesList[] = $primaryVal;
+                }
+                continue;
+            }
+
             if ($rewardCodeModel->insert($saveData)) {
                 $added++;
             }
         }
-        return $added;
+        return [
+            'success_count'   => $added,
+            'duplicate_count' => $duplicates,
+            'duplicates'      => $duplicatesList
+        ];
     }
 
     public function getExclusions($id)
