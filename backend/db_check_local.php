@@ -2,7 +2,7 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-$host = 'localhost';
+$host = '127.0.0.1';
 $user = 'ubayhneffxygo';
 $pass = '1*@J$`r4:e`B';
 $db   = 'dbx7kmb408ygd7';

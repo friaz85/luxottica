@@ -136,7 +136,6 @@ Chart.register(...registerables);
               <button [class.active]="showRedemptions" (click)="toggleMetric('redemptions')" title="Cantidad de canjes">🎁 Recompensas</button>
               <button [class.active]="showCodes" (click)="toggleMetric('codes')" title="Cantidad de códigos">🎫 Códigos</button>
               <button [class.active]="showRedemptionsPoints" (click)="toggleMetric('redemptionsPoints')" title="Puntos en recompensas">💰 Pts Canjeados</button>
-              <button [class.active]="showCodesPoints" (click)="toggleMetric('codesPoints')" title="Puntos en códigos">📥 Pts Registrados</button>
             </div>
           </div>
           <div class="canvas-wrapper" [class.loading-shimmer]="loading()">
@@ -226,12 +225,9 @@ Chart.register(...registerables);
             <thead><tr>
               <th>Usuario</th><th>Nombre</th><th>Contraseña</th><th>Depto</th>
               <th class="text-right">Asignados</th>
-              <th class="text-right">Utilizados</th>
-              <th class="text-right">Restantes</th>
-              <th>Proyecto</th>
-            </tr></thead>
+              <th class="text-right">Utilizados</th>             </tr></thead>
             <tbody>
-              <tr *ngFor="let u of filteredReport()">
+              <tr *ngFor="let u of paginatedReport()">
                 <td style="font-family:monospace;font-size:0.85rem;">{{ u.user_login }}</td>
                 <td class="font-bold">{{ u.full_name }}</td>
                 <td>
@@ -252,11 +248,22 @@ Chart.register(...registerables);
             <div style="display:inline-block;width:28px;height:28px;border:3px solid #e2e8f0;border-top-color:var(--admin-primary);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
           </div>
         </div>
-        <div style="padding:1rem 1.5rem;border-top:1px solid #eee;font-size:0.82rem;color:#94a3b8;" *ngIf="!reportLoading()">
-          Total: <strong>{{ filteredReport().length }}</strong> usuarios
+        <div class="pagination-footer mt-4" *ngIf="filteredReport().length > 0 && !reportLoading()">
+          <div class="pagination-inner">
+            <span class="page-info">
+               Mostrando <b>{{ (currentPageReport() - 1) * pageSizeReport + 1 }}</b> a <b>{{ Math.min(currentPageReport() * pageSizeReport, filteredReport().length) }}</b> de <b>{{ filteredReport().length }}</b> usuarios
+            </span>
+            <div class="pagination-controls">
+              <button class="pag-btn" [disabled]="currentPageReport() === 1" (click)="setPageReport(currentPageReport() - 1)">«</button>
+              <ng-container *ngFor="let p of pageListReport()">
+                <span *ngIf="p === -1" class="pag-ellipsis">…</span>
+                <button *ngIf="p !== -1" class="page-num-btn" [class.active]="currentPageReport() === p" (click)="setPageReport(p)">{{ p }}</button>
+              </ng-container>
+              <button class="pag-btn" [disabled]="currentPageReport() >= totalPagesReport()" (click)="setPageReport(currentPageReport() + 1)">»</button>
+            </div>
+          </div>
         </div>
       </div>
-
     </div>
   `,
   styles: [`
@@ -402,6 +409,28 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     );
   });
 
+  currentPageReport = signal(1);
+  pageSizeReport = 15;
+
+  paginatedReport = computed(() => {
+    const data = this.filteredReport();
+    const start = (this.currentPageReport() - 1) * this.pageSizeReport;
+    return data.slice(start, start + this.pageSizeReport);
+  });
+
+  totalPagesReport = computed(() => {
+    const data = this.filteredReport();
+    return Math.ceil(data.length / this.pageSizeReport);
+  });
+
+  pageListReport = computed(() => this.smartPages(this.currentPageReport(), this.totalPagesReport()));
+
+  setPageReport(page: number) {
+    if (page >= 1 && page <= this.totalPagesReport()) {
+      this.currentPageReport.set(page);
+    }
+  }
+
   showRedemptions = true;
   showCodes = true;
   showRedemptionsPoints = false;
@@ -488,14 +517,20 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     let url = `${environment.apiUrl}/admin/users/report`;
     if (this.reportProject) url += `?id_proyecto=${this.reportProject}`;
     this.http.get<any[]>(url).subscribe({
-      next: data => { this.reportUsers.set(data || []); this.reportLoading.set(false); },
+      next: data => {
+        this.reportUsers.set(data || []);
+        this.reportLoading.set(false);
+        this.currentPageReport.set(1);
+      },
       error: () => this.reportLoading.set(false)
     });
   }
 
   onReportSearch() {
     clearTimeout(this.reportSearchTimer);
-    this.reportSearchTimer = setTimeout(() => {}, 0); // triggers computed signal
+    this.reportSearchTimer = setTimeout(() => {
+      this.currentPageReport.set(1);
+    }, 0);
   }
 
   exportReportCsv() {

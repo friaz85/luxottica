@@ -98,12 +98,14 @@ class AdminUserController extends ResourceController
         }
 
         $newUser = [
-            'id_proyecto'   => $idProyecto,
-            'email'         => $email,
-            'full_name'     => $data['full_name'],
-            'password_hash' => password_hash($data['password'], PASSWORD_DEFAULT),
-            'points'        => $data['points'] ?? 0,
-            'role'          => $data['role'] ?? 'user'
+            'id_proyecto'      => $idProyecto,
+            'email'            => $email,
+            'full_name'        => $data['full_name'],
+            'password_hash'    => password_hash($data['password'], PASSWORD_DEFAULT),
+            'points'           => $data['points'] ?? 0,
+            'points_used'      => 0,
+            'points_remaining' => $data['points'] ?? 0,
+            'role'             => $data['role'] ?? 'user'
         ];
 
         if ($userModel->save($newUser)) {
@@ -447,6 +449,8 @@ class AdminUserController extends ResourceController
                 'password_hash'    => password_hash($plainPassword, PASSWORD_DEFAULT),
                 'password_encrypted' => PasswordCryptoService::encrypt($plainPassword),
                 'points'           => $points,
+                'points_used'      => 0,
+                'points_remaining' => $points,
                 'role'             => 'user'
             ];
 
@@ -624,7 +628,10 @@ class AdminUserController extends ResourceController
 
         $builder = $db->table('users u')
             ->select('u.email as user_login, u.full_name, u.password_encrypted,
-                      u.depto_id, u.points, u.points_used, u.points_remaining,
+                      u.depto_id, 
+                      (u.points + COALESCE(u.points_used, 0)) as points, 
+                      COALESCE(u.points_used, 0) as points_used, 
+                      u.points as points_remaining,
                       u.is_blocked, u.created_at,
                       p.Proyecto as project_name')
             ->join('tblProyecto p', 'p.idProyecto = u.id_proyecto', 'left')
