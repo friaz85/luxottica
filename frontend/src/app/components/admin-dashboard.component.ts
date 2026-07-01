@@ -8,6 +8,7 @@ import { AdminLayoutService } from '../services/admin-layout.service';
 import { ToastService } from '../services/toast.service';
 import { AuthService } from '../services/auth.service';
 import { environment } from '../../environments/environment';
+import { LoaderService } from '../services/loader.service';
 
 Chart.register(...registerables);
 
@@ -489,6 +490,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
 
   private http = inject(HttpClient);
   private toast = inject(ToastService);
+  private loader = inject(LoaderService);
   private cdr = inject(ChangeDetectorRef);
   public layoutService = inject(AdminLayoutService);
 
@@ -585,9 +587,25 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
   }
 
   exportReportCsv() {
+    this.loader.show();
     let url = `${environment.apiUrl}/admin/users/report?export=csv`;
     if (this.reportProject) url += `&id_proyecto=${this.reportProject}`;
-    window.open(url, '_blank');
+    
+    this.http.get(url, { responseType: 'blob' }).subscribe({
+      next: (blob: Blob) => {
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `reporte_usuarios_${new Date().toISOString().slice(0, 10)}.csv`;
+        link.click();
+        window.URL.revokeObjectURL(downloadUrl);
+        this.loader.hide();
+      },
+      error: (err) => {
+        this.toast.show('Error al exportar reporte', 'error');
+        this.loader.hide();
+      }
+    });
   }
 
   loadStats() {
