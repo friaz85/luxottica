@@ -271,3 +271,8 @@ button, input, select, textarea {
         font-size: 0.7rem;
     }
 }
+
+/* Ensure SweetAlert2 is always on top of modals */
+.swal2-container {
+  z-index: 9999 !important;
+}
