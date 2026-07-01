@@ -1286,11 +1286,13 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   }
 
   saveReward() {
-    if (this.vigenciaAreas().length > 0) {
+    const hasCodesToUpload = (this.editingReward.exit_codes && this.editingReward.exit_codes.trim() !== '') || this.pendingCSVFile !== null;
+
+    if (this.vigenciaAreas().length > 0 && hasCodesToUpload) {
       this.editingReward.apply_code_vigencia = true;
     }
 
-    if (this.vigenciaAreas().length > 0 || this.editingReward.apply_code_vigencia) {
+    if (hasCodesToUpload && (this.vigenciaAreas().length > 0 || this.editingReward.apply_code_vigencia)) {
       if (!this.editingReward.upload_vigencia_id) {
         Swal.fire({
           icon: 'error',
