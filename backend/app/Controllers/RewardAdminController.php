@@ -367,13 +367,39 @@ class RewardAdminController extends ResourceController
         $rewardModel = new RewardModel();
         $rewardCodeModel = new RewardCodeModel();
         $reward = $rewardModel->find($id);
-        $rewardCodeModel->where('reward_id', $id)->delete();
-        if ($rewardModel->delete($id)) {
-            $name = $reward ? $reward['title'] : 'ID ' . $id;
+        if (!$reward) {
+            return $this->failNotFound('Recompensa no encontrada');
+        }
+
+        $db = \Config\Database::connect();
+        try {
+            $db->transStart();
+            
+            // Delete related codes
+            $rewardCodeModel->where('reward_id', $id)->delete();
+            
+            // Delete related vigencias links
+            $db->table('reward_vigencias')->where('id_reward', $id)->delete();
+            
+            // Delete related exclusions
+            $db->table('reward_exclusions')->where('id_reward', $id)->delete();
+            
+            // Delete the reward itself
+            $rewardModel->delete($id);
+            
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->fail('Error en la transacción al eliminar la recompensa.');
+            }
+
+            $name = $reward['title'] ?? 'ID ' . $id;
             $this->logActivity('delete_reward', "Eliminada recompensa: '{$name}' (ID: {$id})");
             return $this->respondDeleted(['message' => 'Recompensa eliminada']);
+        } catch (\Exception $e) {
+            log_message('error', 'deleteReward error: ' . $e->getMessage());
+            return $this->fail('No se puede eliminar la recompensa. Es posible que ya tenga canjes asociados en el sistema.');
         }
-        return $this->fail('Error al eliminar');
     }
 
     /**
@@ -422,6 +448,12 @@ class RewardAdminController extends ResourceController
             $rewardCodeModel->where('reward_id', $rewardId)->where('is_used', 0)->delete();
         }
 
+        $rewardModel = new RewardModel();
+        $reward = $rewardModel->find($rewardId);
+        $codesCount = $reward ? (int)($reward['codes_count'] ?? 1) : 1;
+        if ($codesCount <= 0) $codesCount = 1;
+        if ($codesCount > 8) $codesCount = 8;
+
         $lines = explode("\n", $codesText);
         $added = 0;
         foreach ($lines as $line) {
@@ -435,7 +467,7 @@ class RewardAdminController extends ResourceController
                 'is_used'     => 0
             ];
 
-            foreach (array_slice($codes, 0, 8) as $i => $val) {
+            foreach (array_slice($codes, 0, $codesCount) as $i => $val) {
                 $idx = $i + 1;
                 $val = trim($val);
                 if (empty($val)) continue;
@@ -486,6 +518,12 @@ class RewardAdminController extends ResourceController
 
         if (!is_array($rows)) return $this->fail('Formato de códigos inválido.');
 
+        $rewardModel = new RewardModel();
+        $reward = $rewardModel->find($rewardId);
+        $codesCount = $reward ? (int)($reward['codes_count'] ?? 1) : 1;
+        if ($codesCount <= 0) $codesCount = 1;
+        if ($codesCount > 8) $codesCount = 8;
+
         $successCount = 0;
         $duplicates   = [];
 
@@ -502,7 +540,7 @@ class RewardAdminController extends ResourceController
             if (is_array($rowData)) {
                 foreach ($rowData as $i => $val) {
                     $idx = $i + 1;
-                    if ($idx <= 8) {
+                    if ($idx <= $codesCount) {
                         $val = trim($val);
                         if (empty($val)) continue;
 
