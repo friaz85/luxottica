@@ -1405,9 +1405,13 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
           this.processCSVAndUpload(rewardId);
         } else if (uploadedManualCodes && res.success_count !== undefined) {
           const title = res.success_count > 0 ? 'Códigos Procesados' : 'Proceso Finalizado';
+          const rewardName = res.reward_name || this.editingReward.title;
+          const newStock = res.new_stock !== undefined ? res.new_stock : '—';
           const html = `
             <div style="text-align: left; font-size: 0.9rem;">
-              <p>✅ <b>Nuevos cupones:</b> ${res.success_count}</p>
+              <p>🎁 <b>Recompensa:</b> ${rewardName}</p>
+              <p>✅ <b>Cargados:</b> ${res.success_count}</p>
+              <p>📈 <b>Stock final disponible:</b> ${newStock}</p>
               <p>⚠️ <b>Duplicados (omitidos):</b> ${res.duplicate_count}</p>
               ${res.duplicate_count > 0 && res.duplicates && res.duplicates.length > 0 ? `
                 <div style="margin-top: 10px;">
@@ -1527,9 +1531,13 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
       this.http.post(`${environment.apiUrl}/admin/rewards/${rewardId}/add-codes`, payload).subscribe({
         next: (res: any) => {
           const title = res.success_count > 0 ? 'Códigos Procesados' : 'Proceso Finalizado';
+          const rewardName = res.reward_name || this.editingReward.title;
+          const newStock = res.new_stock !== undefined ? res.new_stock : '—';
           let html = `
             <div style="text-align: left; font-size: 0.9rem;">
-              <p>✅ <b>Nuevos cupones:</b> ${res.success_count}</p>
+              <p>🎁 <b>Recompensa:</b> ${rewardName}</p>
+              <p>✅ <b>Cargados:</b> ${res.success_count}</p>
+              <p>📈 <b>Stock final disponible:</b> ${newStock}</p>
               <p>⚠️ <b>Duplicados (omitidos):</b> ${res.duplicate_count}</p>
               ${res.duplicate_count > 0 ? `
                 <div style="margin-top: 10px;">

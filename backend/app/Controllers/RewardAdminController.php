@@ -272,7 +272,9 @@ class RewardAdminController extends ResourceController
                     'id' => $rewardId,
                     'success_count' => $addedCount,
                     'duplicate_count' => $duplicateCount,
-                    'duplicates' => $duplicatesList
+                    'duplicates' => $duplicatesList,
+                    'reward_name' => $saveData['title'],
+                    'new_stock' => $addedCount
                 ]);
             }
         } catch (\Exception $e) {
@@ -393,7 +395,9 @@ class RewardAdminController extends ResourceController
                     'message' => 'Recompensa actualizada',
                     'success_count' => $addedCount,
                     'duplicate_count' => $duplicateCount,
-                    'duplicates' => $duplicatesList
+                    'duplicates' => $duplicatesList,
+                    'reward_name' => $rewardName,
+                    'new_stock' => isset($newStock) ? $newStock : (int)($currentReward['stock'] ?? 0)
                 ]);
             }
         } catch (\Exception $e) {
@@ -671,7 +675,9 @@ class RewardAdminController extends ResourceController
             'message' => 'Proceso de carga finalizado.',
             'success_count' => $successCount,
             'duplicate_count' => count($duplicates),
-            'duplicates' => $duplicates
+            'duplicates' => $duplicates,
+            'reward_name' => $name,
+            'new_stock' => $newStock
         ]);
     }
 
