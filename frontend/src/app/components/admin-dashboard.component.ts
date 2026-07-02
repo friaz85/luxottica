@@ -595,7 +595,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
 
   exportReportCsv() {
     this.loader.show();
-    let url = `${environment.apiUrl}/admin/users/report?export=csv`;
+    let url = `${environment.apiUrl}/admin/users/report?export=csv&t=${new Date().getTime()}`;
     if (this.reportProject) url += `&id_proyecto=${this.reportProject}`;
     
     this.http.get(url, { responseType: 'blob' }).subscribe({
