@@ -644,12 +644,23 @@ class AdminUserController extends ResourceController
 
         $data = $builder->get()->getResultArray();
 
-        // Decrypt passwords for report
+        // Decrypt and mask passwords for report
         foreach ($data as &$row) {
             try {
-                $row['password_display'] = !empty($row['password_encrypted'])
+                $decrypted = !empty($row['password_encrypted'])
                     ? PasswordCryptoService::decrypt($row['password_encrypted'])
                     : '—';
+                
+                if ($decrypted !== '—') {
+                    $len = strlen($decrypted);
+                    if ($len >= 5) {
+                        $row['password_display'] = str_repeat('*', $len - 5) . substr($decrypted, -5);
+                    } else {
+                        $row['password_display'] = str_repeat('*', $len);
+                    }
+                } else {
+                    $row['password_display'] = '—';
+                }
             } catch (\Exception $e) {
                 $row['password_display'] = '—';
             }
