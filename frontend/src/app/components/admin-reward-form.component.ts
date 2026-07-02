@@ -1361,6 +1361,39 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     }
 
     const url = this.editingReward.id ? `${environment.apiUrl}/admin/rewards/${this.editingReward.id}/update` : `${environment.apiUrl}/admin/rewards`;
+
+    if (hasCodesToUpload) {
+      let codeMessage = '';
+      if (this.editingReward.exit_codes && this.editingReward.exit_codes.trim() !== '') {
+        const lines = this.editingReward.exit_codes.split('\n').map((l: string) => l.trim()).filter((l: string) => l.length > 0);
+        const count = lines.length;
+        codeMessage = `cargar <b>${count} cupones/códigos</b>`;
+      } else if (this.pendingCSVFile) {
+        codeMessage = `cargar los códigos del archivo CSV <b>${this.pendingCSVFile.name}</b>`;
+      }
+
+      Swal.fire({
+        title: '¿Confirmar carga de códigos?',
+        html: `¿Estás seguro que deseas ${codeMessage} a la recompensa <b>${this.editingReward.title}</b>?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#ef4444',
+        confirmButtonText: 'Sí, guardar y cargar',
+        cancelButtonText: 'Cancelar'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.executeSaveReward(formData, url);
+        } else {
+          this.saving.set(false);
+        }
+      });
+    } else {
+      this.executeSaveReward(formData, url);
+    }
+  }
+
+  executeSaveReward(formData: FormData, url: string) {
     this.loader.show();
     this.http.post(url, formData).subscribe({
       next: (res: any) => {
