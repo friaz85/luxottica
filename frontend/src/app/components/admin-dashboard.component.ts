@@ -238,7 +238,7 @@ Chart.register(...registerables);
                 <td style="font-family:monospace;font-size:0.85rem;">{{ u.user_login }}</td>
                 <td class="font-bold">{{ u.full_name }}</td>
                 <td>
-                  <span style="font-family:monospace;font-size:0.82rem;background:#f1f5f9;padding:2px 8px;border-radius:6px;">{{ u.password_display || '—' }}</span>
+                  <span style="font-family:monospace;font-size:0.82rem;background:#f1f5f9;padding:2px 8px;border-radius:6px;">{{ maskPassword(u.password_display) }}</span>
                 </td>
                 <td style="font-size:0.82rem;color:#64748b;">{{ u.depto_id || '—' }}</td>
                 <td class="text-right font-bold" style="color:#0f172a;">{{ u.points | number }}</td>
@@ -578,7 +578,14 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
       error: () => this.reportLoading.set(false)
     });
   }
-
+  maskPassword(pass: string): string {
+    if (!pass || pass === '—') return '—';
+    const len = pass.length;
+    if (len >= 5) {
+      return '*'.repeat(len - 5) + pass.slice(-5);
+    }
+    return '*'.repeat(len);
+  }
   onReportSearch() {
     clearTimeout(this.reportSearchTimer);
     this.reportSearchTimer = setTimeout(() => {
