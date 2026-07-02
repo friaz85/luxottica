@@ -76,6 +76,19 @@ import { environment } from '../../environments/environment';
                   <span class="status-pill" [class]="redemption.status">
                     {{ getStatusLabel(redemption.status) }}
                   </span>
+                  
+                  <!-- Estatus Recarga (only for tiempo_aire) -->
+                  <div *ngIf="redemption.tipo_recompensa === 'tiempo_aire'" style="margin-top: 4px;">
+                    <span *ngIf="redemption.status_recarga === 'success'" class="status-pill completed" style="font-size:0.7rem; padding:0.2rem 0.5rem; display:inline-flex; align-items:center; gap:3px;" title="Recarga aplicada con éxito">
+                      📱 Recarga OK
+                    </span>
+                    <span *ngIf="redemption.status_recarga === 'failed'" class="status-pill cancelled" style="font-size:0.7rem; padding:0.2rem 0.5rem; display:inline-flex; align-items:center; gap:3px; cursor:help;" [title]="redemption.recarga_mensaje || 'Error de conexión o datos en Taecel'">
+                      📱 Falló Recarga ⚠️
+                    </span>
+                    <span *ngIf="!redemption.status_recarga" class="status-pill pending" style="font-size:0.7rem; padding:0.2rem 0.5rem; display:inline-flex; align-items:center; gap:3px;" title="Procesando recarga en Taecel">
+                      📱 Procesando
+                    </span>
+                  </div>
                 </td>
                 <td>
                   <span class="project-tag" style="background:#e0f2fe; color:#0369a1; padding:0.4rem 0.8rem; border-radius:0.5rem; font-size:0.75rem; font-weight:800; white-space:nowrap; border:1px solid #bae6fd;">
@@ -317,18 +330,31 @@ export class AdminRedemptionsComponent implements OnInit {
   }
 
   exportToCSV() {
-    const headers = ['ID', 'Nombre', 'Usuario', 'Recompensa', 'Tipo', 'Puntos', 'Estado', 'Proyecto', 'Fecha'];
-    const rows = this.filteredRedemptions().map((r: any) => [
-      r.id,
-      `"${r.user_name}"`,
-      r.user_email,
-      `"${r.reward_name}"`,
-      r.reward_type === 'digital' ? 'Digital' : 'Física',
-      r.points_cost,
-      this.getStatusLabel(r.status),
-      `"${r.project_name || '—'}"`,
-      new Date(r.created_at).toLocaleString('es-MX')
-    ]);
+    const headers = ['ID', 'Nombre', 'Usuario', 'Recompensa', 'Tipo', 'Puntos', 'Estado', 'Estatus Recarga', 'Proyecto', 'Fecha'];
+    const rows = this.filteredRedemptions().map((r: any) => {
+      let recargaStatusStr = 'N/A';
+      if (r.tipo_recompensa === 'tiempo_aire') {
+        if (r.status_recarga === 'success') {
+          recargaStatusStr = 'Exitosa';
+        } else if (r.status_recarga === 'failed') {
+          recargaStatusStr = `Fallida: ${r.recarga_mensaje || 'Error desconocido'}`;
+        } else {
+          recargaStatusStr = 'Procesando';
+        }
+      }
+      return [
+        r.id,
+        `"${r.user_name}"`,
+        r.user_email,
+        `"${r.reward_name}"`,
+        r.reward_type === 'digital' ? 'Digital' : 'Física',
+        r.points_cost,
+        this.getStatusLabel(r.status),
+        `"${recargaStatusStr}"`,
+        `"${r.project_name || '—'}"`,
+        new Date(r.created_at).toLocaleString('es-MX')
+      ];
+    });
 
     const csvContent = "\ufeff" + [headers.join(","), ...rows.map((e: any) => e.join(","))].join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

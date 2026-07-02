@@ -211,12 +211,14 @@ class AdminRedemptionsController extends ResourceController
                 rewards.tipo_recompensa,
                 rewards.cost as points_cost,
                 tel.Telefonia as nombre_telefonia,
-                proj.Proyecto as project_name
+                proj.Proyecto as project_name,
+                log_rec.Mensaje as recarga_mensaje
             ');
             $builder->join('users', 'users.id = redemptions.user_id', 'left');
             $builder->join('rewards', 'rewards.id = redemptions.reward_id', 'left');
             $builder->join('tblTelefonia tel', 'tel.idTelefonia = redemptions.id_telefonia', 'left');
             $builder->join('tblProyecto proj', 'proj.idProyecto = users.id_proyecto', 'left');
+            $builder->join('tblLogRecarga log_rec', 'log_rec.idRegistro = redemptions.id', 'left');
 
             // Search Filter
             $search = $this->request->getGet('search');
@@ -252,13 +254,25 @@ class AdminRedemptionsController extends ResourceController
                 header('Content-Type: text/csv');
                 header('Content-Disposition: attachment; filename="reporte_canjes_' . date('Y-m-d') . '.csv"');
                 $out = fopen('php://output', 'w');
-                fputcsv($out, ['Usuario', 'Recompensa', 'Proyecto', 'Fecha']);
+                fputcsv($out, ['Usuario', 'Recompensa', 'Proyecto', 'Estatus Recarga', 'Fecha']);
 
                 foreach ($data as $row) {
+                    $recargaStatusStr = 'N/A';
+                    if ($row['tipo_recompensa'] === 'tiempo_aire') {
+                        if ($row['status_recarga'] === 'success') {
+                            $recargaStatusStr = 'Exitosa';
+                        } elseif ($row['status_recarga'] === 'failed') {
+                            $recargaStatusStr = 'Fallida: ' . ($row['recarga_mensaje'] ?? 'Error desconocido');
+                        } else {
+                            $recargaStatusStr = 'Procesando';
+                        }
+                    }
+
                     fputcsv($out, [
                         $maskEmail($row['user_email']),
                         $row['reward_name'],
                         $row['project_name'] ?? '—',
+                        $recargaStatusStr,
                         date('Y-m-d', strtotime($row['created_at']))
                     ]);
                 }
