@@ -350,6 +350,7 @@ class AdminUserController extends ResourceController
      */
     public function bulkUpload()
     {
+        @set_time_limit(300);
         $userModel = new UserModel();
         $db        = \Config\Database::connect();
 
@@ -381,6 +382,13 @@ class AdminUserController extends ResourceController
 
         // Get admin info from session/token
         $adminId = $this->request->admin_user->username ?? 'admin';
+
+        // Fetch all existing emails to check duplicates in-memory (faster)
+        $existingUsers  = $db->table('users')->select('email')->get()->getResultArray();
+        $existingEmails = [];
+        foreach ($existingUsers as $u) {
+            $existingEmails[strtolower($u['email'])] = true;
+        }
 
         $logData      = [];
         $successCount = 0;
@@ -418,8 +426,8 @@ class AdminUserController extends ResourceController
                 continue;
             }
 
-            // Check duplicate user
-            if ($userModel->where('email', $email)->first()) {
+            // Check duplicate user in-memory
+            if (isset($existingEmails[strtolower($email)])) {
                 $logData[] = [
                     'full_name' => $fullName,
                     'email'     => $email,
@@ -446,7 +454,7 @@ class AdminUserController extends ResourceController
                 'email'            => $email,
                 'full_name'        => $fullName,
                 'depto_id'         => $deptoId ?: null,
-                'password_hash'    => password_hash($plainPassword, PASSWORD_DEFAULT),
+                'password_hash'    => password_hash($plainPassword, PASSWORD_BCRYPT, ['cost' => 4]),
                 'password_encrypted' => PasswordCryptoService::encrypt($plainPassword),
                 'points'           => $points,
                 'points_used'      => 0,
@@ -456,6 +464,7 @@ class AdminUserController extends ResourceController
 
             if ($userModel->save($newUser)) {
                 $successCount++;
+                $existingEmails[strtolower($email)] = true; // Add to map to prevent dupes in same batch
                 $logData[] = [
                     'full_name' => $fullName,
                     'email'     => $email,

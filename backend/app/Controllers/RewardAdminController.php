@@ -105,6 +105,20 @@ class RewardAdminController extends ResourceController
                 $filteredRewards[] = $reward;
                 continue;
             }
+
+            // Sync/Verify actual stock if it has codes preloaded
+            $hasCodes = $db->table('reward_codes')->where('reward_id', $reward['id'])->countAllResults() > 0;
+            if ($hasCodes) {
+                $actualStock = $db->table('reward_codes')
+                                  ->where('reward_id', $reward['id'])
+                                  ->where('is_used', 0)
+                                  ->where('is_deleted', 0)
+                                  ->countAllResults();
+                if ($actualStock !== (int)$reward['stock']) {
+                    $rewardModel->update($reward['id'], ['stock' => $actualStock]);
+                    $reward['stock'] = $actualStock;
+                }
+            }
             
             // 2. Normal rewards must have stock > 0
             if ((int)$reward['stock'] <= 0) {

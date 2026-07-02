@@ -51,7 +51,7 @@ import { LoaderComponent } from './loader.component';
           <span class="icon">🔑</span> Inventario de Códigos
         </a>
         <a routerLink="/admin/redemptions" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
-          <span class="icon">📋</span> Canjes
+          <span class="icon">📋</span> Reportes
         </a>
         <a routerLink="/admin/pending-rewards" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">⏳</span> Pendientes
