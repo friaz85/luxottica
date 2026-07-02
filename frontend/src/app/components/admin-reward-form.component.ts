@@ -786,6 +786,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   vigenciaAreas = signal<VigenciaArea[]>([]);
   loadMethod = signal<'manual' | 'csv'>('manual');
   pendingCSVFile: File | null = null;
+  pendingCSVCount = 0;
   selectedProject = signal<string>('');
   viewMode = signal<'grid' | 'table'>('grid');
   environment = environment;
@@ -947,6 +948,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     this.selectedImage = null;
     this.selectedPDF = null;
     this.pendingCSVFile = null;
+    this.pendingCSVCount = 0;
     this.pdfLoaded.set(false);
     this.codeAreas.set([]);
     this.vigenciaAreas.set([]);
@@ -973,6 +975,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     this.selectedImage = null;
     this.selectedPDF = null;
     this.pendingCSVFile = null;
+    this.pendingCSVCount = 0;
     this.pdfLoaded.set(false);
     this.loadMethod.set('manual');
     this.vigenciaAreas.set([]);
@@ -1369,7 +1372,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
         const count = lines.length;
         codeMessage = `cargar <b>${count} cupones/códigos</b>`;
       } else if (this.pendingCSVFile) {
-        codeMessage = `cargar los códigos del archivo CSV <b>${this.pendingCSVFile.name}</b>`;
+        codeMessage = `cargar <b>${this.pendingCSVCount} cupones/códigos</b> del archivo CSV <b>${this.pendingCSVFile.name}</b>`;
       }
 
       Swal.fire({
@@ -1509,6 +1512,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
         return;
       }
       this.pendingCSVFile = file;
+      this.pendingCSVCount = lines.length;
       this.toastService.show(`ARCHIVO CARGADO: ${lines.length} CUPONES. PRESIONA GUARDAR PARA PROCESAR.`, 'info');
     };
     reader.readAsText(file);
