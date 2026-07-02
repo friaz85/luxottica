@@ -210,11 +210,13 @@ class AdminRedemptionsController extends ResourceController
                 rewards.type as reward_type,
                 rewards.tipo_recompensa,
                 rewards.cost as points_cost,
-                tel.Telefonia as nombre_telefonia
+                tel.Telefonia as nombre_telefonia,
+                proj.Proyecto as project_name
             ');
             $builder->join('users', 'users.id = redemptions.user_id', 'left');
             $builder->join('rewards', 'rewards.id = redemptions.reward_id', 'left');
             $builder->join('tblTelefonia tel', 'tel.idTelefonia = redemptions.id_telefonia', 'left');
+            $builder->join('tblProyecto proj', 'proj.idProyecto = users.id_proyecto', 'left');
 
             // Search Filter
             $search = $this->request->getGet('search');
@@ -250,12 +252,13 @@ class AdminRedemptionsController extends ResourceController
                 header('Content-Type: text/csv');
                 header('Content-Disposition: attachment; filename="reporte_canjes_' . date('Y-m-d') . '.csv"');
                 $out = fopen('php://output', 'w');
-                fputcsv($out, ['Usuario', 'Recompensa', 'Fecha']);
+                fputcsv($out, ['Usuario', 'Recompensa', 'Proyecto', 'Fecha']);
 
                 foreach ($data as $row) {
                     fputcsv($out, [
                         $maskEmail($row['user_email']),
                         $row['reward_name'],
+                        $row['project_name'] ?? '—',
                         date('Y-m-d', strtotime($row['created_at']))
                     ]);
                 }

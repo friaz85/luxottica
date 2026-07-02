@@ -17,8 +17,8 @@ import { environment } from '../../environments/environment';
     <div class="admin-page" [class.sidebar-closed]="!layoutService.isSidebarOpen()">
       <div class="header-row">
         <div>
-           <h2 class="title">CANJES REALIZADOS</h2>
-           <p class="subtitle">Seguimiento de canjes realizados por los usuarios</p>
+           <h2 class="title">REPORTES</h2>
+           <p class="subtitle">Seguimiento y visualización de reportes y canjes de los usuarios</p>
         </div>
         <div class="header-actions">
           <button class="export-btn secondary" (click)="exportToCSV()">
@@ -28,7 +28,8 @@ import { environment } from '../../environments/environment';
       </div>
 
       <div class="table-container">
-        <div class="table-header">
+        <div class="table-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;border-bottom:1px solid #eee;padding:1.5rem;">
+           <h3 style="font-size:1.2rem;font-weight:900;color:var(--admin-primary);margin:0;">📋 Reporte de Canjes Realizados</h3>
            <div class="search-box">
              <input 
                type="text" 
@@ -48,6 +49,7 @@ import { environment } from '../../environments/environment';
                 <th>Tipo</th>
                 <th>Puntos</th>
                 <th>Estado</th>
+                <th>Proyecto</th>
                 <th class="text-right">Fecha Canje</th>
               </tr>
             </thead>
@@ -55,8 +57,8 @@ import { environment } from '../../environments/environment';
               <tr *ngFor="let redemption of paginatedRedemptions()">
                 <td>
                   <div class="redemption-info-cell">
-                    <span class="font-bold">{{ redemption.user_name }}</span>
-                    <small style="color:#94a3b8; display:block; font-size:0.75rem; font-family:monospace;">{{ redemption.user_email }}</small>
+                     <span class="font-bold">{{ redemption.user_name }}</span>
+                     <small style="color:#94a3b8; display:block; font-size:0.75rem; font-family:monospace;">{{ redemption.user_email }}</small>
                   </div>
                 </td>
                 <td>
@@ -75,10 +77,15 @@ import { environment } from '../../environments/environment';
                     {{ getStatusLabel(redemption.status) }}
                   </span>
                 </td>
+                <td>
+                  <span class="project-tag" style="background:#e0f2fe; color:#0369a1; padding:0.4rem 0.8rem; border-radius:0.5rem; font-size:0.75rem; font-weight:800; white-space:nowrap; border:1px solid #bae6fd;">
+                    {{ redemption.project_name || '—' }}
+                  </span>
+                </td>
                 <td class="text-right text-sm text-gray">{{ redemption.created_at | date:'dd/MM/yy HH:mm' }}</td>
               </tr>
               <tr *ngIf="filteredRedemptions().length === 0">
-                 <td colspan="6" class="text-center py-8 text-gray">No se encontraron recompensas canjeadas</td>
+                 <td colspan="7" class="text-center py-8 text-gray">No se encontraron recompensas canjeadas</td>
               </tr>
             </tbody>
           </table>
@@ -310,7 +317,7 @@ export class AdminRedemptionsComponent implements OnInit {
   }
 
   exportToCSV() {
-    const headers = ['ID', 'Nombre', 'Usuario', 'Recompensa', 'Tipo', 'Puntos', 'Estado', 'Fecha'];
+    const headers = ['ID', 'Nombre', 'Usuario', 'Recompensa', 'Tipo', 'Puntos', 'Estado', 'Proyecto', 'Fecha'];
     const rows = this.filteredRedemptions().map((r: any) => [
       r.id,
       `"${r.user_name}"`,
@@ -319,6 +326,7 @@ export class AdminRedemptionsComponent implements OnInit {
       r.reward_type === 'digital' ? 'Digital' : 'Física',
       r.points_cost,
       this.getStatusLabel(r.status),
+      `"${r.project_name || '—'}"`,
       new Date(r.created_at).toLocaleString('es-MX')
     ]);
 
