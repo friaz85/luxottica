@@ -357,6 +357,34 @@ class AdminRedemptionsController extends ResourceController
 
             $builder->orderBy('r.created_at', 'DESC');
 
+            // Export CSV Logic
+            if ($this->request->getGet('export') === 'csv') {
+                $data = $builder->get()->getResultArray();
+
+                header('Content-Type: text/csv; charset=utf-8');
+                header('Content-Disposition: attachment; filename="reporte_recompensas_pendientes_' . date('Y-m-d') . '.csv"');
+                $out = fopen('php://output', 'w');
+                // Send UTF-8 BOM for Excel compatibility
+                fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
+                
+                fputcsv($out, ['ID', 'Usuario', 'Correo/Login', 'Recompensa', 'Tipo', 'Titular Monedero', 'Fecha']);
+
+                foreach ($data as $row) {
+                    $titular = trim(($row['nombre_monedero'] ?? '') . ' ' . ($row['apellido_paterno'] ?? '') . ' ' . ($row['apellido_materno'] ?? ''));
+                    fputcsv($out, [
+                        $row['id'],
+                        $row['user_name'] ?? '—',
+                        $row['user_login'] ?? '—',
+                        $row['reward_name'] ?? '—',
+                        $row['tipo_recompensa'] === 'monedero' ? 'Monedero' : ($row['tipo_recompensa'] ?? '—'),
+                        $titular ?: '—',
+                        date('d/m/Y H:i', strtotime($row['created_at']))
+                    ]);
+                }
+                fclose($out);
+                exit;
+            }
+
             $total = (clone $builder)->countAllResults(false);
             $data  = $builder->get($perPage, $offset)->getResultArray();
 

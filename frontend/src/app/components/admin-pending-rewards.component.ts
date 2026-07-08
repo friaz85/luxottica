@@ -6,6 +6,7 @@ import { environment } from '../../environments/environment';
 import { AdminNavbarComponent } from './admin-navbar.component';
 import { AdminLayoutService } from '../services/admin-layout.service';
 import { ToastService } from '../services/toast.service';
+import { LoaderService } from '../services/loader.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -106,6 +107,11 @@ import Swal from 'sweetalert2';
             <span class="counter-pill">{{ total() }}</span>
           </h2>
           <p class="subtitle">Monederos pendientes de proceso manual</p>
+        </div>
+        <div class="header-actions">
+          <button class="action-btn secondary" (click)="exportCsv()">
+            <span>📥</span> Exportar CSV
+          </button>
         </div>
       </div>
 
@@ -262,6 +268,7 @@ export class AdminPendingRewardsComponent implements OnInit {
   private http         = inject(HttpClient);
   public layoutService = inject(AdminLayoutService);
   private toast        = inject(ToastService);
+  private loader       = inject(LoaderService);
 
   items    = signal<any[]>([]);
   loading  = signal(true);
@@ -291,6 +298,29 @@ export class AdminPendingRewardsComponent implements OnInit {
         this.loading.set(false);
       },
       error: () => { this.loading.set(false); this.toast.show('Error al cargar datos', 'error'); }
+    });
+  }
+
+  exportCsv() {
+    this.loader.show();
+    let url = `${environment.apiUrl}/admin/redemptions/pending?export=csv`;
+    if (this.search) {
+      url += `&search=${encodeURIComponent(this.search)}`;
+    }
+    this.http.get(url, { responseType: 'blob' }).subscribe({
+      next: (blob: Blob) => {
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `recompensas_pendientes_${new Date().toISOString().slice(0, 10)}.csv`;
+        link.click();
+        window.URL.revokeObjectURL(downloadUrl);
+        this.loader.hide();
+      },
+      error: () => {
+        this.toast.show('Error al exportar reporte', 'error');
+        this.loader.hide();
+      }
     });
   }
 
