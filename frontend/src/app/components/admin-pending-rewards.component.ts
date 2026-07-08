@@ -89,6 +89,10 @@ import Swal from 'sweetalert2';
     .file-label.has-file { border-color: #16a34a; background: #f0fdf4; }
     .file-selected { color: #166534; font-weight: 700; }
 
+    .export-btn { background: var(--admin-primary); border: none; color: white; padding: 0.8rem 1.5rem; border-radius: 0.6rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: bold; transition: 0.3s; }
+    .export-btn.secondary { background: #666; }
+    .export-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
     @media (max-width: 900px) {
       .admin-page { margin-left: 0; padding: 5.5rem 1rem 2rem 1rem; }
       .header-row { flex-direction: column; align-items: flex-start; }
@@ -109,8 +113,8 @@ import Swal from 'sweetalert2';
           <p class="subtitle">Monederos pendientes de proceso manual</p>
         </div>
         <div class="header-actions">
-          <button class="action-btn secondary" (click)="exportCsv()">
-            <span>📥</span> Exportar CSV
+          <button class="export-btn secondary" (click)="exportCsv()">
+            <span class="icon">📥</span> <span class="btn-text">Exportar CSV</span>
           </button>
         </div>
       </div>
