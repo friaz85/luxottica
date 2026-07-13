@@ -55,6 +55,7 @@ CREATE TABLE redemptions (
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'review', 'processing', 'shipped', 'delivered', 'completed')),
     shipping_details JSON,
     pdf_path VARCHAR(255),
+    ip_address VARCHAR(45) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (reward_id) REFERENCES rewards(id)

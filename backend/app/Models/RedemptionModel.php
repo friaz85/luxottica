@@ -23,6 +23,7 @@ class RedemptionModel extends Model
         'status_recarga',
         'fecha_validez_inicio',
         'fecha_validez_fin',
+        'ip_address',
     ];
     protected $useTimestamps = true;
     protected $updatedField = '';

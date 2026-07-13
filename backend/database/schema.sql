@@ -67,6 +67,7 @@ CREATE TABLE redemptions (
     pdf_path VARCHAR(255),
     fecha_validez_inicio DATE DEFAULT NULL,
     fecha_validez_fin DATE DEFAULT NULL,
+    ip_address VARCHAR(45) DEFAULT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (reward_id) REFERENCES rewards(id)

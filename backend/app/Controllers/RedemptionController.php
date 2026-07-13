@@ -210,6 +210,7 @@ class RedemptionController extends ResourceController
                 'status_recarga'       => ($tipoRecompensa === 'tiempo_aire') ? 'pending' : null,
                 'fecha_validez_inicio' => $fechaValidezInicio,
                 'fecha_validez_fin'    => $fechaValidezFin,
+                'ip_address'           => $this->request->getIPAddress(),
             ];
 
             if (!$redemptionModel->save($redemptionData)) {

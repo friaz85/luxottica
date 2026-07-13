@@ -88,7 +88,8 @@ class AdminRedemptionsController extends ResourceController
             'reward_id'    => $rewardId,
             'status'       => 'completed',
             'digital_code' => $finalCodeString,
-            'admin_notes'  => 'Canje manual realizado por ' . ($this->request->admin_user->username ?? 'admin')
+            'admin_notes'  => 'Canje manual realizado por ' . ($this->request->admin_user->username ?? 'admin'),
+            'ip_address'   => $this->request->getIPAddress()
         ];
         
         $redemptionModel->save($redemptionData);
