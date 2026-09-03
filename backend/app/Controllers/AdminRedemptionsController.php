@@ -251,11 +251,21 @@ class AdminRedemptionsController extends ResourceController
                     return str_repeat('*', 4) . substr($name, 4) . '@' . $parts[1];
                 };
 
+                // Helper to clean Taecel balance/amounts
+                $cleanTaecelMsg = function ($msg, $statusRecarga) {
+                    if (!$msg) {
+                        return $statusRecarga === 'success' ? 'Recarga exitosa' : ($statusRecarga === 'failed' ? 'Error al procesar' : 'Procesando');
+                    }
+                    $cleaned = preg_replace('/(\.?\s*(Saldo\s*(Final)?|Monto|Importe)\s*[:=]?\s*[\$]?\s*[\d,]+(\.\d+)?)/i', '', $msg);
+                    $cleaned = trim(preg_replace('/\s{2,}/', ' ', $cleaned));
+                    return rtrim($cleaned, '.') ?: ($statusRecarga === 'success' ? 'Recarga exitosa' : 'Respuesta procesada');
+                };
+
                 // Generate CSV
                 header('Content-Type: text/csv');
                 header('Content-Disposition: attachment; filename="reporte_canjes_' . date('Y-m-d') . '.csv"');
                 $out = fopen('php://output', 'w');
-                fputcsv($out, ['Usuario', 'Recompensa', 'Proyecto', 'Estatus Recarga', 'Fecha']);
+                fputcsv($out, ['Usuario', 'Recompensa', 'Teléfono Recarga', 'Compañía', 'Proyecto', 'Estatus Recarga', 'Fecha']);
 
                 foreach ($data as $row) {
                     $recargaStatusStr = 'N/A';
@@ -263,7 +273,7 @@ class AdminRedemptionsController extends ResourceController
                         if ($row['status_recarga'] === 'success') {
                             $recargaStatusStr = 'Exitosa';
                         } elseif ($row['status_recarga'] === 'failed') {
-                            $recargaStatusStr = 'Fallida: ' . ($row['recarga_mensaje'] ?? 'Error desconocido');
+                            $recargaStatusStr = 'Fallida: ' . $cleanTaecelMsg($row['recarga_mensaje'] ?? '', $row['status_recarga']);
                         } else {
                             $recargaStatusStr = 'Procesando';
                         }
@@ -272,6 +282,8 @@ class AdminRedemptionsController extends ResourceController
                     fputcsv($out, [
                         $maskEmail($row['user_email']),
                         $row['reward_name'],
+                        ($row['tipo_recompensa'] === 'tiempo_aire' && !empty($row['telefono_recarga'])) ? $row['telefono_recarga'] : '—',
+                        ($row['tipo_recompensa'] === 'tiempo_aire' && !empty($row['nombre_telefonia'])) ? $row['nombre_telefonia'] : '—',
                         $row['project_name'] ?? '—',
                         $recargaStatusStr,
                         date('Y-m-d', strtotime($row['created_at']))

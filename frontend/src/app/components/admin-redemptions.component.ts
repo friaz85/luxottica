@@ -78,16 +78,38 @@ import { environment } from '../../environments/environment';
                   </span>
                   
                   <!-- Estatus Recarga (only for tiempo_aire) -->
-                  <div *ngIf="redemption.tipo_recompensa === 'tiempo_aire'" style="margin-top: 4px;">
-                    <span *ngIf="redemption.status_recarga === 'success'" class="status-pill completed" style="font-size:0.7rem; padding:0.2rem 0.5rem; display:inline-flex; align-items:center; gap:3px;" title="Recarga aplicada con éxito">
+                  <div *ngIf="redemption.tipo_recompensa === 'tiempo_aire'" style="margin-top: 4px; display: inline-flex; align-items: center; gap: 6px;">
+                    <span *ngIf="redemption.status_recarga === 'success'" class="status-pill completed" style="font-size:0.7rem; padding:0.2rem 0.5rem; display:inline-flex; align-items:center; gap:3px;">
                       📱 Recarga OK
                     </span>
-                    <span *ngIf="redemption.status_recarga === 'failed'" class="status-pill cancelled" style="font-size:0.7rem; padding:0.2rem 0.5rem; display:inline-flex; align-items:center; gap:3px; cursor:help;" [title]="redemption.recarga_mensaje || 'Error de conexión o datos en Taecel'">
+                    <span *ngIf="redemption.status_recarga === 'failed'" class="status-pill cancelled" style="font-size:0.7rem; padding:0.2rem 0.5rem; display:inline-flex; align-items:center; gap:3px;">
                       📱 Falló Recarga ⚠️
                     </span>
-                    <span *ngIf="!redemption.status_recarga" class="status-pill pending" style="font-size:0.7rem; padding:0.2rem 0.5rem; display:inline-flex; align-items:center; gap:3px;" title="Procesando recarga en Taecel">
+                    <span *ngIf="!redemption.status_recarga" class="status-pill pending" style="font-size:0.7rem; padding:0.2rem 0.5rem; display:inline-flex; align-items:center; gap:3px;">
                       📱 Procesando
                     </span>
+
+                    <!-- Info Tooltip Icon -->
+                    <div class="recarga-info-tooltip-container">
+                      <button type="button" class="recarga-info-btn" aria-label="Información de recarga">
+                        ℹ️
+                      </button>
+                      <div class="recarga-tooltip">
+                        <div class="recarga-tooltip-header">Detalles de Recarga</div>
+                        <div class="recarga-tooltip-row">
+                          <span class="lbl">Teléfono:</span>
+                          <span class="val">{{ redemption.telefono_recarga || 'No registrado' }}</span>
+                        </div>
+                        <div class="recarga-tooltip-row" *ngIf="redemption.nombre_telefonia">
+                          <span class="lbl">Compañía:</span>
+                          <span class="val">{{ redemption.nombre_telefonia }}</span>
+                        </div>
+                        <div class="recarga-tooltip-row">
+                          <span class="lbl">Respuesta:</span>
+                          <span class="val">{{ getCleanTaecelMessage(redemption.recarga_mensaje, redemption.status_recarga) }}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </td>
                 <td>
@@ -227,6 +249,48 @@ import { environment } from '../../environments/environment';
     .status-pill.completed { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
     .status-pill.shipped { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
     .status-pill.cancelled { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+    
+    .recarga-info-tooltip-container { position: relative; display: inline-flex; align-items: center; }
+    .recarga-info-btn { background: none; border: none; font-size: 0.85rem; cursor: pointer; padding: 2px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; line-height: 1; transition: transform 0.15s ease; }
+    .recarga-info-btn:hover { transform: scale(1.15); }
+    .recarga-tooltip {
+      visibility: hidden;
+      opacity: 0;
+      width: 250px;
+      background-color: #1e293b;
+      color: #f8fafc;
+      text-align: left;
+      border-radius: 8px;
+      padding: 10px 12px;
+      position: absolute;
+      z-index: 100;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+      font-size: 0.78rem;
+      pointer-events: none;
+    }
+    .recarga-tooltip::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-left: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: #1e293b transparent transparent transparent;
+    }
+    .recarga-info-tooltip-container:hover .recarga-tooltip {
+      visibility: visible;
+      opacity: 1;
+    }
+    .recarga-tooltip-header { font-weight: 800; font-size: 0.8rem; margin-bottom: 6px; color: #38bdf8; border-bottom: 1px solid #334155; padding-bottom: 4px; }
+    .recarga-tooltip-row { margin-bottom: 4px; display: flex; gap: 4px; line-height: 1.3; }
+    .recarga-tooltip-row:last-child { margin-bottom: 0; }
+    .recarga-tooltip-row .lbl { color: #94a3b8; font-weight: 600; white-space: nowrap; }
+    .recarga-tooltip-row .val { color: #f1f5f9; font-weight: 500; word-break: break-word; }
 
     .pagination-footer { padding: 1.5rem 2rem; background: #fff; border-top: 1px solid #eee; }
     .pagination-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; }
@@ -329,15 +393,32 @@ export class AdminRedemptionsComponent implements OnInit {
     return labels[status] || status;
   }
 
+  getCleanTaecelMessage(msg: string | null | undefined, statusRecarga: string | null | undefined): string {
+    if (!msg) {
+      if (statusRecarga === 'success') return 'Recarga procesada exitosamente.';
+      if (statusRecarga === 'failed') return 'Error al procesar con el operador.';
+      return 'En proceso de verificación.';
+    }
+    // Remove saldo / montos details from message (e.g., "Saldo: 100", "Saldo Final: $120.00", etc.)
+    let cleaned = msg
+      .replace(/(\.?\s*(Saldo\s*(Final)?|Monto|Importe)\s*[:=]?\s*[\$]?\s*[\d,]+(\.\d+)?)/gi, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    if (cleaned.endsWith('.')) {
+      cleaned = cleaned.slice(0, -1).trim();
+    }
+    return cleaned || (statusRecarga === 'success' ? 'Recarga exitosa' : 'Respuesta procesada');
+  }
+
   exportToCSV() {
-    const headers = ['ID', 'Nombre', 'Usuario', 'Recompensa', 'Tipo', 'Puntos', 'Estado', 'Estatus Recarga', 'Proyecto', 'Fecha'];
+    const headers = ['ID', 'Nombre', 'Usuario', 'Recompensa', 'Tipo', 'Puntos', 'Estado', 'Estatus Recarga', 'Teléfono Recarga', 'Compañía', 'Proyecto', 'Fecha'];
     const rows = this.filteredRedemptions().map((r: any) => {
       let recargaStatusStr = 'N/A';
       if (r.tipo_recompensa === 'tiempo_aire') {
         if (r.status_recarga === 'success') {
           recargaStatusStr = 'Exitosa';
         } else if (r.status_recarga === 'failed') {
-          recargaStatusStr = `Fallida: ${r.recarga_mensaje || 'Error desconocido'}`;
+          recargaStatusStr = `Fallida: ${this.getCleanTaecelMessage(r.recarga_mensaje, r.status_recarga)}`;
         } else {
           recargaStatusStr = 'Procesando';
         }
@@ -351,6 +432,8 @@ export class AdminRedemptionsComponent implements OnInit {
         r.points_cost,
         this.getStatusLabel(r.status),
         `"${recargaStatusStr}"`,
+        r.tipo_recompensa === 'tiempo_aire' && r.telefono_recarga ? `"${r.telefono_recarga}"` : '—',
+        r.tipo_recompensa === 'tiempo_aire' && r.nombre_telefonia ? `"${r.nombre_telefonia}"` : '—',
         `"${r.project_name || '—'}"`,
         new Date(r.created_at).toLocaleString('es-MX')
       ];
