@@ -132,16 +132,17 @@ import { environment } from '../../environments/environment';
                Mostrando <b>{{ (currentPage() - 1) * pageSize + 1 }}</b> a <b>{{ Math.min(currentPage() * pageSize, filteredRedemptions().length) }}</b> de <b>{{ filteredRedemptions().length }}</b>
             </span>
             <div class="pagination-controls">
-              <button class="pag-btn" [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)">« Anterior</button>
-              <div class="page-numbers">
-                <button *ngFor="let p of [].constructor(totalPages()); let i = index" 
+              <button class="pag-btn" [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)">«</button>
+              <ng-container *ngFor="let p of pageList()">
+                <span *ngIf="p === -1" class="pag-ellipsis">…</span>
+                <button *ngIf="p !== -1" 
                         class="page-num-btn" 
-                        [class.active]="currentPage() === (i + 1)"
-                        (click)="setPage(i + 1)">
-                  {{ i + 1 }}
+                        [class.active]="currentPage() === p" 
+                        (click)="setPage(p)">
+                  {{ p }}
                 </button>
-              </div>
-              <button class="pag-btn" [disabled]="currentPage() >= totalPages()" (click)="setPage(currentPage() + 1)">Siguiente »</button>
+              </ng-container>
+              <button class="pag-btn" [disabled]="currentPage() >= totalPages()" (click)="setPage(currentPage() + 1)">»</button>
             </div>
           </div>
         </div>
@@ -257,17 +258,18 @@ import { environment } from '../../environments/environment';
       visibility: hidden;
       opacity: 0;
       width: 250px;
-      background-color: #1e293b;
-      color: #f8fafc;
+      background-color: #ffffff;
+      color: #334155;
       text-align: left;
       border-radius: 8px;
+      border: 1px solid #e2e8f0;
       padding: 10px 12px;
       position: absolute;
       z-index: 100;
       bottom: 125%;
       left: 50%;
       transform: translateX(-50%);
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
       transition: opacity 0.2s ease, visibility 0.2s ease;
       font-size: 0.78rem;
       pointer-events: none;
@@ -277,20 +279,30 @@ import { environment } from '../../environments/environment';
       position: absolute;
       top: 100%;
       left: 50%;
-      margin-left: -5px;
-      border-width: 5px;
+      margin-left: -6px;
+      border-width: 6px;
       border-style: solid;
-      border-color: #1e293b transparent transparent transparent;
+      border-color: #ffffff transparent transparent transparent;
+    }
+    .recarga-tooltip::before {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-left: -7px;
+      border-width: 7px;
+      border-style: solid;
+      border-color: #cbd5e1 transparent transparent transparent;
     }
     .recarga-info-tooltip-container:hover .recarga-tooltip {
       visibility: visible;
       opacity: 1;
     }
-    .recarga-tooltip-header { font-weight: 800; font-size: 0.8rem; margin-bottom: 6px; color: #38bdf8; border-bottom: 1px solid #334155; padding-bottom: 4px; }
-    .recarga-tooltip-row { margin-bottom: 4px; display: flex; gap: 4px; line-height: 1.3; }
+    .recarga-tooltip-header { font-weight: 800; font-size: 0.8rem; margin-bottom: 6px; color: var(--admin-primary, #0f172a); border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+    .recarga-tooltip-row { margin-bottom: 4px; display: flex; gap: 6px; line-height: 1.35; }
     .recarga-tooltip-row:last-child { margin-bottom: 0; }
-    .recarga-tooltip-row .lbl { color: #94a3b8; font-weight: 600; white-space: nowrap; }
-    .recarga-tooltip-row .val { color: #f1f5f9; font-weight: 500; word-break: break-word; }
+    .recarga-tooltip-row .lbl { color: #64748b; font-weight: 700; white-space: nowrap; }
+    .recarga-tooltip-row .val { color: #0f172a; font-weight: 500; word-break: break-word; }
 
     .pagination-footer { padding: 1.5rem 2rem; background: #fff; border-top: 1px solid #eee; }
     .pagination-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; }
@@ -299,6 +311,7 @@ import { environment } from '../../environments/environment';
     .pag-btn { background: #fff; border: 1px solid #d1d5db; color: #374151; padding: 0.4rem 0.8rem; border-radius: 0.4rem; font-weight: 600; cursor: pointer; }
     .page-num-btn { width: 32px; height: 32px; border-radius: 0.4rem; border: 1px solid #d1d5db; background: #fff; cursor: pointer; font-weight: 700; }
     .page-num-btn.active { background: var(--admin-primary); color: white; border-color: var(--admin-primary); }
+    .pag-ellipsis { display: inline-flex; align-items: center; justify-content: center; width: 24px; color: #94a3b8; font-weight: bold; }
 
     .text-gold { color: #d4b106; }
     .mobile-only-info { display: none; margin-top: 0.3rem; font-size: 0.8rem; color: #666; font-weight: 700; }
@@ -382,6 +395,8 @@ export class AdminRedemptionsComponent implements OnInit {
   });
 
   totalPages = computed(() => Math.ceil(this.filteredRedemptions().length / this.pageSize));
+
+  pageList = computed(() => this.smartPages(this.currentPage(), this.totalPages()));
 
   getStatusLabel(status: string): string {
     const labels: { [key: string]: string } = {
