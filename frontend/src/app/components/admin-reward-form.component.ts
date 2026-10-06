@@ -123,15 +123,12 @@ interface VigenciaArea {
                        reward.tipo_recompensa === 'tiempo_aire' ? '📱 Tiempo Aire' : '🎁 Normal' }}
                   </span>
                 </div>
-                <div class="reward-card-dates" *ngIf="reward.vigencias && reward.vigencias.length > 0">
-                  <div *ngFor="let v of reward.vigencias"
-                       class="date-pill"
-                       [class.expired]="isExpired(v.fecha_fin)"
-                       [class.active-vig]="!isExpired(v.fecha_fin)">
+                <div class="reward-card-dates" *ngIf="getActiveVigencias(reward.vigencias).length > 0">
+                  <div *ngFor="let v of getActiveVigencias(reward.vigencias)"
+                       class="date-pill active-vig">
                     📅 {{ formatShortDate(v.fecha_inicio) }} al {{ formatShortDate(v.fecha_fin) }}
                     &nbsp;—&nbsp;
                     <strong>{{ v.codes_available }} cód.</strong>
-                    <span *ngIf="isExpired(v.fecha_fin)" style="font-size:0.7rem;color:#cc0000;margin-left:4px;">(expirada)</span>
                   </div>
                 </div>
               </div>
@@ -194,8 +191,8 @@ interface VigenciaArea {
                   </span>
                </td>
                 <td>
-                   <div *ngIf="reward.vigencias && reward.vigencias.length > 0; else noVigencia" style="font-size: 0.8rem; line-height: 1.3; display: flex; flex-direction: column; gap: 0.25rem;">
-                      <div *ngFor="let v of reward.vigencias" class="status-pill future" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;">
+                   <div *ngIf="getActiveVigencias(reward.vigencias).length > 0; else noVigencia" style="font-size: 0.8rem; line-height: 1.3; display: flex; flex-direction: column; gap: 0.25rem;">
+                      <div *ngFor="let v of getActiveVigencias(reward.vigencias)" class="status-pill future" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;">
                          {{ formatShortDate(v.fecha_inicio) }} al {{ formatShortDate(v.fecha_fin) }}
                       </div>
                    </div>
@@ -882,6 +879,11 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   isExpired(fechaFin: string): boolean {
     if (!fechaFin) return true;
     return new Date(fechaFin.replace(' ', 'T')) < new Date();
+  }
+
+  getActiveVigencias(vigencias: any[] | undefined): any[] {
+    if (!vigencias || !Array.isArray(vigencias)) return [];
+    return vigencias.filter(v => !this.isExpired(v.fecha_fin));
   }
 
   isVigenciaSelected(id: number): boolean {
