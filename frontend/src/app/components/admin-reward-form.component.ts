@@ -179,7 +179,7 @@ interface VigenciaArea {
                 </td>
                 <td class="font-bold text-blue">{{ (reward.cost || 0) | number }} pts</td>
                 <td>
-                   <span class="stock-badge" [class.low]="reward.stock <= 5">{{ reward.stock }}</span>
+                   <span class="stock-badge" [class.low]="(reward.active_stock ?? 0) <= 5">{{ reward.active_stock ?? 0 }}</span>
                 </td>
                 <td>
                   <span class="type-badge" [ngClass]="{
