@@ -20,6 +20,36 @@ class RewardAdminController extends ResourceController
         ]);
     }
 
+    private function calculateActiveStock($rewardId): int
+    {
+        $db = \Config\Database::connect();
+        $now = date('Y-m-d H:i:s');
+
+        $vigencias = $db->table('reward_codes')
+                        ->select('vigencias.*, COUNT(reward_codes.id) as codes_available')
+                        ->join('vigencias', 'vigencias.id = reward_codes.id_vigencia')
+                        ->where('reward_codes.reward_id', $rewardId)
+                        ->where('reward_codes.is_used', 0)
+                        ->where('reward_codes.is_deleted', 0)
+                        ->groupBy('vigencias.id')
+                        ->get()
+                        ->getResultArray();
+
+        $codesNoVigencia = (int) $db->table('reward_codes')
+                                    ->where('reward_id', $rewardId)
+                                    ->where('is_used', 0)
+                                    ->where('is_deleted', 0)
+                                    ->where('id_vigencia IS NULL', null, false)
+                                    ->countAllResults();
+
+        $stockFromVigencias = array_sum(array_column(
+            array_filter($vigencias, fn($v) => $v['fecha_fin'] >= $now),
+            'codes_available'
+        ));
+
+        return $stockFromVigencias + $codesNoVigencia;
+    }
+
     public function index()
     {
         $rewardModel = new RewardModel();
@@ -267,6 +297,8 @@ class RewardAdminController extends ResourceController
 
                 $this->logActivity('create_reward', "Creada recompensa: '{$saveData['title']}' (ID: {$rewardId}). Stock inicial: " . $addedCount);
 
+                $activeStock = $this->calculateActiveStock($rewardId);
+
                 return $this->respondCreated([
                     'message' => 'Recompensa creada',
                     'id' => $rewardId,
@@ -274,7 +306,8 @@ class RewardAdminController extends ResourceController
                     'duplicate_count' => $duplicateCount,
                     'duplicates' => $duplicatesList,
                     'reward_name' => $saveData['title'],
-                    'new_stock' => $addedCount
+                    'new_stock' => $activeStock,
+                    'active_stock' => $activeStock
                 ]);
             }
         } catch (\Exception $e) {
@@ -391,13 +424,16 @@ class RewardAdminController extends ResourceController
                 $rewardName = $updateData['title'] ?? ($currentReward['title'] ?? 'ID ' . $id);
                 $this->logActivity('update_reward', "Actualizada recompensa: '{$rewardName}' (ID: {$id})");
 
+                $activeStock = $this->calculateActiveStock($id);
+
                 return $this->respond([
                     'message' => 'Recompensa actualizada',
                     'success_count' => $addedCount,
                     'duplicate_count' => $duplicateCount,
                     'duplicates' => $duplicatesList,
                     'reward_name' => $rewardName,
-                    'new_stock' => isset($newStock) ? $newStock : (int)($currentReward['stock'] ?? 0)
+                    'new_stock' => $activeStock,
+                    'active_stock' => $activeStock
                 ]);
             }
         } catch (\Exception $e) {
@@ -671,13 +707,16 @@ class RewardAdminController extends ResourceController
         $name = $reward ? $reward['title'] : 'ID ' . $rewardId;
         $this->logActivity('add_reward_codes', "Cargados {$successCount} códigos a recompensa '{$name}' (ID: {$rewardId}). Nuevo stock: {$newStock}");
 
+        $activeStock = $this->calculateActiveStock($rewardId);
+
         return $this->respondCreated([
             'message' => 'Proceso de carga finalizado.',
             'success_count' => $successCount,
             'duplicate_count' => count($duplicates),
             'duplicates' => $duplicates,
             'reward_name' => $name,
-            'new_stock' => $newStock
+            'new_stock' => $activeStock,
+            'active_stock' => $activeStock
         ]);
     }
 

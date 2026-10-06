@@ -1411,12 +1411,12 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
         } else if (uploadedManualCodes && res.success_count !== undefined) {
           const title = res.success_count > 0 ? 'Códigos Procesados' : 'Proceso Finalizado';
           const rewardName = res.reward_name || this.editingReward.title;
-          const newStock = res.new_stock !== undefined ? res.new_stock : '—';
+          const newStock = (res.active_stock !== undefined ? res.active_stock : res.new_stock) !== undefined ? (res.active_stock ?? res.new_stock) : '—';
           const html = `
             <div style="text-align: left; font-size: 0.9rem;">
               <p>🎁 <b>Recompensa:</b> ${rewardName}</p>
               <p>✅ <b>Cargados:</b> ${res.success_count}</p>
-              <p>📈 <b>Stock final disponible:</b> ${newStock}</p>
+              <p>📈 <b>Stock activo disponible:</b> ${newStock}</p>
               <p>⚠️ <b>Duplicados (omitidos):</b> ${res.duplicate_count}</p>
               ${res.duplicate_count > 0 && res.duplicates && res.duplicates.length > 0 ? `
                 <div style="margin-top: 10px;">
@@ -1538,12 +1538,12 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
         next: (res: any) => {
           const title = res.success_count > 0 ? 'Códigos Procesados' : 'Proceso Finalizado';
           const rewardName = res.reward_name || this.editingReward.title;
-          const newStock = res.new_stock !== undefined ? res.new_stock : '—';
+          const newStock = (res.active_stock !== undefined ? res.active_stock : res.new_stock) !== undefined ? (res.active_stock ?? res.new_stock) : '—';
           let html = `
             <div style="text-align: left; font-size: 0.9rem;">
               <p>🎁 <b>Recompensa:</b> ${rewardName}</p>
               <p>✅ <b>Cargados:</b> ${res.success_count}</p>
-              <p>📈 <b>Stock final disponible:</b> ${newStock}</p>
+              <p>📈 <b>Stock activo disponible:</b> ${newStock}</p>
               <p>⚠️ <b>Duplicados (omitidos):</b> ${res.duplicate_count}</p>
               ${res.duplicate_count > 0 ? `
                 <div style="margin-top: 10px;">
