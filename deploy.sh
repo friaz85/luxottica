@@ -13,12 +13,16 @@ SSH_PARAMS="-p 18765 -o StrictHostKeyChecking=no -i \"$SSH_KEY\""
 
 # 1. Update Frontend Environment
 echo "📝 Updating frontend environment..."
-cat > frontend/src/environments/environment.ts <<EOF
+cat > frontend/src/environments/environment.ts <<'EOF'
+const origin = typeof window !== 'undefined' && window.location?.origin 
+    ? window.location.origin 
+    : 'https://q-tokens.com.mx';
+
 export const environment = {
-    production: $( [ "$ENV" == "PROD" ] && echo "true" || echo "false" ),
-    apiUrl: '$API_URL',
-    uploadsUrl: '$API_URL/public/uploads',
-    fallbackUrl: 'https://q-tokens.com.mx/luxottica/api/public/uploads'
+    production: true,
+    apiUrl: `${origin}/luxottica/api`,
+    uploadsUrl: `${origin}/luxottica/api/public/uploads`,
+    fallbackUrl: `${origin}/luxottica/api/public/uploads`
 };
 EOF
 
