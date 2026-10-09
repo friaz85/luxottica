@@ -206,7 +206,8 @@ export class AdminLoginComponent {
         this.router.navigate(['/admin/dashboard']);
       },
       error: (err) => {
-        const msg = (err.error?.message || 'ERROR DE CONEXIÓN').toUpperCase();
+        const serverMsg = err.error?.messages?.error || err.error?.message || (typeof err.error?.messages === 'string' ? err.error.messages : null);
+        const msg = (serverMsg || (err.status === 0 ? 'ERROR DE CONEXIÓN' : 'CREDENCIALES INVÁLIDAS')).toUpperCase();
         this.error.set(msg);
         this.toast.show(msg, 'error');
         this.loading.set(false);
